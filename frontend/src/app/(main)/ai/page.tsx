@@ -26,6 +26,8 @@ import { AIPersonaSelector, AIPersonaPreview } from '@/components/ai/ai-persona-
 import { AIReplyGenerator } from '@/components/ai/ai-reply-generator'
 import { AIReplyAdvice } from '@/components/ai/ai-reply-advice'
 import { CloudLetterCompanion } from '@/components/ai/cloud-letter-companion'
+import { UnreachableCompanion } from '@/components/ai/unreachable-companion'
+import { CharacterStation } from '@/components/ai/character-station'
 import { AuthFixBanner } from '@/components/ai/auth-fix-banner'
 import { UsageStatsCard } from '@/components/ai/usage-stats-card'
 import { useAuth } from '@/contexts/auth-context-new'
@@ -252,49 +254,9 @@ export default function AIPage() {
           </Card>
         </TabsContent>
 
-        {/* AI Personas Tab */}
+        {/* Cloud Letter (Unreachable Companion) Tab */}
         <TabsContent value="personas" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Persona Selector */}
-            <div className="lg:col-span-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    选择AI笔友
-                  </CardTitle>
-                  <CardDescription>
-                    选择一个长期陪伴你的AI笔友人设
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <AIPersonaSelector
-                    value={selectedPersona}
-                    onChange={setSelectedPersona}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Cloud Letter Companion */}
-            <div className="lg:col-span-8">
-              <CloudLetterCompanion selectedPersonaId={selectedPersona} />
-            </div>
-          </div>
-          
-          {/* Usage Instructions for Cloud Letter Companion */}
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-lg">☁️ 云中锦书使用说明</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p>• <strong>长期关系：</strong>选择的AI笔友将成为你的长期写信伙伴，保持一致的性格和记忆</p>
-              <p>• <strong>个性化交流：</strong>AI会根据你们的对话历史，逐渐了解你的兴趣和写作风格</p>
-              <p>• <strong>情感陪伴：</strong>不只是工具，更是一个有温度的写信伙伴，陪伴你的成长历程</p>
-              <p>• <strong>多样选择：</strong>诗人、朋友、哲学家等不同类型，总有一个适合你的交流方式</p>
-              <p>• <strong>持续互动：</strong>支持长期书信往来，建立深厚的"笔友"情感纽带</p>
-            </CardContent>
-          </Card>
+          <UnreachableCompanion />
         </TabsContent>
 
         {/* Penpal Matching Tab */}
@@ -352,44 +314,24 @@ export default function AIPage() {
           </div>
         </TabsContent>
 
-        {/* Reply Generator Tab */}
+        {/* Character Station Tab */}
         <TabsContent value="reply" className="space-y-6">
-          <div className="max-w-4xl mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-green-600" />
-                  角色驿站 - 回信角度建议
-                </CardTitle>
-                <CardDescription>
-                  基于不同角色视角，为你的回信提供多样化的思路和建议。让AI帮你从不同角度思考如何回应，而非直接生成内容。
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AIReplyAdvice
-                  letterId={testLetterId}
-                  letterContent="这里是一封测试信件的内容..."
-                  onUseAdvice={(advice) => {
-                    console.log('使用了AI回信建议:', advice)
-                  }}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Usage Guide for Character Station */}
-            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-              <CardHeader>
-                <CardTitle className="text-lg">🏤 角色驿站使用指南</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p>• <strong>角色视角：</strong>从不同角色（朋友、长辈、同学等）的视角获取回信思路和建议</p>
-                <p>• <strong>思路启发：</strong>AI提供回信角度和要点，而非直接生成完整内容，保持回信的原创性</p>
-                <p>• <strong>自定义角色：</strong>支持创建个性化角色，根据特定关系和场景定制回信建议</p>
-                <p>• <strong>情感引导：</strong>帮助理解来信的情感需求，提供合适的回应策略和语气建议</p>
-                <p>• <strong>真实表达：</strong>以建议为基础，融入个人真实感受和具体经历，让回信更有温度</p>
-              </CardContent>
-            </Card>
-          </div>
+          <CharacterStation 
+            letters={[
+              {
+                id: '1',
+                content: '亲爱的朋友，最近生活怎么样？我这边期末考试快到了，压力有点大。你还记得我们上次聊的那本书吗？我终于看完了，感触很深...',
+                senderName: '小明',
+                receivedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+              },
+              {
+                id: '2',
+                content: '好久不见！听说你最近在学习新技能，进展如何？我最近也在尝试一些新事物，虽然有点困难，但感觉很充实...',
+                senderName: '小红',
+                receivedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+              }
+            ]}
+          />
         </TabsContent>
       </Tabs>
         </div>
