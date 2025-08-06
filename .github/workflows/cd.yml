@@ -22,7 +22,7 @@ env:
 jobs:
   deploy-staging:
     name: Deploy to Staging
-    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    if: false # Disabled until AWS credentials are configured
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -59,7 +59,7 @@ jobs:
 
   deploy-production:
     name: Deploy to Production
-    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.environment == 'production'
+    if: false # Disabled until AWS credentials are configured
     runs-on: ubuntu-latest
     environment: production
     steps:
