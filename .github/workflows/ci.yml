@@ -196,13 +196,13 @@ jobs:
       
       - name: Run tests
         run: |
-          cd services/admin-service
+          cd services/admin-service/backend
           ./mvnw test
       
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
-          files: ./services/admin-service/target/site/jacoco/jacoco.xml
+          files: ./services/admin-service/backend/target/site/jacoco/jacoco.xml
           flags: admin-service
 
   integration-tests:
@@ -261,7 +261,7 @@ jobs:
           cd backend
           go build -o bin/server main.go
           cd ../services/courier-service
-          go build -o bin/courier cmd/main.go
+          go build -o bin/courier main.go
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
