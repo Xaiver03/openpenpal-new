@@ -1,0 +1,488 @@
+{
+  "login": [
+    {
+      "username": "courier_level1",
+      "level": 1,
+      "success": true,
+      "expectedRole": "courier",
+      "actualRole": "courier_level1",
+      "passed": false
+    },
+    {
+      "username": "courier_level2",
+      "level": 2,
+      "success": true,
+      "expectedRole": "senior_courier",
+      "actualRole": "courier_level2",
+      "passed": false
+    },
+    {
+      "username": "courier_level3",
+      "level": 3,
+      "success": false,
+      "error": "Request failed with status code 401",
+      "passed": false
+    },
+    {
+      "username": "courier_level4",
+      "level": 4,
+      "success": true,
+      "expectedRole": "coordinator",
+      "actualRole": "courier_level4",
+      "passed": false
+    }
+  ],
+  "api": [
+    {
+      "endpoint": "/courier/info",
+      "description": "Get courier info",
+      "minLevel": 1,
+      "courierLevel": 1,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 500,
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/courier/stats",
+      "description": "Get courier stats",
+      "minLevel": 1,
+      "courierLevel": 1,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 500,
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/courier/tasks",
+      "description": "Get tasks",
+      "minLevel": 2,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 500,
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/courier/hierarchy/subordinates",
+      "description": "Get subordinates",
+      "minLevel": 2,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/level/2",
+      "description": "Get L2 couriers",
+      "minLevel": 3,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/create",
+      "description": "Create subordinate",
+      "minLevel": 3,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/level/3",
+      "description": "Get L3 couriers",
+      "minLevel": 4,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/city/overview",
+      "description": "City overview",
+      "minLevel": 4,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/info",
+      "description": "Get courier info",
+      "minLevel": 1,
+      "courierLevel": 2,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 500,
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/courier/stats",
+      "description": "Get courier stats",
+      "minLevel": 1,
+      "courierLevel": 2,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 500,
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/courier/tasks",
+      "description": "Get tasks",
+      "minLevel": 2,
+      "courierLevel": 2,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 500,
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/courier/hierarchy/subordinates",
+      "description": "Get subordinates",
+      "minLevel": 2,
+      "courierLevel": 2,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/level/2",
+      "description": "Get L2 couriers",
+      "minLevel": 3,
+      "courierLevel": 2,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/create",
+      "description": "Create subordinate",
+      "minLevel": 3,
+      "courierLevel": 2,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/level/3",
+      "description": "Get L3 couriers",
+      "minLevel": 4,
+      "courierLevel": 2,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/city/overview",
+      "description": "City overview",
+      "minLevel": 4,
+      "courierLevel": 2,
+      "shouldHaveAccess": false,
+      "hasAccess": false,
+      "passed": true,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/info",
+      "description": "Get courier info",
+      "minLevel": 1,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 500,
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/courier/stats",
+      "description": "Get courier stats",
+      "minLevel": 1,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 500,
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/courier/tasks",
+      "description": "Get tasks",
+      "minLevel": 2,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 500,
+      "error": "Request failed with status code 500"
+    },
+    {
+      "endpoint": "/courier/hierarchy/subordinates",
+      "description": "Get subordinates",
+      "minLevel": 2,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/level/2",
+      "description": "Get L2 couriers",
+      "minLevel": 3,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/create",
+      "description": "Create subordinate",
+      "minLevel": 3,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/level/3",
+      "description": "Get L3 couriers",
+      "minLevel": 4,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    },
+    {
+      "endpoint": "/courier/hierarchy/city/overview",
+      "description": "City overview",
+      "minLevel": 4,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": false,
+      "passed": false,
+      "status": 404,
+      "error": "Request failed with status code 404"
+    }
+  ],
+  "frontend": [
+    {
+      "path": "/courier",
+      "description": "Basic courier dashboard",
+      "minLevel": 1,
+      "courierLevel": 1,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/tasks",
+      "description": "Task list",
+      "minLevel": 1,
+      "courierLevel": 1,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/building-manage",
+      "description": "Building management",
+      "minLevel": 2,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": true,
+      "passed": false,
+      "status": 200
+    },
+    {
+      "path": "/courier/zone-manage",
+      "description": "Zone management",
+      "minLevel": 3,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": true,
+      "passed": false,
+      "status": 200
+    },
+    {
+      "path": "/courier/school-manage",
+      "description": "School management",
+      "minLevel": 3,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": true,
+      "passed": false,
+      "status": 200
+    },
+    {
+      "path": "/courier/city-manage",
+      "description": "City management",
+      "minLevel": 4,
+      "courierLevel": 1,
+      "shouldHaveAccess": false,
+      "hasAccess": true,
+      "passed": false,
+      "status": 200
+    },
+    {
+      "path": "/courier",
+      "description": "Basic courier dashboard",
+      "minLevel": 1,
+      "courierLevel": 2,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/tasks",
+      "description": "Task list",
+      "minLevel": 1,
+      "courierLevel": 2,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/building-manage",
+      "description": "Building management",
+      "minLevel": 2,
+      "courierLevel": 2,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/zone-manage",
+      "description": "Zone management",
+      "minLevel": 3,
+      "courierLevel": 2,
+      "shouldHaveAccess": false,
+      "hasAccess": true,
+      "passed": false,
+      "status": 200
+    },
+    {
+      "path": "/courier/school-manage",
+      "description": "School management",
+      "minLevel": 3,
+      "courierLevel": 2,
+      "shouldHaveAccess": false,
+      "hasAccess": true,
+      "passed": false,
+      "status": 200
+    },
+    {
+      "path": "/courier/city-manage",
+      "description": "City management",
+      "minLevel": 4,
+      "courierLevel": 2,
+      "shouldHaveAccess": false,
+      "hasAccess": true,
+      "passed": false,
+      "status": 200
+    },
+    {
+      "path": "/courier",
+      "description": "Basic courier dashboard",
+      "minLevel": 1,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/tasks",
+      "description": "Task list",
+      "minLevel": 1,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/building-manage",
+      "description": "Building management",
+      "minLevel": 2,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/zone-manage",
+      "description": "Zone management",
+      "minLevel": 3,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/school-manage",
+      "description": "School management",
+      "minLevel": 3,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    },
+    {
+      "path": "/courier/city-manage",
+      "description": "City management",
+      "minLevel": 4,
+      "courierLevel": 4,
+      "shouldHaveAccess": true,
+      "hasAccess": true,
+      "passed": true,
+      "status": 200
+    }
+  ],
+  "summary": {
+    "totalTests": 46,
+    "passed": 21,
+    "failed": 25
+  }
+}

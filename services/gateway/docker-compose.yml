@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build: .
+    container_name: openpenpal-api-gateway
+    ports:
+      - "8000:8000"   # API Gateway 主端口
+      - "9000:9000"   # 监控指标端口
+    environment:
+      - PORT=8000
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
+      - REDIS_URL=redis://redis:6379/0
+      
+      # 后端服务地址
+      - MAIN_BACKEND_HOSTS=http://main-backend:8080
+      - WRITE_SERVICE_HOSTS=http://write-service:8001  
+      - COURIER_SERVICE_HOSTS=http://courier-service:8002
+      - ADMIN_SERVICE_HOSTS=http://admin-service:8003
+      - OCR_SERVICE_HOSTS=http://ocr-service:8004
+      
+      # 超时配置
+      - PROXY_TIMEOUT=30
+      - CONNECT_TIMEOUT=5
+      - KEEPALIVE_TIMEOUT=30
+      
+      # 限流配置
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_DEFAULT=100
+      - RATE_LIMIT_BURST=10
+      
+      # 监控配置
+      - METRICS_ENABLED=true
+      - METRICS_PORT=9000
+    
+    depends_on:
+      redis:
+        condition: service_healthy
+    
+    networks:
+      - openpenpal-network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    volumes:
+      - ./logs:/home/gateway/logs
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=Host(`api.openpenpal.local`)"
+      - "traefik.http.services.gateway.loadbalancer.server.port=8000"
+
+  # Redis (共享缓存)
+  redis:
+    image: redis:7-alpine
+    container_name: openpenpal-gateway-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Nginx (负载均衡器，可选)
+  nginx:
+    image: nginx:alpine
+    container_name: openpenpal-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - api-gateway
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Prometheus (监控，可选)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: openpenpal-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Grafana (可视化，可选)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: openpenpal-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+networks:
+  openpenpal-network:
+    driver: bridge
+    name: openpenpal-network
+
+volumes:
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

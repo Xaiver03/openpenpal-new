@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-08-05T12:00:35.725Z",
+  "results": {
+    "passed": 1,
+    "failed": 5,
+    "issues": [
+      "AI returned fallback content",
+      "Reply generation failed",
+      "Pen pal matching failed",
+      "Writing advice failed",
+      "Error handling issue"
+    ]
+  },
+  "successRate": 16.7,
+  "moonshotStatus": "fallback"
+}

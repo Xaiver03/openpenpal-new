@@ -1,0 +1,53 @@
+# OpenPenPal日志监控配置
+# 用于Prometheus + Grafana监控
+
+# 日志收集器配置 (Promtail)
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+  # 应用日志
+  - job_name: openpenpal-app
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: openpenpal
+          component: app
+          __path__: /Users/rocalight/同步空间/opplc/openpenpal/logs/app/*.log
+
+  # 访问日志
+  - job_name: openpenpal-access
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: openpenpal
+          component: access
+          __path__: /Users/rocalight/同步空间/opplc/openpenpal/logs/access/*.log
+
+  # 错误日志
+  - job_name: openpenpal-error
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: openpenpal
+          component: error
+          __path__: /Users/rocalight/同步空间/opplc/openpenpal/logs/error/*.log
+    pipeline_stages:
+      - match:
+          selector: '{component="error"}'
+          stages:
+            - regex:
+                expression: '(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(?P<level>\w+)\] (?P<message>.*)'
+            - timestamp:
+                source: timestamp
+                format: '2006-01-02 15:04:05'

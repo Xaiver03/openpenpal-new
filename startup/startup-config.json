@@ -1,0 +1,253 @@
+{
+  "project": {
+    "name": "OpenPenPal",
+    "version": "1.0.0",
+    "description": "跨校园信件传递平台"
+  },
+  "services": {
+    "frontend": {
+      "name": "前端应用",
+      "port": 3000,
+      "path": "./frontend",
+      "command": "npm run dev",
+      "healthCheck": "http://localhost:3000",
+      "dependencies": ["backend"],
+      "autoStart": true
+    },
+    "admin-frontend": {
+      "name": "管理后台",
+      "port": 3001,
+      "path": "./services/admin-service/frontend",
+      "command": "npm run dev",
+      "healthCheck": "http://localhost:3001",
+      "dependencies": ["admin-service"],
+      "autoStart": false
+    },
+    "gateway": {
+      "name": "API网关",
+      "port": 8000,
+      "path": "./apps/mock-services",
+      "command": "node src/index.js --service gateway",
+      "healthCheck": "http://localhost:8000/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "go-backend": {
+      "name": "Go后端服务",
+      "port": 8080,
+      "path": "./backend",
+      "command": "./openpenpal-backend",
+      "healthCheck": "http://localhost:8080/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "backend": {
+      "name": "主后端服务",
+      "port": 8080,
+      "path": "./apps/mock-services",
+      "command": "node src/index.js --service main-backend",
+      "healthCheck": "http://localhost:8080/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "write-service": {
+      "name": "写信服务",
+      "port": 8001,
+      "path": "./apps/mock-services",
+      "command": "node src/index.js --service write-service",
+      "healthCheck": "http://localhost:8001/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "courier-service": {
+      "name": "信使服务",
+      "port": 8002,
+      "path": "./apps/mock-services",
+      "command": "node src/index.js --service courier-service",
+      "healthCheck": "http://localhost:8002/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "admin-service": {
+      "name": "管理服务",
+      "port": 8003,
+      "path": "./apps/mock-services",
+      "command": "node src/index.js --service admin-service",
+      "healthCheck": "http://localhost:8003/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "ocr-service": {
+      "name": "OCR服务",
+      "port": 8004,
+      "path": "./apps/mock-services",
+      "command": "node src/index.js --service ocr-service",
+      "healthCheck": "http://localhost:8004/health",
+      "dependencies": [],
+      "autoStart": false
+    },
+    "simple-mock": {
+      "name": "简化Mock服务",
+      "port": 8000,
+      "path": "./",
+      "command": "node scripts/simple-mock-services.js",
+      "healthCheck": "http://localhost:8000/health",
+      "dependencies": [],
+      "autoStart": false
+    },
+    "real-gateway": {
+      "name": "API网关（真实）",
+      "port": 8000,
+      "path": "./services/gateway",
+      "command": "./bin/gateway",
+      "healthCheck": "http://localhost:8000/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "real-write-service": {
+      "name": "写信服务（真实）",
+      "port": 8001,
+      "path": "./services/write-service",
+      "command": "python app/main.py",
+      "healthCheck": "http://localhost:8001/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "real-courier-service": {
+      "name": "信使服务（真实）",
+      "port": 8002,
+      "path": "./services/courier-service",
+      "command": "./bin/courier-service",
+      "healthCheck": "http://localhost:8002/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "real-admin-service": {
+      "name": "管理服务（真实）",
+      "port": 8003,
+      "path": "./services/admin-service/backend",
+      "command": "java -jar target/admin-service.jar",
+      "healthCheck": "http://localhost:8003/health",
+      "dependencies": [],
+      "autoStart": true
+    },
+    "real-ocr-service": {
+      "name": "OCR服务（真实）",
+      "port": 8004,
+      "path": "./services/ocr-service",
+      "command": "python app/main.py",
+      "healthCheck": "http://localhost:8004/health",
+      "dependencies": [],
+      "autoStart": true
+    }
+  },
+  "modes": {
+    "development": {
+      "description": "开发模式",
+      "services": ["go-backend", "frontend"],
+      "environment": {
+        "NODE_ENV": "development",
+        "DEBUG": "true",
+        "LOG_LEVEL": "debug"
+      }
+    },
+    "production": {
+      "description": "生产模式 - 启动所有核心服务",
+      "services": [
+        "go-backend",
+        "real-gateway", 
+        "real-write-service",
+        "real-courier-service",
+        "real-admin-service",
+        "real-ocr-service",
+        "frontend", 
+        "admin-frontend"
+      ],
+      "environment": {
+        "NODE_ENV": "production",
+        "DEBUG": "false",
+        "LOG_LEVEL": "info",
+        "DATABASE_TYPE": "postgres"
+      }
+    },
+    "simple": {
+      "description": "简化模式",
+      "services": ["go-backend", "frontend"],
+      "environment": {
+        "NODE_ENV": "development",
+        "DEBUG": "true"
+      }
+    },
+    "demo": {
+      "description": "演示模式", 
+      "services": ["go-backend", "frontend"],
+      "environment": {
+        "NODE_ENV": "demo",
+        "DEBUG": "false"
+      },
+      "autoOpen": true,
+      "preloadData": true
+    },
+    "complete": {
+      "description": "完整微服务模式",
+      "services": [
+        "go-backend",
+        "real-gateway", 
+        "real-write-service",
+        "real-courier-service",
+        "real-admin-service",
+        "real-ocr-service",
+        "frontend", 
+        "admin-frontend"
+      ],
+      "environment": {
+        "NODE_ENV": "development",
+        "DEBUG": "true",
+        "LOG_LEVEL": "debug",
+        "DATABASE_TYPE": "postgres"
+      },
+      "autoOpen": true
+    },
+    "mock": {
+      "description": "Mock服务模式",
+      "services": ["simple-mock", "frontend"],
+      "environment": {
+        "NODE_ENV": "development",
+        "DEBUG": "true"
+      }
+    }
+  },
+  "environment": {
+    "JWT_SECRET": "openpenpal-super-secret-jwt-key-for-integration",
+    "API_BASE_URL": "http://localhost:8000",
+    "FRONTEND_URL": "http://localhost:3000",
+    "ADMIN_FRONTEND_URL": "http://localhost:3001"
+  },
+  "database": {
+    "type": "mock",
+    "host": "localhost",
+    "port": 5432,
+    "name": "openpenpal",
+    "user": "openpenpal",
+    "password": "password"
+  },
+  "logging": {
+    "level": "info",
+    "format": "combined",
+    "directory": "./logs",
+    "rotation": true,
+    "maxSize": "10MB",
+    "maxFiles": 5
+  },
+  "monitoring": {
+    "enabled": true,
+    "healthCheckInterval": 30,
+    "performanceMetrics": true,
+    "errorTracking": true
+  },
+  "browser": {
+    "autoOpen": true,
+    "defaultUrl": "http://localhost:3000",
+    "adminUrl": "http://localhost:3001"
+  }
+}

@@ -1,0 +1,55 @@
+# 邮件服务配置 - 使用 Gmail SMTP
+spring:
+  mail:
+    # Gmail SMTP 配置
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:openpenpal.system@gmail.com}
+    password: ${MAIL_APP_PASSWORD:your-gmail-app-password}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+          ssl:
+            trust: smtp.gmail.com
+    
+    # 备选配置 - QQ邮箱
+    # host: smtp.qq.com
+    # port: 587
+    # username: ${MAIL_USERNAME:your-email@qq.com}
+    # password: ${MAIL_PASSWORD:your-auth-code}
+
+# 应用邮件配置
+app:
+  mail:
+    from: ${MAIL_FROM:noreply@openpenpal.com}
+    from-name: ${MAIL_FROM_NAME:OpenPenPal}
+    enabled: ${MAIL_ENABLED:true}
+    templates:
+      path: classpath:/templates/email/
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+
+# 邮件发送限制配置
+mail:
+  rate-limit:
+    # 每个邮箱每小时最大发送次数
+    per-email-per-hour: 10
+    # 每个IP每小时最大发送次数
+    per-ip-per-hour: 50
+    # 验证码冷却时间(秒)
+    verification-cooldown: 60
+  verification:
+    # 验证码长度
+    code-length: 6
+    # 验证码有效期(分钟)
+    expiry-minutes: 5
+    # 最大重试次数
+    max-attempts: 5

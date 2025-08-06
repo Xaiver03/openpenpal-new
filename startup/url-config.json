@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "description": "OpenPenPal URL 配置管理",
+  "urls": {
+    "primary": {
+      "name": "主应用",
+      "url": "http://localhost:3000",
+      "description": "用户前端应用",
+      "priority": 100,
+      "auto_open": true,
+      "health_check": "/health",
+      "wait_timeout": 30
+    },
+    "admin": {
+      "name": "管理后台",
+      "url": "http://localhost:3001",
+      "description": "管理员界面",
+      "priority": 90,
+      "auto_open": false,
+      "health_check": "/health",
+      "wait_timeout": 30
+    },
+    "api": {
+      "name": "API网关",
+      "url": "http://localhost:8000",
+      "description": "API网关服务",
+      "priority": 80,
+      "auto_open": false,
+      "health_check": "/health",
+      "wait_timeout": 30
+    },
+    "docs": {
+      "name": "API文档",
+      "url": "http://localhost:8000/docs",
+      "description": "API文档界面",
+      "priority": 70,
+      "auto_open": false,
+      "health_check": "/docs",
+      "wait_timeout": 30
+    }
+  },
+  "modes": {
+    "development": {
+      "auto_open_urls": ["primary"],
+      "show_all_urls": true,
+      "keep_running": true,
+      "browser_delay": 3
+    },
+    "simple": {
+      "auto_open_urls": ["primary"],
+      "show_all_urls": false,
+      "keep_running": true,
+      "browser_delay": 2
+    },
+    "demo": {
+      "auto_open_urls": ["primary", "admin"],
+      "show_all_urls": true,
+      "keep_running": true,
+      "browser_delay": 3
+    },
+    "complete": {
+      "auto_open_urls": ["primary"],
+      "show_all_urls": true,
+      "keep_running": true,
+      "browser_delay": 5
+    },
+    "production": {
+      "auto_open_urls": [],
+      "show_all_urls": true,
+      "keep_running": false,
+      "browser_delay": 0
+    }
+  },
+  "browser": {
+    "preferred": "auto",
+    "fallback_enabled": true,
+    "retry_count": 3,
+    "retry_delay": 2,
+    "test_timeout": 10
+  },
+  "display": {
+    "show_qr_code": false,
+    "show_network_info": true,
+    "show_health_status": true,
+    "compact_mode": false
+  }
+}

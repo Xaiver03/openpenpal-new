@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenPenPal 商城后台管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .header {
+            background: #001529;
+            color: white;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 500;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 0 24px;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: #262626;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1890ff;
+        }
+        
+        .api-section {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .api-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            margin: 8px 0;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        
+        .api-info h3 {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .api-info p {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background: #1890ff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #40a9ff;
+        }
+        
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #73d13d;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .result-area {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .loading {
+            color: #1890ff;
+        }
+        
+        .error {
+            color: #ff4d4f;
+        }
+        
+        .success {
+            color: #52c41a;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛒 OpenPenPal 商城后台管理系统</h1>
+    </div>
+    
+    <div class="container">
+        <!-- 仪表板统计 -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>📊 系统统计</h2>
+                <div id="system-stats">
+                    <div class="stat-item">
+                        <span>服务状态</span>
+                        <span class="stat-value" id="service-status">检查中...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>安全评分</span>
+                        <span class="stat-value" id="security-score">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>API响应时间</span>
+                        <span class="stat-value" id="response-time">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>👥 用户与权限</h2>
+                <div id="rbac-stats">
+                    <div class="stat-item">
+                        <span>总用户数</span>
+                        <span class="stat-value" id="total-users">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>活跃用户</span>
+                        <span class="stat-value" id="active-users">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>在线用户</span>
+                        <span class="stat-value" id="online-users">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>角色总数</span>
+                        <span class="stat-value" id="total-roles">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📦 商品管理</h2>
+                <div id="product-stats">
+                    <div class="stat-item">
+                        <span>分类总数</span>
+                        <span class="stat-value" id="total-categories">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>价格策略</span>
+                        <span class="stat-value" id="pricing-policies">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>最后更新</span>
+                        <span class="stat-value" id="last-update">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API操作区域 -->
+        <div class="api-section">
+            <h2>🔧 管理操作</h2>
+            
+            <div class="api-item">
+                <div class="api-info">
+                    <h3>系统健康检查</h3>
+                    <p>获取系统运行状态和安全信息</p>
+                </div>
+                <button class="btn btn-success" onclick="checkHealth(true)">检查健康状态</button>
+            </div>
+            
+            <div class="api-item">
+                <div class="api-info">
+                    <h3>商品分类管理</h3>
+                    <p>查看和管理商品分类树结构</p>
+                </div>
+                <button class="btn btn-primary" onclick="getCategories(true)">获取分类数据</button>
+            </div>
+            
+            <div class="api-item">
+                <div class="api-info">
+                    <h3>权限统计信息</h3>
+                    <p>查看用户、角色和权限统计</p>
+                </div>
+                <button class="btn btn-primary" onclick="getRbacStats(true)">获取权限统计</button>
+            </div>
+            
+            <div class="api-item">
+                <div class="api-info">
+                    <h3>价格策略管理</h3>
+                    <p>管理商品价格策略和定价规则</p>
+                </div>
+                <button class="btn btn-primary" onclick="getPricingData(true)">获取价格数据</button>
+            </div>
+            
+            <div class="api-item">
+                <div class="api-info">
+                    <h3>API文档</h3>
+                    <p>查看完整的API接口文档</p>
+                </div>
+                <button class="btn btn-success" onclick="openApiDocs()">打开API文档</button>
+            </div>
+            
+            <!-- 结果显示区域 -->
+            <div id="result-area" class="result-area" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';  // 使用相对路径，避免跨域问题
+        
+        // 页面加载时自动获取数据
+        window.onload = function() {
+            loadDashboardData();
+        };
+        
+        // 通用按钮处理器
+        function withButtonState(func, buttonText) {
+            return async function(showResult = true) {
+                const button = event?.target;
+                const originalText = button?.textContent;
+                
+                if (button) {
+                    button.disabled = true;
+                    button.textContent = buttonText || '处理中...';
+                }
+                
+                try {
+                    return await func(showResult);
+                } finally {
+                    if (button) {
+                        button.disabled = false;
+                        button.textContent = originalText;
+                    }
+                }
+            }
+        }
+        
+        async function loadDashboardData() {
+            await checkHealth(false);
+            await getRbacStats(false);
+            await getCategories(false);
+            await getPricingData(false);
+        }
+        
+        async function apiCall(endpoint, showResult = true) {
+            if (showResult) {
+                showLoading('正在请求数据...');
+            }
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(endpoint);  // 直接使用endpoint，因为API_BASE已经是空字符串
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (showResult) {
+                    showSuccess(JSON.stringify(data, null, 2));
+                }
+                
+                return { data, responseTime };
+            } catch (error) {
+                console.error('API调用错误:', error);
+                if (showResult) {
+                    showError(`请求失败: ${error.message}\n\n请确保服务正在运行：http://localhost:8001`);
+                }
+                throw error;
+            }
+        }
+        
+        function showLoading(message) {
+            showResult('loading', message);
+        }
+        
+        function showSuccess(message) {
+            showResult('success', message);
+        }
+        
+        function showError(message) {
+            showResult('error', message);
+        }
+        
+        async function checkHealth(showResult = true) {
+            try {
+                const { data, responseTime } = await apiCall('/health', showResult);
+                
+                // 更新仪表板
+                document.getElementById('service-status').textContent = '✅ 正常运行';
+                document.getElementById('security-score').textContent = data.data.security_score || '--';
+                document.getElementById('response-time').textContent = `${responseTime}ms`;
+                
+            } catch (error) {
+                document.getElementById('service-status').textContent = '❌ 服务异常';
+                document.getElementById('security-score').textContent = '--';
+                document.getElementById('response-time').textContent = '--';
+            }
+        }
+        
+        async function getRbacStats(showResult = true) {
+            try {
+                const { data } = await apiCall('/api/v1/test/rbac', showResult);
+                
+                // 更新RBAC统计
+                document.getElementById('total-users').textContent = data.data.user_total || '--';
+                document.getElementById('active-users').textContent = data.data.user_active || '--';
+                document.getElementById('online-users').textContent = data.data.online_users || '--';
+                document.getElementById('total-roles').textContent = data.data.role_total || '--';
+                
+            } catch (error) {
+                console.error('Failed to load RBAC stats:', error);
+            }
+        }
+        
+        async function getCategories(showResult = true) {
+            try {
+                const { data } = await apiCall('/api/v1/test/categories', showResult);
+                
+                // 更新商品统计
+                document.getElementById('total-categories').textContent = data.data.total_nodes || '--';
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+                
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        }
+        
+        async function getPricingData(showResult = true) {
+            try {
+                const { data } = await apiCall('/api/v1/test/pricing', showResult);
+                
+                // 更新价格统计
+                document.getElementById('pricing-policies').textContent = data.data.total || '--';
+                
+            } catch (error) {
+                console.error('Failed to load pricing data:', error);
+            }
+        }
+        
+        function openApiDocs() {
+            window.open('/docs', '_blank');
+        }
+        
+        function showResult(type, content) {
+            const resultArea = document.getElementById('result-area');
+            resultArea.style.display = 'block';
+            resultArea.className = `result-area ${type}`;
+            resultArea.textContent = content;
+            
+            // 滚动到结果区域
+            resultArea.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 定期刷新数据
+        setInterval(loadDashboardData, 30000); // 每30秒刷新一次
+    </script>
+</body>
+</html>

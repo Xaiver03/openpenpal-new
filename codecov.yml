@@ -1,0 +1,92 @@
+# Codecov配置文件
+codecov:
+  require_ci_to_pass: true
+  max_report_age: 24
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 1%
+        
+      frontend:
+        target: 75%
+        paths:
+          - frontend/
+          
+      backend:
+        target: 80%
+        paths:
+          - backend/
+          - services/courier-service/
+          
+      python-services:
+        target: 70%
+        paths:
+          - services/write-service/
+          - services/ocr-service/
+          
+      java-services:
+        target: 70%
+        paths:
+          - services/admin-service/
+    
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "reach,diff,flags,files,footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+flags:
+  frontend:
+    paths:
+      - frontend/
+    carryforward: true
+    
+  backend:
+    paths:
+      - backend/
+      - services/courier-service/
+    carryforward: true
+    
+  write-service:
+    paths:
+      - services/write-service/
+    carryforward: true
+    
+  ocr-service:
+    paths:
+      - services/ocr-service/
+    carryforward: true
+    
+  admin-service:
+    paths:
+      - services/admin-service/
+    carryforward: true
+
+ignore:
+  - "**/*_test.go"
+  - "**/test_*.py"
+  - "**/*.test.{js,jsx,ts,tsx}"
+  - "**/mocks/**"
+  - "**/vendor/**"
+  - "**/node_modules/**"

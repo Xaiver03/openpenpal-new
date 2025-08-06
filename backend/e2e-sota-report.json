@@ -1,0 +1,255 @@
+{
+  "summary": {
+    "total": 22,
+    "passed": 18,
+    "failed": 4,
+    "successRate": "81.8",
+    "timestamp": "2025-08-05T12:34:34.794Z"
+  },
+  "categories": {
+    "路由别名": [
+      {
+        "name": "路由别名: 学校列表",
+        "passed": true,
+        "timestamp": "2025-08-05T12:34:27.064Z",
+        "route": "/api/schools",
+        "status": 200,
+        "hasData": true
+      },
+      {
+        "name": "路由别名: 邮编查询",
+        "passed": true,
+        "timestamp": "2025-08-05T12:34:27.065Z",
+        "route": "/api/postcode/100080",
+        "status": 200,
+        "hasData": true
+      },
+      {
+        "name": "路由别名: 地址搜索",
+        "passed": true,
+        "timestamp": "2025-08-05T12:34:27.066Z",
+        "route": "/api/address/search?q=北京",
+        "status": 200,
+        "hasData": true
+      },
+      {
+        "name": "路由别名: CSRF令牌",
+        "passed": true,
+        "timestamp": "2025-08-05T12:34:27.066Z",
+        "route": "/api/auth/csrf",
+        "status": 200,
+        "hasData": true
+      }
+    ],
+    "字段转换": [
+      {
+        "name": "字段转换",
+        "passed": true,
+        "timestamp": "2025-08-05T12:34:27.285Z",
+        "fieldsChecked": 5,
+        "userFields": [
+          "createdAt",
+          "email",
+          "id",
+          "isActive",
+          "lastLoginAt",
+          "nickname",
+          "role",
+          "schoolCode",
+          "updatedAt",
+          "username"
+        ]
+      }
+    ],
+    "AI功能": [],
+    "信件系统": [],
+    "信使系统": [],
+    "博物馆": [
+      {
+        "name": "博物馆条目",
+        "passed": true,
+        "timestamp": "2025-08-05T12:34:32.526Z",
+        "count": 0
+      }
+    ],
+    "错误处理": [],
+    "性能": [
+      {
+        "name": "性能: 学校列表",
+        "passed": true,
+        "timestamp": "2025-08-05T12:34:32.527Z",
+        "duration": 0,
+        "endpoint": "/api/schools"
+      },
+      {
+        "name": "性能: AI灵感",
+        "passed": false,
+        "timestamp": "2025-08-05T12:34:34.794Z",
+        "duration": 2267,
+        "endpoint": "/api/v1/ai/inspiration"
+      },
+      {
+        "name": "性能: 信件列表",
+        "passed": true,
+        "timestamp": "2025-08-05T12:34:34.794Z",
+        "duration": 0,
+        "endpoint": "/api/v1/letters"
+      }
+    ]
+  },
+  "tests": [
+    {
+      "name": "路由别名: 学校列表",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:27.064Z",
+      "route": "/api/schools",
+      "status": 200,
+      "hasData": true
+    },
+    {
+      "name": "路由别名: 邮编查询",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:27.065Z",
+      "route": "/api/postcode/100080",
+      "status": 200,
+      "hasData": true
+    },
+    {
+      "name": "路由别名: 地址搜索",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:27.066Z",
+      "route": "/api/address/search?q=北京",
+      "status": 200,
+      "hasData": true
+    },
+    {
+      "name": "路由别名: CSRF令牌",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:27.066Z",
+      "route": "/api/auth/csrf",
+      "status": 200,
+      "hasData": true
+    },
+    {
+      "name": "CSRF令牌获取",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:27.066Z"
+    },
+    {
+      "name": "字段转换",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:27.285Z",
+      "fieldsChecked": 5,
+      "userFields": [
+        "createdAt",
+        "email",
+        "id",
+        "isActive",
+        "lastLoginAt",
+        "nickname",
+        "role",
+        "schoolCode",
+        "updatedAt",
+        "username"
+      ]
+    },
+    {
+      "name": "认证端点访问",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:27.286Z"
+    },
+    {
+      "name": "AI灵感生成",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.304Z",
+      "count": 1,
+      "isRealAI": false,
+      "avgLength": 23
+    },
+    {
+      "name": "AI人设列表",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.305Z",
+      "count": 8
+    },
+    {
+      "name": "每日灵感",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.305Z"
+    },
+    {
+      "name": "创建信件",
+      "passed": false,
+      "timestamp": "2025-08-05T12:34:32.306Z"
+    },
+    {
+      "name": "信使登录",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.518Z"
+    },
+    {
+      "name": "信使信息",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.522Z",
+      "hasTransformed": false
+    },
+    {
+      "name": "层级信息",
+      "passed": false,
+      "timestamp": "2025-08-05T12:34:32.523Z"
+    },
+    {
+      "name": "展览列表",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.525Z"
+    },
+    {
+      "name": "博物馆条目",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.526Z",
+      "count": 0
+    },
+    {
+      "name": "404错误",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.526Z"
+    },
+    {
+      "name": "验证错误",
+      "passed": false,
+      "timestamp": "2025-08-05T12:34:32.527Z"
+    },
+    {
+      "name": "未授权错误",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.527Z"
+    },
+    {
+      "name": "性能: 学校列表",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:32.527Z",
+      "duration": 0,
+      "endpoint": "/api/schools"
+    },
+    {
+      "name": "性能: AI灵感",
+      "passed": false,
+      "timestamp": "2025-08-05T12:34:34.794Z",
+      "duration": 2267,
+      "endpoint": "/api/v1/ai/inspiration"
+    },
+    {
+      "name": "性能: 信件列表",
+      "passed": true,
+      "timestamp": "2025-08-05T12:34:34.794Z",
+      "duration": 0,
+      "endpoint": "/api/v1/letters"
+    }
+  ],
+  "conclusions": {
+    "fieldTransformation": true,
+    "aiIntegration": false,
+    "routeAliases": true,
+    "overallStatus": "PASS"
+  }
+}

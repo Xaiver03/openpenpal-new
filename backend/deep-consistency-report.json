@@ -1,0 +1,732 @@
+{
+  "critical": [
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/v1/admin/ai/analytics but backend doesn't implement it",
+      "files": [
+        "/app/admin/ai/page.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/v1/admin/ai/logs?${params} but backend doesn't implement it",
+      "files": [
+        "/app/admin/ai/page.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/schools?${params.toString()} but backend doesn't implement it",
+      "files": [
+        "/app/admin/schools/page.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/admin/permissions/audit but backend doesn't implement it",
+      "files": [
+        "/app/api/admin/permissions/route.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/graphql but backend doesn't implement it",
+      "files": [
+        "/app/api/graphql/route.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/auth/register but backend doesn't implement it",
+      "files": [
+        "/app/(auth)/register-simple/page.tsx",
+        "/components/auth/SimpleRegistrationForm.tsx",
+        "/lib/services/auth-service-simple.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/auth/check-username but backend doesn't implement it",
+      "files": [
+        "/utils/validation.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/auth/check-email but backend doesn't implement it",
+      "files": [
+        "/utils/validation.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/schools/validate but backend doesn't implement it",
+      "files": [
+        "/utils/validation.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/admin/permissions?type=overview but backend doesn't implement it",
+      "files": [
+        "/components/admin/dynamic-permission-manager.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/admin/permissions?type=roles but backend doesn't implement it",
+      "files": [
+        "/components/admin/dynamic-permission-manager.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/admin/permissions?type=courier-levels but backend doesn't implement it",
+      "files": [
+        "/components/admin/dynamic-permission-manager.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/admin/permissions?type=modules but backend doesn't implement it",
+      "files": [
+        "/components/admin/dynamic-permission-manager.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/admin/permissions but backend doesn't implement it",
+      "files": [
+        "/components/admin/dynamic-permission-manager.tsx",
+        "/components/admin/dynamic-permission-manager.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/admin/permissions?type=${type}&target=${target}&modifiedBy=${user?.username ||  but backend doesn't implement it",
+      "files": [
+        "/components/admin/dynamic-permission-manager.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/errors/report but backend doesn't implement it",
+      "files": [
+        "/components/error/error-boundary.tsx",
+        "/components/error/error-boundary.tsx"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/admin/permissions/notifications but backend doesn't implement it",
+      "files": [
+        "/lib/permissions/permission-notifications.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/auth/login but backend doesn't implement it",
+      "files": [
+        "/lib/services/auth-service-simple.ts",
+        "/lib/services/auth-service.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/auth/logout but backend doesn't implement it",
+      "files": [
+        "/lib/services/auth-service-simple.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/auth/me but backend doesn't implement it",
+      "files": [
+        "/lib/services/auth-service-simple.ts",
+        "/lib/services/auth-service.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/auth/refresh but backend doesn't implement it",
+      "files": [
+        "/lib/services/auth-service-simple.ts",
+        "/lib/services/auth-service.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/postcode/${postcode} but backend doesn't implement it",
+      "files": [
+        "/lib/services/postcode-service.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/address/search?q=${encodeURIComponent(query)}&limit=${limit} but backend doesn't implement it",
+      "files": [
+        "/lib/services/postcode-service.ts"
+      ]
+    },
+    {
+      "type": "API_MISMATCH",
+      "message": "Frontend calls /api/auth/csrf but backend doesn't implement it",
+      "files": [
+        "/lib/services/auth-service.ts"
+      ]
+    },
+    {
+      "type": "DATABASE_ERROR",
+      "message": "Database analysis failed: Expected ':' after property name in JSON at position 101 (line 1 column 102)"
+    }
+  ],
+  "warnings": [
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript User.schoolCode has no corresponding Go field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript User.isActive has no corresponding Go field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript User.lastLoginAt has no corresponding Go field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript User.createdAt has no corresponding Go field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript User.updatedAt has no corresponding Go field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript User.sentLetters has no corresponding Go field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript User.authoredLetters has no corresponding Go field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go User.SchoolCode (json: school_code) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go User.IsActive (json: is_active) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go User.LastLoginAt (json: last_login_at) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go User.CreatedAt (json: created_at) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go User.UpdatedAt (json: updated_at) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go User.SentLetters (json: sent_letters) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go User.AuthoredLetters (json: authored_letters) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "user.ts",
+        "goFile": "user.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Letter.sender_id has no corresponding Go field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Letter.recipient_info has no corresponding Go field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Letter.name has no corresponding Go field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Letter.address has no corresponding Go field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Letter.phone has no corresponding Go field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.UserID (json: user_id) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.AuthorID (json: author_id) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.Status (json: status) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.Visibility (json: visibility) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.LikeCount (json: like_count) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.RecipientOPCode (json: recipient_op_code) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.SenderOPCode (json: sender_op_code) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.ShareCount (json: share_count) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.ViewCount (json: view_count) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.ReplyTo (json: reply_to) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.EnvelopeID (json: envelope_id) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.CreatedAt (json: created_at) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.UpdatedAt (json: updated_at) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.User (json: user) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.Author (json: author) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.StatusLogs (json: status_logs) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.Photos (json: photos) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.Envelope (json: envelope) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.Likes (json: likes) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Letter.Shares (json: shares) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "index.ts",
+        "goFile": "letter.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Courier.userId has no corresponding Go field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Courier.schoolCode has no corresponding Go field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Courier.isActive has no corresponding Go field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Courier.score has no corresponding Go field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Courier.completedTasks has no corresponding Go field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Courier.createdAt has no corresponding Go field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "TypeScript Courier.updatedAt has no corresponding Go field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.UserID (json: user_id) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.User (json: user) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.Name (json: name) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.Contact (json: contact) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.School (json: school) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.ManagedOPCodePrefix (json: managed_op_code_prefix) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.HasPrinter (json: has_printer) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.SelfIntro (json: self_intro) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.CanMentor (json: can_mentor) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.WeeklyHours (json: weekly_hours) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.MaxDailyTasks (json: max_daily_tasks) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.TransportMethod (json: transport_method) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.TimeSlots (json: time_slots) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.Status (json: status) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.TaskCount (json: task_count) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.Points (json: points) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.CreatedAt (json: created_at) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.UpdatedAt (json: updated_at) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "MODEL_FIELD_MISMATCH",
+      "message": "Go Courier.DeletedAt (json: deleted_at) has no corresponding TypeScript field",
+      "details": {
+        "tsFile": "courier.ts",
+        "goFile": "courier.go"
+      }
+    },
+    {
+      "type": "OPCODE_VALIDATION",
+      "message": "OP Code format validation might be missing or incorrect"
+    },
+    {
+      "type": "TOKEN_REFRESH",
+      "message": "Token refresh mechanism might not be properly implemented"
+    }
+  ],
+  "inconsistencies": [
+    {
+      "type": "COURIER_HIERARCHY",
+      "message": "Courier Level1 not properly implemented in hierarchy service"
+    },
+    {
+      "type": "COURIER_HIERARCHY",
+      "message": "Courier Level2 not properly implemented in hierarchy service"
+    },
+    {
+      "type": "COURIER_HIERARCHY",
+      "message": "Courier Level3 not properly implemented in hierarchy service"
+    },
+    {
+      "type": "COURIER_HIERARCHY",
+      "message": "Courier Level4 not properly implemented in hierarchy service"
+    }
+  ],
+  "suggestions": []
+}

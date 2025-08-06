@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="#F59E0B" opacity="0.1"/>
+  
+  <!-- Main Circle -->
+  <circle cx="100" cy="100" r="80" fill="#F59E0B" opacity="0.2" stroke="#F59E0B" stroke-width="2"/>
+  
+  <!-- Inner Circle -->
+  <circle cx="100" cy="100" r="60" fill="none" stroke="#F59E0B" stroke-width="1" opacity="0.5"/>
+  
+  <!-- Text Initial -->
+  <text x="100" y="100" text-anchor="middle" dominant-baseline="central" 
+        font-family="system-ui, -apple-system, sans-serif" 
+        font-size="48" font-weight="bold" fill="#F59E0B">
+    艺
+  </text>
+  
+  <!-- Decorative Elements -->
+  <circle cx="40" cy="40" r="3" fill="#F59E0B" opacity="0.5"/>
+  <circle cx="160" cy="40" r="3" fill="#F59E0B" opacity="0.5"/>
+  <circle cx="40" cy="160" r="3" fill="#F59E0B" opacity="0.5"/>
+  <circle cx="160" cy="160" r="3" fill="#F59E0B" opacity="0.5"/>
+</svg>

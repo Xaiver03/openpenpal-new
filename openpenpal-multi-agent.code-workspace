@@ -1,0 +1,310 @@
+{
+  "folders": [
+    {
+      "name": "🏠 OpenPenPal Root",
+      "path": "."
+    },
+    {
+      "name": "🎨 Frontend (Next.js)",
+      "path": "./frontend"
+    },
+    {
+      "name": "⚡ Current Backend (Go)",
+      "path": "./backend"
+    },
+    {
+      "name": "📝 Write Service (Agent #2)",
+      "path": "./services/write-service"
+    },
+    {
+      "name": "🚚 Courier Service (Agent #3)", 
+      "path": "./services/courier-service"
+    },
+    {
+      "name": "👨‍💼 Admin Service (Agent #4)",
+      "path": "./services/admin-service"
+    },
+    {
+      "name": "🔍 OCR Service (Agent #5)",
+      "path": "./services/ocr-service"
+    },
+    {
+      "name": "🌐 Gateway Service",
+      "path": "./services/gateway"
+    },
+    {
+      "name": "📋 Agent Tasks",
+      "path": "./agent-tasks"
+    },
+    {
+      "name": "📚 Documentation",
+      "path": "./docs"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/venv": true,
+      "**/__pycache__": true,
+      "**/target": true,
+      "**/.git": false
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/venv": true,
+      "**/__pycache__": true
+    },
+    "typescript.preferences.includePackageJsonAutoImports": "auto",
+    "python.defaultInterpreterPath": "./venv/bin/python",
+    "go.toolsManagement.autoUpdate": true,
+    "java.configuration.updateBuildConfiguration": "automatic",
+    
+    // 统一代码格式化设置
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+    
+    // 多语言特定设置
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "[go]": {
+      "editor.defaultFormatter": "golang.go"
+    },
+    "[java]": {
+      "editor.defaultFormatter": "redhat.java"
+    },
+    
+    // 终端设置
+    "terminal.integrated.cwd": ".",
+    "terminal.integrated.splitCwd": "workspaceRoot"
+  },
+  "extensions": {
+    "recommendations": [
+      // 通用开发
+      "ms-vscode.vscode-typescript-next",
+      "esbenp.prettier-vscode",
+      "ms-vscode.vscode-json",
+      "bradlc.vscode-tailwindcss",
+      
+      // Python开发 (Agent #2, #5)
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "ms-python.flake8",
+      "ms-python.isort",
+      
+      // Go开发 (Agent #3)
+      "golang.go",
+      "ms-vscode.vscode-go",
+      
+      // Java开发 (Agent #4)
+      "redhat.java",
+      "vscjava.vscode-java-pack",
+      "vmware.vscode-spring-boot",
+      
+      // 前端开发 (Agent #1)
+      "bradlc.vscode-tailwindcss",
+      "ms-vscode.vscode-typescript-next",
+      "formulahendry.auto-rename-tag",
+      
+      // Docker & DevOps
+      "ms-azuretools.vscode-docker",
+      "ms-vscode-remote.remote-containers",
+      
+      // Git协作
+      "eamodio.gitlens",
+      "github.vscode-pull-request-github",
+      
+      // API开发
+      "humao.rest-client",
+      "42crunch.vscode-openapi",
+      
+      // 文档编写
+      "yzhang.markdown-all-in-one",
+      "bierner.markdown-mermaid"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "🚀 Start All Services",
+        "type": "shell",
+        "command": "./scripts/multi-agent-dev.sh",
+        "args": ["start", "all"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "🛑 Stop All Services", 
+        "type": "shell",
+        "command": "./scripts/multi-agent-dev.sh",
+        "args": ["stop"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        }
+      },
+      {
+        "label": "📊 Check Agent Status",
+        "type": "shell", 
+        "command": "./scripts/multi-agent-dev.sh",
+        "args": ["status"],
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        }
+      },
+      {
+        "label": "🔍 Check Ports",
+        "type": "shell",
+        "command": "./scripts/multi-agent-dev.sh", 
+        "args": ["ports"],
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        }
+      },
+      {
+        "label": "🧪 Run Integration Tests",
+        "type": "shell",
+        "command": "./scripts/multi-agent-dev.sh",
+        "args": ["test"],
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always", 
+          "focus": false,
+          "panel": "shared"
+        }
+      },
+      {
+        "label": "📝 Init Write Service (Agent #2)",
+        "type": "shell",
+        "command": "./scripts/multi-agent-dev.sh",
+        "args": ["init", "2"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        }
+      },
+      {
+        "label": "🚚 Init Courier Service (Agent #3)",
+        "type": "shell",
+        "command": "./scripts/multi-agent-dev.sh",
+        "args": ["init", "3"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        }
+      },
+      {
+        "label": "🎨 Start Frontend Only",
+        "type": "shell",
+        "command": "npm run dev",
+        "options": {
+          "cwd": "${workspaceFolder}/frontend"
+        },
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "dedicated"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "⚡ Start Backend Only",
+        "type": "shell",
+        "command": "go run main.go",
+        "options": {
+          "cwd": "${workspaceFolder}/backend"
+        },
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "dedicated"
+        },
+        "problemMatcher": []
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "🎨 Debug Frontend",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder}/frontend",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "dev"]
+      },
+      {
+        "name": "⚡ Debug Backend", 
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/backend/main.go",
+        "cwd": "${workspaceFolder}/backend"
+      },
+      {
+        "name": "📝 Debug Write Service",
+        "type": "python",
+        "request": "launch",
+        "module": "uvicorn",
+        "args": ["app.main:app", "--reload"],
+        "cwd": "${workspaceFolder}/services/write-service",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "🚚 Debug Courier Service",
+        "type": "go", 
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/services/courier-service/cmd/main.go",
+        "cwd": "${workspaceFolder}/services/courier-service"
+      }
+    ],
+    "compounds": [
+      {
+        "name": "🚀 Debug All Services",
+        "configurations": [
+          "🎨 Debug Frontend",
+          "⚡ Debug Backend"
+        ]
+      }
+    ]
+  }
+}

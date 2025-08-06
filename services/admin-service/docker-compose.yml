@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # Admin Service
+  admin-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: openpenpal-admin-service
+    ports:
+      - "8003:8003"
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: openpenpal
+      DB_USERNAME: admin_user
+      DB_PASSWORD: admin_pass
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: admin-jwt-secret-key-very-long-and-secure-production
+      WRITE_SERVICE_URL: http://write-service:8001
+      COURIER_SERVICE_URL: http://courier-service:8002
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+    volumes:
+      - admin-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/api/admin/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: openpenpal-postgres
+    environment:
+      POSTGRES_DB: openpenpal
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: admin_pass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_user -d openpenpal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: openpenpal-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Admin Frontend (Vue.js)
+  admin-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: openpenpal-admin-frontend
+    ports:
+      - "3001:3000"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8003/api/admin
+      VITE_APP_TITLE: OpenPenPal Admin
+    depends_on:
+      - admin-service
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  admin-logs:
+    driver: local
+
+networks:
+  openpenpal-network:
+    driver: bridge
+    name: openpenpal

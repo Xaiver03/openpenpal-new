@@ -1,0 +1,175 @@
+# golangci-lint 配置文件
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  build-tags: []
+  skip-dirs:
+    - vendor
+    - bin
+    - .git
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*_gen\\.go$"
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+  # 错误检查
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    ignore: fmt:.*
+
+  # 函数复杂度
+  gocyclo:
+    min-complexity: 15
+
+  # 认知复杂度
+  gocognit:
+    min-complexity: 20
+
+  # 代码重复检查
+  dupl:
+    threshold: 100
+
+  # 函数长度
+  funlen:
+    lines: 80
+    statements: 40
+
+  # 文件长度
+  lll:
+    line-length: 120
+    tab-width: 1
+
+  # 变量名长度
+  varnamelen:
+    min-name-length: 2
+    max-identifier-length: 30
+    ignore-names:
+      - err
+      - id
+      - i
+      - j
+      - k
+      - db
+      - tx
+      - ok
+
+  # 导入顺序
+  goimports:
+    local-prefixes: github.com/openpenpal
+
+  # 字符串格式化
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  # 无用代码检查
+  unused:
+    check-exported: false
+
+  # 拼写检查
+  misspell:
+    locale: US
+
+  # 结构体对齐
+  maligned:
+    suggest-new: true
+
+  # Go版本检查
+  gomodguard:
+    blocked:
+      modules: []
+
+linters:
+  disable-all: true
+  enable:
+    # 错误检查
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    
+    # 代码质量
+    - gocyclo
+    - gocognit
+    - dupl
+    - funlen
+    - gochecknoinits
+    - gochecknoglobals
+    - goconst
+    - gocritic
+    - godot
+    - godox
+    - goerr113
+    - gofmt
+    - goimports
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - lll
+    - maligned
+    - misspell
+    - nakedret
+    - nolintlint
+    - prealloc
+    - rowserrcheck
+    - sqlclosecheck
+    - unconvert
+    - unparam
+    - varnamelen
+    - whitespace
+    
+    # 性能
+    - bodyclose
+    - nilerr
+    - noctx
+
+issues:
+  exclude-rules:
+    # 测试文件排除某些规则
+    - path: _test\.go
+      linters:
+        - gomnd
+        - funlen
+        - gocognit
+        - gocyclo
+        - dupl
+        - lll
+        - varnamelen
+        - goconst
+        - goerr113
+        - noctx
+
+    # main函数排除某些规则  
+    - path: main\.go
+      linters:
+        - gochecknoinits
+        - gochecknoglobals
+
+    # 配置文件排除某些规则
+    - path: config/
+      linters:
+        - gochecknoglobals
+        - gomnd
+
+  exclude:
+    # 默认排除的问题
+    - "Error return value of .((os\\.)?std(out|err)\\..*|.*Close|.*Flush|os\\.Remove(All)?|.*printf?|os\\.(Un)?Setenv). is not checked"
+    - "exported function .* should have comment or be unexported"
+    - "exported type .* should have comment or be unexported"
+    - "exported var .* should have comment or be unexported"
+    - "exported const .* should have comment or be unexported"
+
+  max-issues-per-linter: 50
+  max-same-issues: 3
+  new: false
+  fix: false

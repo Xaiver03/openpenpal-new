@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-08-05T13:54:28.407Z",
+  "issues": {
+    "letterCreation": {
+      "status": "pending",
+      "description": "信件创建失败",
+      "details": ""
+    },
+    "courierFieldTransform": {
+      "status": "partial",
+      "description": "信使字段转换不完整",
+      "details": {
+        "fieldsFound": [
+          "courierInfo",
+          "isCourier",
+          "userRole"
+        ],
+        "expectedFields": [
+          "managedOpCodePrefix",
+          "hasPrinter",
+          "weeklyHours",
+          "maxDailyTasks",
+          "transportMethod"
+        ]
+      }
+    },
+    "hierarchyAccess": {
+      "status": "failed",
+      "description": "层级信息访问失败",
+      "note": "所有级别都无法访问"
+    },
+    "validationError": {
+      "status": "failed",
+      "description": "验证错误处理"
+    }
+  },
+  "summary": {
+    "fixed": 0,
+    "partial": 1,
+    "failed": 2
+  }
+}

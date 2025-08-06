@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # OCR服务
+  ocr-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openpenpal-ocr-service
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=false
+      - HOST=0.0.0.0
+      - PORT=8004
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-shared-jwt-secret}
+      - MAX_FILE_SIZE=10485760
+      - DEFAULT_OCR_ENGINE=paddle
+      - ENABLE_GPU=false
+      - CACHE_TTL=86400
+    volumes:
+      - ocr_uploads:/app/uploads
+      - ocr_models:/app/models
+      - ocr_logs:/app/logs
+    ports:
+      - "8004:8004"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ocr-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: ocr-redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - ocr-network
+
+  # Nginx反向代理 (可选)
+  nginx:
+    image: nginx:alpine
+    container_name: ocr-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ocr_uploads:/var/www/uploads:ro
+    depends_on:
+      - ocr-service
+    restart: unless-stopped
+    networks:
+      - ocr-network
+
+volumes:
+  redis_data:
+    driver: local
+  ocr_uploads:
+    driver: local
+  ocr_models:
+    driver: local
+  ocr_logs:
+    driver: local
+
+networks:
+  ocr-network:
+    driver: bridge
+    name: openpenpal-ocr-network

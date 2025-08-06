@@ -1,0 +1,332 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenPenPal Configuration Schema",
+  "type": "object",
+  "required": ["app", "database", "redis"],
+  "properties": {
+    "app": {
+      "type": "object",
+      "required": ["name", "env", "url", "port"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "default": "OpenPenPal"
+        },
+        "env": {
+          "type": "string",
+          "enum": ["development", "staging", "production"],
+          "default": "development"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "debug": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "database": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^postgresql://.*"
+        },
+        "pool": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "integer",
+              "default": 2
+            },
+            "max": {
+              "type": "integer",
+              "default": 10
+            },
+            "idleTimeoutMillis": {
+              "type": "integer",
+              "default": 30000
+            }
+          }
+        },
+        "migrations": {
+          "type": "object",
+          "properties": {
+            "directory": {
+              "type": "string",
+              "default": "./migrations"
+            },
+            "tableName": {
+              "type": "string",
+              "default": "migrations"
+            }
+          }
+        }
+      }
+    },
+    "redis": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^redis://.*"
+        },
+        "password": {
+          "type": "string"
+        },
+        "db": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15,
+          "default": 0
+        },
+        "keyPrefix": {
+          "type": "string",
+          "default": "openpenpal:"
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "required": ["jwt"],
+      "properties": {
+        "jwt": {
+          "type": "object",
+          "required": ["secret", "expiresIn"],
+          "properties": {
+            "secret": {
+              "type": "string",
+              "minLength": 32
+            },
+            "expiresIn": {
+              "type": "string",
+              "pattern": "^\\d+[smhd]$"
+            },
+            "refreshExpiresIn": {
+              "type": "string",
+              "pattern": "^\\d+[smhd]$",
+              "default": "30d"
+            }
+          }
+        },
+        "bcrypt": {
+          "type": "object",
+          "properties": {
+            "rounds": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 20,
+              "default": 10
+            }
+          }
+        }
+      }
+    },
+    "mail": {
+      "type": "object",
+      "required": ["host", "port", "from"],
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        },
+        "secure": {
+          "type": "boolean",
+          "default": false
+        },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "user": {
+              "type": "string"
+            },
+            "pass": {
+              "type": "string"
+            }
+          }
+        },
+        "from": {
+          "type": "object",
+          "required": ["address", "name"],
+          "properties": {
+            "address": {
+              "type": "string",
+              "format": "email"
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["local", "s3", "qiniu", "oss", "cos"]
+        },
+        "local": {
+          "type": "object",
+          "properties": {
+            "uploadDir": {
+              "type": "string",
+              "default": "./uploads"
+            }
+          }
+        },
+        "s3": {
+          "type": "object",
+          "properties": {
+            "accessKeyId": {
+              "type": "string"
+            },
+            "secretAccessKey": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "bucket": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "services": {
+      "type": "object",
+      "properties": {
+        "frontend": {
+          "type": "object",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "default": 3000
+            }
+          }
+        },
+        "apiGateway": {
+          "type": "object",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "default": 8000
+            }
+          }
+        },
+        "writeService": {
+          "type": "object",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "default": 8001
+            }
+          }
+        },
+        "courierService": {
+          "type": "object",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "default": 8002
+            }
+          }
+        },
+        "adminService": {
+          "type": "object",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "default": 8003
+            }
+          }
+        },
+        "ocrService": {
+          "type": "object",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "default": 8004
+            }
+          }
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "properties": {
+        "sentry": {
+          "type": "object",
+          "properties": {
+            "dsn": {
+              "type": "string"
+            },
+            "environment": {
+              "type": "string"
+            }
+          }
+        },
+        "prometheus": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "port": {
+              "type": "integer",
+              "default": 9090
+            }
+          }
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "cors": {
+          "type": "object",
+          "properties": {
+            "origins": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "credentials": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "rateLimit": {
+          "type": "object",
+          "properties": {
+            "windowMs": {
+              "type": "integer",
+              "default": 900000
+            },
+            "max": {
+              "type": "integer",
+              "default": 100
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,144 @@
+package models
+
+// RoleMapping provides mapping between frontend and backend role names
+// This follows SOTA principles: backward compatibility while allowing migration
+type RoleMapping struct {
+	// Frontend role names to backend role names
+	FrontendToBackend map[string]UserRole
+	// Backend role names to frontend role names
+	BackendToFrontend map[UserRole]string
+}
+
+// GetDefaultRoleMapping returns the default role mapping configuration
+func GetDefaultRoleMapping() *RoleMapping {
+	return &RoleMapping{
+		FrontendToBackend: map[string]UserRole{
+			// Direct mappings
+			"user":           RoleUser,
+			"school_admin":   RoleSchoolAdmin,
+			"platform_admin": RolePlatformAdmin,
+			"super_admin":    RoleSuperAdmin,
+
+			// 四级信使系统 - 完整映射
+			"courier_level1": RoleCourierLevel1,
+			"courier_level2": RoleCourierLevel2,
+			"courier_level3": RoleCourierLevel3,
+			"courier_level4": RoleCourierLevel4,
+
+			// 兼容前端的通用角色名称
+			"courier":             RoleCourierLevel1, // 默认映射到一级信使
+			"senior_courier":      RoleCourierLevel2,
+			"courier_coordinator": RoleCourierLevel3,
+			"admin":               RolePlatformAdmin,
+		},
+		BackendToFrontend: map[UserRole]string{
+			RoleUser:          "user",
+			RoleCourierLevel1: "courier_level1",
+			RoleCourierLevel2: "courier_level2",
+			RoleCourierLevel3: "courier_level3",
+			RoleCourierLevel4: "courier_level4",
+			RoleSchoolAdmin:   "school_admin",
+			RolePlatformAdmin: "platform_admin",
+			RoleSuperAdmin:    "super_admin",
+		},
+	}
+}
+
+// MapFrontendRole maps a frontend role to backend UserRole
+func (rm *RoleMapping) MapFrontendRole(frontendRole string) UserRole {
+	if backendRole, exists := rm.FrontendToBackend[frontendRole]; exists {
+		return backendRole
+	}
+	// Default to user role if not found
+	return RoleUser
+}
+
+// MapBackendRole maps a backend UserRole to frontend role name
+func (rm *RoleMapping) MapBackendRole(backendRole UserRole) string {
+	if frontendRole, exists := rm.BackendToFrontend[backendRole]; exists {
+		return frontendRole
+	}
+	// Return the backend role string if no mapping found
+	return string(backendRole)
+}
+
+// GetCourierLevel extracts courier level from various role formats
+func GetCourierLevel(role string) int {
+	switch role {
+	case "courier", "courier_level1":
+		return 1
+	case "senior_courier", "courier_level2":
+		return 2
+	case "courier_coordinator", "courier_level3":
+		return 3
+	case "courier_level4":
+		return 4
+	default:
+		// Check if it's an admin role (higher than couriers)
+		if role == "school_admin" || role == "platform_admin" || role == "super_admin" || role == "admin" {
+			return 5
+		}
+		return 0
+	}
+}
+
+// NormalizeRole normalizes various role formats to standard backend UserRole
+func NormalizeRole(role string) UserRole {
+	mapping := GetDefaultRoleMapping()
+	return mapping.MapFrontendRole(role)
+}
+
+// GetFrontendRole gets the frontend-compatible role name
+func GetFrontendRole(role UserRole) string {
+	mapping := GetDefaultRoleMapping()
+	return mapping.MapBackendRole(role)
+}
+
+// CourierLevelInfo provides detailed courier level information
+type CourierLevelInfo struct {
+	Level        int    `json:"level"`
+	BackendRole  string `json:"backend_role"`
+	FrontendRole string `json:"frontend_role"`
+	DisplayName  string `json:"display_name"`
+	Description  string `json:"description"`
+}
+
+// GetCourierLevelInfo returns detailed information about a courier level
+func GetCourierLevelInfo(role UserRole) *CourierLevelInfo {
+	switch role {
+	case RoleCourierLevel1:
+		return &CourierLevelInfo{
+			Level:        1,
+			BackendRole:  string(RoleCourierLevel1),
+			FrontendRole: "courier_level1",
+			DisplayName:  "一级信使",
+			Description:  "楼栋/班级级别信使，负责基础投递",
+		}
+	case RoleCourierLevel2:
+		return &CourierLevelInfo{
+			Level:        2,
+			BackendRole:  string(RoleCourierLevel2),
+			FrontendRole: "courier_level2",
+			DisplayName:  "二级信使",
+			Description:  "区域/年级级别信使，可以分配任务",
+		}
+	case RoleCourierLevel3:
+		return &CourierLevelInfo{
+			Level:        3,
+			BackendRole:  string(RoleCourierLevel3),
+			FrontendRole: "courier_level3",
+			DisplayName:  "三级信使",
+			Description:  "学校级别信使，管理学校信使团队",
+		}
+	case RoleCourierLevel4:
+		return &CourierLevelInfo{
+			Level:        4,
+			BackendRole:  string(RoleCourierLevel4),
+			FrontendRole: "courier_level4",
+			DisplayName:  "四级信使",
+			Description:  "城市级别信使，协调跨校投递",
+		}
+	default:
+		return nil
+	}
+}

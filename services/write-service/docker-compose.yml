@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  write-service:
+    build: .
+    container_name: openpenpal-write-service
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/openpenpal
+      - JWT_SECRET=your-super-secret-jwt-key
+      - REDIS_URL=redis://redis:6379/0
+      - WEBSOCKET_URL=ws://websocket:8080/ws
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+      - /app/venv  # 排除虚拟环境目录
+    restart: unless-stopped
+    networks:
+      - openpenpal-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: openpenpal-write-db
+    environment:
+      - POSTGRES_DB=openpenpal
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5433:5432"  # 避免与主数据库冲突
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - openpenpal-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: openpenpal-write-redis
+    ports:
+      - "6380:6379"  # 避免与主Redis冲突
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - openpenpal-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  openpenpal-network:
+    external: true

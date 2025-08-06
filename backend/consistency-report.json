@@ -1,0 +1,428 @@
+{
+  "timestamp": "2025-08-05T11:18:19.814Z",
+  "summary": {
+    "errors": 0,
+    "warnings": 6,
+    "info": 77
+  },
+  "issues": [],
+  "warnings": [
+    {
+      "category": "Auth",
+      "message": "JWT_SECRET not found in environment",
+      "timestamp": "2025-08-05T11:18:19.789Z"
+    },
+    {
+      "category": "Database",
+      "message": "Expected table 'envelope_styles' not found",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Business",
+      "message": "Courier level courier_level1 not found in hierarchy service",
+      "timestamp": "2025-08-05T11:18:19.813Z"
+    },
+    {
+      "category": "Business",
+      "message": "Courier level courier_level2 not found in hierarchy service",
+      "timestamp": "2025-08-05T11:18:19.813Z"
+    },
+    {
+      "category": "Business",
+      "message": "Courier level courier_level3 not found in hierarchy service",
+      "timestamp": "2025-08-05T11:18:19.813Z"
+    },
+    {
+      "category": "Business",
+      "message": "Courier level courier_level4 not found in hierarchy service",
+      "timestamp": "2025-08-05T11:18:19.813Z"
+    }
+  ],
+  "info": [
+    {
+      "category": "Database",
+      "message": "Additional table found: 'user_profiles'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'envelope_designs'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'envelopes'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'letter_codes'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'status_logs'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'letter_photos'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'envelope_votes'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'envelope_orders'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'ai_matches'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'ai_replies'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'ai_curations'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'user_credits'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'credit_transactions'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'credit_rules'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'user_levels'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'museum_collections'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'museum_exhibition_entries'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'museum_exhibitions'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'sensitive_words'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'moderation_rules'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'moderation_records'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'moderation_queues'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'moderation_stats'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'notifications'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'email_templates'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'email_logs'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'notification_preferences'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'notification_batches'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'analytics_metrics'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'user_analytics'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'system_analytics'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'performance_metrics'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'analytics_reports'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'task_templates'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'scheduled_tasks'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'task_executions'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'task_workers'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'storage_configs'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'museum_submissions'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'storage_files'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'storage_operations'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'museum_tags'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'museum_interactions'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'museum_reactions'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'letter_likes'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'letter_shares'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'user_daily_usages'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'content_violation_records'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'performance_alerts'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_level_models'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_permission_models'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_badges'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_points'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'signal_code_batches'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'signal_code_rules'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'postal_code_rules'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'postal_code_zones'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_zones'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'level_upgrade_requests'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_growth_paths'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_incentives'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_statistics'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_points_transactions'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_badge_earneds'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'postal_code_applications'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'postal_code_assignments'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'signal_code_usage_logs'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_rankings'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'courier_points_histories'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'task_assignment_histories'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Database",
+      "message": "Additional table found: 'tasks'",
+      "timestamp": "2025-08-05T11:18:19.812Z"
+    },
+    {
+      "category": "Business",
+      "message": "Letter status 'pending_payment' not found in model",
+      "timestamp": "2025-08-05T11:18:19.813Z"
+    },
+    {
+      "category": "Business",
+      "message": "Letter status 'paid' not found in model",
+      "timestamp": "2025-08-05T11:18:19.813Z"
+    },
+    {
+      "category": "Config",
+      "message": "Config file not found for admin-service",
+      "timestamp": "2025-08-05T11:18:19.814Z"
+    },
+    {
+      "category": "Config",
+      "message": "Config file not found for courier-service",
+      "timestamp": "2025-08-05T11:18:19.814Z"
+    },
+    {
+      "category": "Config",
+      "message": "Config file not found for write-service",
+      "timestamp": "2025-08-05T11:18:19.814Z"
+    },
+    {
+      "category": "Config",
+      "message": "Config file not found for ocr-service",
+      "timestamp": "2025-08-05T11:18:19.814Z"
+    }
+  ]
+}

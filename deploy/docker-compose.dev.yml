@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Development Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: openpenpal-postgres-dev
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: openpenpal_dev
+      POSTGRES_USER: openpenpal
+      POSTGRES_PASSWORD: openpenpal_dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openpenpal -d openpenpal_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Redis Development Cache
+  redis-dev:
+    image: redis:7-alpine
+    container_name: openpenpal-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # pgAdmin for Database Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: openpenpal-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@openpenpal.dev
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:80/misc/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis Commander for Redis Management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: openpenpal-redis-commander
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: "local:redis-dev:6379"
+      HTTP_USER: admin
+      HTTP_PASSWORD: admin123
+    depends_on:
+      redis-dev:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # MailHog for Email Testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: openpenpal-mailhog
+    restart: unless-stopped
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP server
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:8025/api/v2/messages?limit=1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Go Backend API (Development)
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: openpenpal-backend-dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - ENVIRONMENT=development
+      - DATABASE_TYPE=postgres
+      - DATABASE_URL=postgres://openpenpal:openpenpal_dev_password@postgres:5432/openpenpal_dev?sslmode=disable
+      - JWT_SECRET=dev-secret-key-not-for-production
+      - FRONTEND_URL=http://localhost:3000
+      - BASE_URL=http://localhost:8080
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_FROM=noreply@openpenpal.dev
+      - REDIS_HOST=redis-dev
+      - REDIS_PORT=6379
+    volumes:
+      - ./backend:/app
+      - backend_dev_uploads:/root/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis-dev:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
+    command: ["go", "run", "main.go"]
+
+volumes:
+  postgres_dev_data:
+    name: openpenpal-postgres-dev-data
+  redis_dev_data:
+    name: openpenpal-redis-dev-data
+  pgadmin_data:
+    name: openpenpal-pgadmin-data
+  backend_dev_uploads:
+    name: openpenpal-backend-dev-uploads
+
+networks:
+  default:
+    name: openpenpal-dev-network
+    driver: bridge

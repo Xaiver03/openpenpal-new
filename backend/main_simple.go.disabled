@@ -1,0 +1,192 @@
+package main
+
+import (
+	"log"
+	"fmt"
+
+	"openpenpal-backend/internal/config"
+	"openpenpal-backend/internal/handlers"
+	"openpenpal-backend/internal/middleware"
+	"openpenpal-backend/internal/services"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	// 加载配置
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("Failed to load config:", err)
+	}
+
+	// 初始化数据库
+	db, err := config.SetupDatabaseDirect(cfg)
+	if err != nil {
+		log.Fatal("Failed to setup database:", err)
+	}
+
+	// 在开发环境下初始化测试数据
+	if cfg.Environment == "development" {
+		if err := config.SeedData(db); err != nil {
+			log.Printf("Warning: Failed to seed data: %v", err)
+		} else {
+			log.Printf("Test data seeded successfully")
+		}
+	}
+
+	// 初始化基础服务
+	userService := services.NewUserService(db, cfg)
+	letterService := services.NewLetterService(db, cfg)
+	courierService := services.NewCourierService(db)
+	museumService := services.NewMuseumService(db)
+	
+	// 初始化处理器
+	userHandler := handlers.NewUserHandler(userService)
+	letterHandler := handlers.NewLetterHandler(letterService)
+	courierHandler := handlers.NewCourierHandler(courierService)
+	museumHandler := handlers.NewMuseumHandler(museumService)
+
+	// 设置Gin模式
+	if cfg.Environment == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// 创建路由器
+	router := gin.New()
+
+	// 全局中间件
+	router.Use(middleware.LoggerMiddleware())
+	router.Use(middleware.RecoveryMiddleware())
+	router.Use(middleware.CORSMiddleware())
+
+	// 健康检查
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "healthy",
+			"service": "openpenpal-backend",
+			"version": cfg.AppVersion,
+		})
+	})
+
+	// API版本组
+	v1 := router.Group("/api/v1")
+
+	// 公开路由
+	public := v1.Group("/")
+	{
+		// 用户认证
+		auth := public.Group("/auth")
+		{
+			auth.POST("/register", userHandler.Register)
+			auth.POST("/login", userHandler.Login)
+		}
+
+		// 公开的信件读取
+		letters := public.Group("/letters")
+		{
+			letters.GET("/read/:code", letterHandler.GetLetterByCode)
+			letters.POST("/read/:code/mark-read", letterHandler.MarkAsRead)
+			letters.GET("/public", letterHandler.GetPublicLetters)
+		}
+
+		// 公开的信使统计信息
+		courier := public.Group("/courier")
+		{
+			courier.GET("/stats", courierHandler.GetCourierStats)
+		}
+
+		// 公开的博物馆信息
+		museum := public.Group("/museum")
+		{
+			museum.GET("/entries", museumHandler.GetMuseumEntries)
+			museum.GET("/entries/:id", museumHandler.GetMuseumEntry)
+			museum.GET("/exhibitions", museumHandler.GetMuseumExhibitions)
+		}
+	}
+
+	// 需要认证的路由
+	protected := v1.Group("/")
+	protected.Use(middleware.AuthMiddleware(cfg, db))
+	{
+		// 用户相关
+		users := protected.Group("/users")
+		{
+			users.GET("/me", userHandler.GetProfile)
+			users.PUT("/me", userHandler.UpdateProfile)
+			users.POST("/me/change-password", userHandler.ChangePassword)
+			users.GET("/me/stats", userHandler.GetUserStats)
+			users.DELETE("/me", userHandler.DeactivateAccount)
+		}
+
+		// 信件相关
+		letters := protected.Group("/letters")
+		{
+			letters.POST("/", letterHandler.CreateDraft)
+			letters.GET("/", letterHandler.GetUserLetters)
+			letters.GET("/stats", letterHandler.GetUserStats)
+			letters.GET("/:id", letterHandler.GetLetter)
+			letters.PUT("/:id", letterHandler.UpdateLetter)
+			letters.DELETE("/:id", letterHandler.DeleteLetter)
+			letters.POST("/:id/generate-code", letterHandler.GenerateCode)
+		}
+
+		// 信使相关
+		courier := protected.Group("/courier")
+		{
+			courier.POST("/apply", courierHandler.ApplyCourier)
+			courier.GET("/status", courierHandler.GetCourierStatus)
+			courier.GET("/profile", courierHandler.GetCourierProfile)
+			courier.POST("/letters/:code/status", letterHandler.UpdateStatus)
+			courier.POST("/create", courierHandler.CreateCourier)
+			courier.GET("/subordinates", courierHandler.GetSubordinates)
+			courier.GET("/me", courierHandler.GetCourierInfo)
+		}
+
+		// 博物馆相关
+		museum := protected.Group("/museum")
+		{
+			museum.POST("/items", museumHandler.CreateMuseumItem)
+		}
+	}
+
+	// 管理员路由
+	admin := v1.Group("/admin")
+	admin.Use(middleware.AuthMiddleware(cfg, db))
+	admin.Use(middleware.RoleMiddleware("admin"))
+	{
+		// 用户管理
+		adminUsers := admin.Group("/users")
+		{
+			adminUsers.GET("/:id", userHandler.AdminGetUser)
+			adminUsers.DELETE("/:id", userHandler.AdminDeactivateUser)
+			adminUsers.POST("/:id/reactivate", userHandler.AdminReactivateUser)
+		}
+
+		// 信使管理
+		adminCourier := admin.Group("/courier")
+		{
+			adminCourier.GET("/applications", courierHandler.GetPendingApplications)
+			adminCourier.POST("/:id/approve", courierHandler.ApproveCourierApplication)
+			adminCourier.POST("/:id/reject", courierHandler.RejectCourierApplication)
+		}
+
+		// 博物馆管理
+		adminMuseum := admin.Group("/museum")
+		{
+			adminMuseum.POST("/items/:id/approve", museumHandler.ApproveMuseumItem)
+		}
+	}
+
+	// 静态文件服务
+	router.Static("/uploads", "./uploads")
+
+	// 启动服务器
+	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+	log.Printf("Starting server on %s", addr)
+	log.Printf("Environment: %s", cfg.Environment)
+	log.Printf("Frontend URL: %s", cfg.FrontendURL)
+	
+	if err := router.Run(addr); err != nil {
+		log.Fatal("Failed to start server:", err)
+	}
+}

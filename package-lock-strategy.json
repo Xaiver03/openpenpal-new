@@ -1,0 +1,205 @@
+{
+  "name": "openpenpal-dependency-strategy",
+  "version": "1.0.0",
+  "description": "OpenPenPal项目依赖管理策略和版本锁定配置",
+  "strategy": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-01-24",
+    "lockingPolicy": "strict",
+    "updatePolicy": "conservative"
+  },
+  "sharedDependencies": {
+    "runtimeDependencies": {
+      "express": {
+        "version": "4.18.2",
+        "reason": "Express v5仍在beta，v4是生产稳定版本",
+        "projects": ["backend", "gateway", "mock-services", "write-service", "courier-service", "admin-service"],
+        "criticalLevel": "high",
+        "securityPolicy": "strict"
+      },
+      "cors": {
+        "version": "2.8.5",
+        "reason": "稳定的CORS中间件",
+        "projects": ["backend", "gateway", "mock-services"],
+        "criticalLevel": "medium"
+      },
+      "jsonwebtoken": {
+        "version": "9.0.2",
+        "reason": "JWT处理，安全相关",
+        "projects": ["backend", "gateway", "auth-service"],
+        "criticalLevel": "high",
+        "securityPolicy": "strict"
+      },
+      "helmet": {
+        "version": "7.1.0",
+        "reason": "安全头中间件，避免v8的破坏性更改",
+        "projects": ["backend", "gateway"],
+        "criticalLevel": "high",
+        "securityPolicy": "strict"
+      },
+      "dotenv": {
+        "version": "16.3.1",
+        "reason": "环境变量管理",
+        "projects": ["backend", "frontend", "mock-services"],
+        "criticalLevel": "low"
+      },
+      "axios": {
+        "version": "1.6.2",
+        "reason": "HTTP客户端",
+        "projects": ["frontend", "admin-frontend"],
+        "criticalLevel": "medium"
+      }
+    },
+    "developmentDependencies": {
+      "nodemon": {
+        "version": "3.0.2",
+        "reason": "开发时热重载",
+        "projects": ["backend", "mock-services"],
+        "criticalLevel": "low"
+      },
+      "typescript": {
+        "version": "5.3.3",
+        "reason": "TypeScript编译器，统一版本确保类型兼容",
+        "projects": ["frontend", "admin-frontend"],
+        "criticalLevel": "high"
+      },
+      "@types/node": {
+        "version": "20.10.6",
+        "reason": "Node.js类型定义",
+        "projects": ["backend", "frontend"],
+        "criticalLevel": "medium"
+      },
+      "eslint": {
+        "version": "8.56.0",
+        "reason": "代码检查工具",
+        "projects": ["frontend", "admin-frontend", "backend"],
+        "criticalLevel": "medium"
+      },
+      "prettier": {
+        "version": "3.1.1",
+        "reason": "代码格式化",
+        "projects": ["frontend", "admin-frontend", "backend"],
+        "criticalLevel": "low"
+      }
+    }
+  },
+  "versionConstraints": {
+    "node": {
+      "minimum": "18.0.0",
+      "recommended": "20.x.x",
+      "maximum": "21.x.x",
+      "reason": "支持现代JavaScript特性，避免过新版本的兼容性问题"
+    },
+    "npm": {
+      "minimum": "8.0.0",
+      "recommended": "10.x.x",
+      "reason": "支持workspaces和现代包管理特性"
+    }
+  },
+  "conflictResolution": {
+    "express": {
+      "conflictVersions": ["5.1.0", "4.18.2"],
+      "resolution": "4.18.2",
+      "strategy": "downgrade",
+      "reason": "Express v5仍在beta阶段，存在兼容性风险",
+      "migrationPlan": {
+        "timeline": "2025-Q2",
+        "steps": [
+          "等待Express v5稳定版发布",
+          "创建兼容性测试套件",
+          "逐个服务迁移测试",
+          "全面升级"
+        ]
+      }
+    },
+    "helmet": {
+      "conflictVersions": ["8.1.0", "7.1.0"],
+      "resolution": "7.1.0",
+      "strategy": "downgrade",
+      "reason": "v8引入了破坏性API更改",
+      "affectedProjects": ["gateway", "backend"]
+    },
+    "jsonwebtoken": {
+      "conflictVersions": ["9.0.2", "9.0.0"],
+      "resolution": "9.0.2",
+      "strategy": "upgrade",
+      "reason": "修复了安全漏洞",
+      "securityImportance": "critical"
+    }
+  },
+  "updatePolicy": {
+    "automatic": {
+      "enabled": false,
+      "reason": "生产环境需要手动控制更新"
+    },
+    "security": {
+      "enabled": true,
+      "autoApply": "patch",
+      "notification": "immediate",
+      "reason": "安全更新需要及时应用"
+    },
+    "schedule": {
+      "major": "quarterly",
+      "minor": "monthly", 
+      "patch": "weekly",
+      "security": "immediate"
+    }
+  },
+  "lockFiles": {
+    "strategy": "unified",
+    "location": "root",
+    "perProject": false,
+    "reason": "统一管理避免版本冲突"
+  },
+  "tools": {
+    "packageManager": "npm",
+    "lockFileValidation": true,
+    "dependencyAudit": true,
+    "vulnerabilityScanning": true,
+    "licenseCompliance": true
+  },
+  "monitoring": {
+    "outdatedDependencies": {
+      "enabled": true,
+      "frequency": "weekly",
+      "threshold": {
+        "major": 2,
+        "minor": 5,
+        "patch": 10
+      }
+    },
+    "vulnerabilities": {
+      "enabled": true,
+      "frequency": "daily",
+      "autoReport": true
+    },
+    "licenseChanges": {
+      "enabled": true,
+      "frequency": "monthly"
+    }
+  },
+  "compliance": {
+    "licenses": {
+      "allowed": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC"],
+      "restricted": ["GPL-3.0", "AGPL-3.0"],
+      "requireApproval": ["GPL-2.0", "LGPL-2.1", "LGPL-3.0"]
+    },
+    "security": {
+      "minimumCVSS": 4.0,
+      "blockedPackages": [],
+      "requiredScanning": true
+    }
+  },
+  "documentation": {
+    "changeLog": {
+      "location": "DEPENDENCY_CHANGELOG.md",
+      "format": "markdown",
+      "includeReasons": true
+    },
+    "dependencyMap": {
+      "location": "docs/dependency-map.md",
+      "includeGraph": true,
+      "updateFrequency": "monthly"
+    }
+  }
+}

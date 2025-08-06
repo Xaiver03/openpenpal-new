@@ -1,0 +1,97 @@
+# OpenPenPal Prometheus监控配置
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# 规则文件
+rule_files:
+  - "alert_rules.yml"
+
+# 告警管理器配置
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# 抓取配置
+scrape_configs:
+  # Prometheus自监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 前端应用监控
+  - job_name: 'openpenpal-frontend'
+    static_configs:
+      - targets: ['frontend:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # API网关监控
+  - job_name: 'openpenpal-gateway'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # PostgreSQL监控
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Redis监控
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Nginx监控
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: '/nginx_status'
+    scrape_interval: 30s
+
+  # Node Exporter (系统指标)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # 微服务监控
+  - job_name: 'openpenpal-write-service'
+    static_configs:
+      - targets: ['write-service:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'openpenpal-courier-service'
+    static_configs:
+      - targets: ['courier-service:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'openpenpal-admin-service'
+    static_configs:
+      - targets: ['admin-service:8003']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 30s
+
+  - job_name: 'openpenpal-ocr-service'
+    static_configs:
+      - targets: ['ocr-service:8004']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # 自定义业务指标
+  - job_name: 'openpenpal-business-metrics'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: '/api/v1/metrics/business'
+    scrape_interval: 60s

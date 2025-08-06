@@ -1,0 +1,84 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_run:
+    workflows: ["Test Suite"]
+    branches: [ main ]
+    types: 
+      - completed
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
+    
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.page_url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests before deploy
+      run: |
+        npm run test
+        npm run type-check
+        npm run lint
+        
+    - name: Build for production
+      run: npm run build
+      env:
+        NODE_ENV: production
+        
+    - name: Run post-build tests
+      run: |
+        # Test that build was successful
+        test -f .next/BUILD_ID
+        test -d .next/static
+        
+    - name: Deploy to staging
+      id: deploy-staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your staging deployment commands here
+        
+    - name: Run smoke tests on staging
+      run: |
+        echo "Running smoke tests on staging..."
+        # Add smoke tests here
+        
+    - name: Deploy to production
+      id: deploy
+      if: success()
+      run: |
+        echo "Deploying to production environment..."
+        echo "page_url=https://openpenpal.example.com" >> $GITHUB_OUTPUT
+        # Add your production deployment commands here
+        
+    - name: Notify deployment success
+      if: success()
+      run: |
+        echo "✅ Deployment successful!"
+        # Add notification logic (Slack, email, etc.)
+        
+    - name: Notify deployment failure
+      if: failure()
+      run: |
+        echo "❌ Deployment failed!"
+        # Add failure notification logic

@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # 开发环境OCR服务
+  ocr-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ocr-service-dev
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8004
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=development-jwt-secret
+      - MAX_FILE_SIZE=10485760
+      - DEFAULT_OCR_ENGINE=paddle
+      - ENABLE_GPU=false
+      - CACHE_TTL=3600
+    volumes:
+      # 开发模式：挂载源代码目录，支持热重载
+      - .:/app
+      - dev_uploads:/app/uploads
+      - dev_models:/app/models
+    ports:
+      - "8004:8004"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["python", "app.py"]  # 开发模式使用Flask自带服务器
+    networks:
+      - dev-network
+
+  # Redis (开发环境)
+  redis:
+    image: redis:7-alpine
+    container_name: redis-dev
+    command: redis-server --appendonly yes
+    volumes:
+      - dev_redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - dev-network
+
+  # Redis Commander (Redis管理界面)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander-dev
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+volumes:
+  dev_redis_data:
+    driver: local
+  dev_uploads:
+    driver: local  
+  dev_models:
+    driver: local
+
+networks:
+  dev-network:
+    driver: bridge
+    name: ocr-dev-network

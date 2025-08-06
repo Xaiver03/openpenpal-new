@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信使中心测试页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        button.success { background: #28a745; }
+        button.success:hover { background: #218838; }
+        .debug-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 信使中心功能测试</h1>
+    <p>此页面用于测试信使中心按钮显示和功能的系统性修复效果</p>
+
+    <div class="test-card">
+        <h2>1. 前端页面测试</h2>
+        <p>打开 OpenPenPal 前端页面，测试不同用户状态下的信使中心显示</p>
+        
+        <div class="status info">
+            <strong>测试步骤：</strong><br>
+            1. 访问 <a href="http://localhost:3000" target="_blank">http://localhost:3000</a><br>
+            2. 使用管理员账户登录 (admin/admin123)<br>
+            3. 查看右下角开发者调试面板<br>
+            4. 启用"测试信使模式"并选择不同等级<br>
+            5. 观察Header中的信使中心入口和首页管理面板
+        </div>
+
+        <button onclick="openFrontend()">打开前端页面</button>
+        <button onclick="testLogin()" class="success">测试登录</button>
+    </div>
+
+    <div class="test-card">
+        <h2>2. 权限服务测试</h2>
+        <p>测试修复后的 isCourier 判断逻辑</p>
+        
+        <button onclick="testPermissionService()">测试权限判断</button>
+        <button onclick="testCourierRoles()">测试信使角色</button>
+        
+        <div id="permission-results" class="debug-output" style="display: none;"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>3. 用户状态同步测试</h2>
+        <p>测试用户状态在不同场景下的同步情况</p>
+        
+        <button onclick="testStateSync()">测试状态同步</button>
+        <button onclick="testRefreshUser()">测试用户刷新</button>
+        
+        <div id="sync-results" class="debug-output" style="display: none;"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>4. 测试结果</h2>
+        <div id="test-summary" class="status info">
+            点击上方按钮开始测试...
+        </div>
+    </div>
+
+    <script>
+        function openFrontend() {
+            window.open('http://localhost:3000', '_blank');
+            updateSummary('已打开前端页面，请在新标签页中进行测试', 'info');
+        }
+
+        function testLogin() {
+            fetch('http://localhost:8080/api/v1/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: 'admin',
+                    password: 'admin123'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateSummary('✅ 管理员登录成功', 'success');
+                    console.log('Login successful:', data);
+                } else {
+                    updateSummary('❌ 登录失败: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                updateSummary('❌ 网络错误: ' + error.message, 'error');
+            });
+        }
+
+        function testPermissionService() {
+            const testUsers = [
+                {
+                    id: 'test1',
+                    role: 'user',
+                    courierInfo: null
+                },
+                {
+                    id: 'test2', 
+                    role: 'courier_level1',
+                    courierInfo: { level: 1 }
+                },
+                {
+                    id: 'test3',
+                    role: 'courier_level2',
+                    courierInfo: { level: 2 }
+                },
+                {
+                    id: 'test4',
+                    role: 'super_admin',
+                    courierInfo: { level: 3 }
+                }
+            ];
+
+            let results = '权限服务测试结果:\\n\\n';
+            
+            testUsers.forEach(user => {
+                // 模拟 isCourier 逻辑
+                const courierRoles = ['courier', 'senior_courier', 'courier_coordinator', 
+                                    'courier_level1', 'courier_level2', 'courier_level3', 'courier_level4'];
+                const hasRole = courierRoles.includes(user.role);
+                const hasCourierInfo = user.courierInfo && user.courierInfo.level > 0;
+                const isCourier = hasRole || hasCourierInfo;
+                
+                results += `用户 ${user.id}:\\n`;
+                results += `  角色: ${user.role}\\n`;
+                results += `  信使信息: ${JSON.stringify(user.courierInfo)}\\n`;
+                results += `  角色匹配: ${hasRole}\\n`;
+                results += `  有信使信息: ${hasCourierInfo}\\n`;
+                results += `  是信使: ${isCourier}\\n\\n`;
+            });
+
+            document.getElementById('permission-results').textContent = results;
+            document.getElementById('permission-results').style.display = 'block';
+            updateSummary('✅ 权限服务测试完成，查看上方结果', 'success');
+        }
+
+        function testCourierRoles() {
+            const roles = ['courier_level1', 'courier_level2', 'courier_level3', 'courier_level4'];
+            let results = '信使角色测试结果:\\n\\n';
+            
+            roles.forEach(role => {
+                const testUser = {
+                    id: `test-${role}`,
+                    role: role,
+                    courierInfo: { level: parseInt(role.slice(-1)) }
+                };
+                
+                results += `角色: ${role}\\n`;
+                results += `  等级: ${testUser.courierInfo.level}\\n`;
+                results += `  应该显示信使中心: 是\\n\\n`;
+            });
+
+            document.getElementById('permission-results').textContent = results;
+            document.getElementById('permission-results').style.display = 'block';
+            updateSummary('✅ 信使角色测试完成', 'success');
+        }
+
+        function testStateSync() {
+            // 模拟状态同步测试
+            const results = `用户状态同步测试:\\n\\n` +
+                `1. 登录状态: ${localStorage.getItem('auth_token') ? '已登录' : '未登录'}\\n` +
+                `2. 测试模式: ${localStorage.getItem('test_courier_mode') || '未启用'}\\n` +
+                `3. 测试等级: ${localStorage.getItem('test_courier_level') || '未设置'}\\n` +
+                `4. Cookie状态: ${document.cookie.includes('auth_token') ? '存在' : '不存在'}\\n\\n` +
+                `建议操作:\\n` +
+                `- 在前端页面启用测试信使模式\\n` +
+                `- 观察Header和首页的变化\\n` +
+                `- 检查浏览器控制台的调试信息`;
+
+            document.getElementById('sync-results').textContent = results;
+            document.getElementById('sync-results').style.display = 'block';
+            updateSummary('✅ 状态同步检查完成', 'success');
+        }
+
+        function testRefreshUser() {
+            // 这个测试需要在前端页面的context中运行
+            updateSummary('ℹ️  用户刷新测试需在前端页面控制台执行：useUserStore.getState().refreshUser()', 'warning');
+        }
+
+        function updateSummary(message, type) {
+            const summaryDiv = document.getElementById('test-summary');
+            summaryDiv.textContent = message;
+            summaryDiv.className = `status ${type}`;
+        }
+
+        // 页面加载时的初始化
+        window.onload = function() {
+            updateSummary('🧪 测试环境已准备就绪，请按顺序执行测试', 'info');
+        };
+    </script>
+</body>
+</html>

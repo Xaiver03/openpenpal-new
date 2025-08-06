@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-08-05T11:40:33.349Z",
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "warnings": 0
+  },
+  "results": {
+    "passed": [
+      "Health Check",
+      "CSRF Token",
+      "Check Username",
+      "Check Email",
+      "List Schools",
+      "Search Schools",
+      "Validate School",
+      "Get Postcode",
+      "Address Search",
+      "Permissions Overview",
+      "Permissions Roles",
+      "Permissions Audit",
+      "Report Error",
+      "Login (Backend)"
+    ],
+    "failed": [],
+    "warnings": []
+  }
+}
