@@ -266,6 +266,15 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" binding:"required,min=6"`
 }
 
+// AdminUpdateUserRequest 管理员更新用户请求
+type AdminUpdateUserRequest struct {
+	Nickname   string `json:"nickname"`
+	Email      string `json:"email"`
+	Role       string `json:"role"`
+	SchoolCode string `json:"school_code"`
+	IsActive   bool   `json:"is_active"`
+}
+
 // UserStats 用户统计
 type UserStats struct {
 	LettersSent     int64 `json:"letters_sent"`

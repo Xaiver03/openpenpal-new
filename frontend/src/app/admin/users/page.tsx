@@ -27,6 +27,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -104,6 +106,14 @@ export default function UsersManagePage() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null)
   const [showUserDetail, setShowUserDetail] = useState(false)
   const [showBanDialog, setShowBanDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editFormData, setEditFormData] = useState({
+    nickname: '',
+    email: '',
+    role: '',
+    school_code: '',
+    is_active: true
+  })
 
   if (!user || !hasPermission(PERMISSIONS.MANAGE_USERS)) {
     return (
@@ -280,6 +290,70 @@ export default function UsersManagePage() {
       console.error('Failed to unban user', error)
     }
   }, [])
+
+  const handleEditUser = useCallback((user: AdminUser) => {
+    setSelectedUser(user)
+    setEditFormData({
+      nickname: user.nickname,
+      email: user.email,
+      role: user.role,
+      school_code: user.school_code,
+      is_active: user.is_active
+    })
+    setShowEditDialog(true)
+  }, [])
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!selectedUser) return
+    
+    try {
+      // Call the API to update the user
+      const response = await fetch(`/api/v1/admin/users/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(editFormData)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || '更新用户失败')
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        // Update the user in the local state
+        setUsers(prev => prev.map(u => 
+          u.id === selectedUser.id 
+            ? { 
+                ...u, 
+                nickname: editFormData.nickname,
+                email: editFormData.email,
+                role: editFormData.role as UserRole,
+                school_code: editFormData.school_code,
+                is_active: editFormData.is_active,
+                updated_at: new Date().toISOString()
+              } 
+            : u
+        ))
+        
+        setShowEditDialog(false)
+        setSelectedUser(null)
+        
+        // Show success message (you can add a toast notification here)
+        console.log('用户信息更新成功')
+      } else {
+        throw new Error(result.message || '更新失败')
+      }
+    } catch (error) {
+      console.error('Failed to update user', error)
+      // You can show an error message to the user here
+      alert(error instanceof Error ? error.message : '更新用户信息失败')
+    }
+  }, [selectedUser, editFormData])
 
   if (loading) {
     return (
@@ -512,7 +586,7 @@ export default function UsersManagePage() {
                             <Eye className="mr-2 h-4 w-4" />
                             查看详情
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditUser(user)}>
                             <Edit className="mr-2 h-4 w-4" />
                             编辑信息
                           </DropdownMenuItem>
@@ -636,7 +710,12 @@ export default function UsersManagePage() {
             <Button variant="outline" onClick={() => setShowUserDetail(false)}>
               关闭
             </Button>
-            <Button>编辑用户</Button>
+            <Button onClick={() => {
+              if (selectedUser) {
+                handleEditUser(selectedUser)
+                setShowUserDetail(false)
+              }
+            }}>编辑用户</Button>
           </DialogFooter>
         </DialogContent>
         </Dialog>
@@ -664,6 +743,100 @@ export default function UsersManagePage() {
             </Button>
           </DialogFooter>
         </DialogContent>
+        </Dialog>
+      </ComponentErrorBoundary>
+
+      {/* 编辑用户对话框 */}
+      <ComponentErrorBoundary>
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>编辑用户信息</DialogTitle>
+              <DialogDescription>
+                修改用户 {selectedUser?.nickname} 的信息
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-nickname">昵称</Label>
+                <Input
+                  id="edit-nickname"
+                  value={editFormData.nickname}
+                  onChange={(e) => setEditFormData({ ...editFormData, nickname: e.target.value })}
+                  placeholder="请输入昵称"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">邮箱</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  placeholder="请输入邮箱"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-role">角色</Label>
+                <Select 
+                  value={editFormData.role} 
+                  onValueChange={(value) => setEditFormData({ ...editFormData, role: value })}
+                >
+                  <SelectTrigger id="edit-role">
+                    <SelectValue placeholder="选择角色" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-school">学校代码</Label>
+                <Select 
+                  value={editFormData.school_code} 
+                  onValueChange={(value) => setEditFormData({ ...editFormData, school_code: value })}
+                >
+                  <SelectTrigger id="edit-school">
+                    <SelectValue placeholder="选择学校" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BJDX01">北京大学</SelectItem>
+                    <SelectItem value="QHDX01">清华大学</SelectItem>
+                    <SelectItem value="FDDX01">复旦大学</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-active">账号状态</Label>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="edit-active"
+                    checked={editFormData.is_active}
+                    onCheckedChange={(checked) => setEditFormData({ ...editFormData, is_active: checked })}
+                  />
+                  <Label htmlFor="edit-active" className="text-sm">
+                    {editFormData.is_active ? '活跃' : '禁用'}
+                  </Label>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                保存修改
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
       </ComponentErrorBoundary>
       </div>

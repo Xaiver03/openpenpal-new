@@ -605,6 +605,7 @@ func main() {
 		{
 			adminUsers.GET("/", adminHandler.GetUserManagement)
 			adminUsers.GET("/:id", userHandler.AdminGetUser)
+			adminUsers.PUT("/:id", adminHandler.UpdateUser)
 			adminUsers.DELETE("/:id", userHandler.AdminDeactivateUser)
 			adminUsers.POST("/:id/reactivate", userHandler.AdminReactivateUser)
 		}

@@ -521,3 +521,68 @@ func (s *AdminService) GetSystemSettings() (*models.AdminSystemSettings, error) 
 
 	return settings, nil
 }
+
+// UpdateUser 更新用户信息（管理员功能）
+func (s *AdminService) UpdateUser(userID string, req *models.AdminUpdateUserRequest) (*models.User, error) {
+	var user models.User
+	
+	// 查找用户
+	if err := s.db.First(&user, "id = ?", userID).Error; err != nil {
+		return nil, fmt.Errorf("用户不存在: %w", err)
+	}
+
+	// 更新用户信息
+	updates := make(map[string]interface{})
+	
+	if req.Nickname != "" {
+		updates["nickname"] = req.Nickname
+	}
+	
+	if req.Email != "" {
+		// 检查邮箱是否已被其他用户使用
+		var count int64
+		if err := s.db.Model(&models.User{}).Where("email = ? AND id != ?", req.Email, userID).Count(&count).Error; err != nil {
+			return nil, fmt.Errorf("检查邮箱失败: %w", err)
+		}
+		if count > 0 {
+			return nil, fmt.Errorf("邮箱已被使用")
+		}
+		updates["email"] = req.Email
+	}
+	
+	if req.Role != "" {
+		// 验证角色是否有效
+		validRoles := []string{"user", "courier", "courier_level1", "courier_level2", "courier_level3", "courier_level4", "school_admin", "admin", "super_admin"}
+		isValidRole := false
+		for _, validRole := range validRoles {
+			if req.Role == validRole {
+				isValidRole = true
+				break
+			}
+		}
+		if !isValidRole {
+			return nil, fmt.Errorf("无效的角色: %s", req.Role)
+		}
+		updates["role"] = req.Role
+	}
+	
+	if req.SchoolCode != "" {
+		updates["school_code"] = req.SchoolCode
+	}
+	
+	// 更新激活状态
+	updates["is_active"] = req.IsActive
+	updates["updated_at"] = time.Now()
+
+	// 执行更新
+	if err := s.db.Model(&user).Updates(updates).Error; err != nil {
+		return nil, fmt.Errorf("更新用户失败: %w", err)
+	}
+
+	// 重新加载用户信息
+	if err := s.db.First(&user, "id = ?", userID).Error; err != nil {
+		return nil, fmt.Errorf("重新加载用户失败: %w", err)
+	}
+
+	return &user, nil
+}

@@ -195,3 +195,51 @@ func (h *AdminHandler) GetAnalyticsData(c *gin.Context) {
 		"message": "获取分析数据成功",
 	})
 }
+
+// UpdateUser 更新用户信息（管理员功能）
+func (h *AdminHandler) UpdateUser(c *gin.Context) {
+	// 检查用户权限
+	userRole, exists := c.Get("role")
+	if !exists || (userRole != "admin" && userRole != "super_admin") {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "权限不足，只有管理员可以更新用户信息",
+		})
+		return
+	}
+
+	userID := c.Param("id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "用户ID不能为空",
+		})
+		return
+	}
+
+	var req models.AdminUpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "请求数据无效",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	user, err := h.adminService.UpdateUser(userID, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "更新用户信息失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    user,
+		"message": "用户信息更新成功",
+	})
+}

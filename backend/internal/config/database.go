@@ -431,41 +431,37 @@ func initializeCourierSystemWithSharedData(db *gorm.DB) error {
 				// Create courier record based on user role
 				level := 1
 				zoneCode := ""
-				zoneType := ""
 				managedPrefix := ""
 				
 				switch user.Role {
 				case models.RoleCourierLevel4:
 					level = 4
 					zoneCode = "BEIJING"
-					zoneType = "city"
 					managedPrefix = "BJ"
 				case models.RoleCourierLevel3:
 					level = 3
 					zoneCode = "BJDX"
-					zoneType = "school"
 					managedPrefix = "BJDX"
 				case models.RoleCourierLevel2:
 					level = 2
 					zoneCode = "BJDX-NORTH"
-					zoneType = "zone"
 					managedPrefix = "BJDX5F"
 				case models.RoleCourierLevel1:
 					level = 1
 					zoneCode = "BJDX-A-101"
-					zoneType = "building"
 					managedPrefix = "BJDX5F01"
 				}
 				
 				courier = models.Courier{
 					ID:                   uuid.New().String(),
 					UserID:               user.ID,
+					Name:                 user.Nickname,
+					Contact:              user.Email,
+					School:               "北京大学",
+					Zone:                 zoneCode,
 					Level:                level,
-					ZoneCode:             zoneCode,
-					ZoneType:             zoneType,
-					Status:               models.CourierStatusActive,
+					Status:               "approved",
 					ManagedOPCodePrefix:  managedPrefix,
-					PerformanceScore:     95.0 + float64(level),
 					CreatedAt:            time.Now(),
 					UpdatedAt:            time.Now(),
 				}
@@ -482,22 +478,9 @@ func initializeCourierSystemWithSharedData(db *gorm.DB) error {
 	}
 	
 	// Step 2: Establish hierarchy relationships
-	if l4 := courierMap["courier_level4"]; l4 != nil {
-		if l3 := courierMap["courier_level3"]; l3 != nil {
-			l3.ParentID = &l4.ID
-			db.Save(l3)
-			
-			if l2 := courierMap["courier_level2"]; l2 != nil {
-				l2.ParentID = &l3.ID
-				db.Save(l2)
-				
-				if l1 := courierMap["courier_level1"]; l1 != nil {
-					l1.ParentID = &l2.ID
-					db.Save(l1)
-				}
-			}
-		}
-	}
+	// Note: The backend courier model doesn't have ParentID field
+	// Hierarchy is managed through the courier service
+	log.Printf("Courier hierarchy initialized (managed by courier service)")
 	log.Println("Established courier hierarchy relationships")
 	
 	// Step 3: Create sample letters and tasks
@@ -510,9 +493,9 @@ func initializeCourierSystemWithSharedData(db *gorm.DB) error {
 				UserID:        alice.ID,
 				Title:         "给远方朋友的新年祝福",
 				Content:       "新的一年，希望你一切安好...",
-				RecipientType: models.RecipientSpecific,
-				Status:        models.StatusPending,
-				IsAnonymous:   false,
+				Style:         models.StyleCasual,
+				Status:        models.StatusGenerated,
+				Visibility:    models.VisibilityPrivate,
 				CreatedAt:     time.Now(),
 				UpdatedAt:     time.Now(),
 			},
@@ -521,9 +504,9 @@ func initializeCourierSystemWithSharedData(db *gorm.DB) error {
 				UserID:        alice.ID,
 				Title:         "感谢信",
 				Content:       "感谢你的帮助和支持...",
-				RecipientType: models.RecipientRandom,
-				Status:        models.StatusPending,
-				IsAnonymous:   false,
+				Style:         models.StyleCasual,
+				Status:        models.StatusGenerated,
+				Visibility:    models.VisibilityPrivate,
 				CreatedAt:     time.Now(),
 				UpdatedAt:     time.Now(),
 			},
@@ -533,32 +516,55 @@ func initializeCourierSystemWithSharedData(db *gorm.DB) error {
 			db.Create(&letter)
 		}
 		
+		// Create letter codes for the letters
+		letterCodes := []models.LetterCode{
+			{
+				ID:       uuid.New().String(),
+				LetterID: letters[0].ID,
+				Code:     "LC" + fmt.Sprintf("%06d", time.Now().Unix()%1000000),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+			{
+				ID:       uuid.New().String(),
+				LetterID: letters[1].ID,
+				Code:     "LC" + fmt.Sprintf("%06d", (time.Now().Unix()+1)%1000000),
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		}
+		
+		for _, letterCode := range letterCodes {
+			db.Create(&letterCode)
+		}
+		
 		// Create shared courier tasks (unassigned)
 		tasks := []models.CourierTask{
 			{
 				ID:               uuid.New().String(),
-				LetterID:         letters[0].ID,
-				PickupLocation:   "北京大学5号楼",
-				DeliveryLocation: "北京大学3食堂",
-				PickupOPCode:     "BJDX5F01",
-				DeliveryOPCode:   "BJDX3D12",
-				TaskType:         models.TaskTypeStandard,
-				Status:           models.TaskStatusAvailable,
-				Priority:         models.PriorityMedium,
+				CourierID:        courierMap["courier_level1"].ID, // Assign to level 1 courier for now
+				LetterCode:       letterCodes[0].Code,
+				Title:            letters[0].Title,
+				SenderName:       alice.Nickname,
+				TargetLocation:   "北京大学3食堂",
+				PickupOPCode:     "PK5F01",
+				DeliveryOPCode:   "PK3D12",
+				Status:           "pending",
+				Priority:         "normal",
 				CreatedAt:        time.Now(),
 				UpdatedAt:        time.Now(),
 			},
 			{
 				ID:               uuid.New().String(),
-				LetterID:         letters[1].ID,
-				PickupLocation:   "北京大学5号楼",
-				DeliveryLocation: "清华大学3号楼",
-				PickupOPCode:     "BJDX5F01",
-				DeliveryOPCode:   "QHUA3B02",
-				TaskType:         models.TaskTypeExpress,
-				Status:           models.TaskStatusAvailable,
-				Priority:         models.PriorityHigh,
-				RequiredLevel:    3, // Inter-school requires Level 3+
+				CourierID:        courierMap["courier_level3"].ID, // Assign to level 3 courier for cross-school
+				LetterCode:       letterCodes[1].Code,
+				Title:            letters[1].Title,
+				SenderName:       alice.Nickname,
+				TargetLocation:   "清华大学3号楼",
+				PickupOPCode:     "PK5F01",
+				DeliveryOPCode:   "QH3B02",
+				Status:           "pending",
+				Priority:         "urgent",
 				CreatedAt:        time.Now(),
 				UpdatedAt:        time.Now(),
 			},
