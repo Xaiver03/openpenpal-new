@@ -16,7 +16,8 @@ import {
   Shield,
   Truck,
   Crown,
-  Brain
+  Brain,
+  MapPin
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -59,6 +60,7 @@ export function Header({ className }: HeaderProps) {
     { href: '/plaza', label: '写作广场', icon: Send },
     { href: '/museum', label: '信件博物馆', icon: Inbox },
     { href: '/shop', label: '信封商城', icon: Mail },
+    { href: '/postcode', label: '地址编号', icon: MapPin },
   ]
 
   const userMenuItems = [
