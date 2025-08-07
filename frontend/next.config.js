@@ -95,12 +95,12 @@ const nextConfig = {
     return config;
   },
   
-  // API代理配置 - 将API请求转发到网关
+  // API代理配置 - 将API请求转发到后端
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
+        destination: 'http://localhost:8080/api/:path*',
       },
     ];
   },
