@@ -162,32 +162,46 @@ export function Header({ className }: HeaderProps) {
               <SimpleWebSocketIndicator className="mr-2" />
               <NotificationCenter />
               
-              <div className="flex items-center space-x-1">
-                {userMenuItems.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Button
-                      key={item.href}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(item.href)}
-                      className="flex items-center space-x-2"
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="hidden xl:inline">{item.label}</span>
-                    </Button>
-                  )
-                })}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 text-red-600 hover:text-red-700"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden xl:inline">退出</span>
-                </Button>
-              </div>
+              {/* 用户下拉菜单 */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <span>{nickname || username || '我的'}</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {userMenuItems.map((item, index) => {
+                    const Icon = item.icon
+                    const showDivider = index === 0 || 
+                      (index > 0 && userMenuItems[index - 1].href.includes('courier') !== item.href.includes('courier')) ||
+                      (index > 0 && userMenuItems[index - 1].href.includes('admin') !== item.href.includes('admin'))
+                    
+                    return (
+                      <div key={item.href}>
+                        {showDivider && index > 0 && (
+                          <div className="my-1 h-px bg-border" />
+                        )}
+                        <DropdownMenuItem asChild>
+                          <Link href={item.href} className="flex items-center space-x-2">
+                            <Icon className="h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </div>
+                    )
+                  })}
+                  <div className="my-1 h-px bg-border" />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>退出登录</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <div className="flex items-center space-x-2">
