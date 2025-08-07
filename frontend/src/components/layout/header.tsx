@@ -27,6 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { useAuth, usePermissions, useCourier } from '@/stores/user-store'
 import { getCourierLevelManagementPath } from '@/constants/roles'
@@ -137,9 +138,14 @@ export function Header({ className }: HeaderProps) {
               {/* 用户下拉菜单 */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span>{nickname || username || '我的'}</span>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2 h-auto py-1.5">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={avatar} alt={username || ''} />
+                      <AvatarFallback className="text-xs">
+                        {(nickname || username || 'U').slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="max-w-[100px] truncate">{nickname || username || '我的'}</span>
                     <ChevronDown className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
