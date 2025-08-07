@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"openpenpal-backend/internal/models"
 	"shared/pkg/database"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -166,6 +168,11 @@ func SeedData(db *gorm.DB) error {
 	// 执行安全种子数据生成
 	if err := seedManager.SecureSeedData(); err != nil {
 		return fmt.Errorf("secure seed failed: %w", err)
+	}
+	
+	// Initialize courier system with hierarchy and shared data
+	if err := initializeCourierSystemWithSharedData(db); err != nil {
+		return fmt.Errorf("courier system initialization failed: %w", err)
 	}
 	
 	return nil
@@ -403,5 +410,166 @@ func LegacySeedData(db *gorm.DB) error {
 	}
 
 	log.Println("Test data seeded successfully")
+	return nil
+}
+
+// initializeCourierSystemWithSharedData creates courier hierarchy and shared tasks
+func initializeCourierSystemWithSharedData(db *gorm.DB) error {
+	log.Println("Initializing courier system hierarchy and shared data...")
+	
+	// Step 1: Create courier records for all courier users
+	var courierUsers []models.User
+	if err := db.Where("role LIKE ?", "courier%").Find(&courierUsers).Error; err != nil {
+		return fmt.Errorf("failed to find courier users: %w", err)
+	}
+	
+	courierMap := make(map[string]*models.Courier)
+	for _, user := range courierUsers {
+		var courier models.Courier
+		if err := db.Where("user_id = ?", user.ID).First(&courier).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				// Create courier record based on user role
+				level := 1
+				zoneCode := ""
+				zoneType := ""
+				managedPrefix := ""
+				
+				switch user.Role {
+				case models.RoleCourierLevel4:
+					level = 4
+					zoneCode = "BEIJING"
+					zoneType = "city"
+					managedPrefix = "BJ"
+				case models.RoleCourierLevel3:
+					level = 3
+					zoneCode = "BJDX"
+					zoneType = "school"
+					managedPrefix = "BJDX"
+				case models.RoleCourierLevel2:
+					level = 2
+					zoneCode = "BJDX-NORTH"
+					zoneType = "zone"
+					managedPrefix = "BJDX5F"
+				case models.RoleCourierLevel1:
+					level = 1
+					zoneCode = "BJDX-A-101"
+					zoneType = "building"
+					managedPrefix = "BJDX5F01"
+				}
+				
+				courier = models.Courier{
+					ID:                   uuid.New().String(),
+					UserID:               user.ID,
+					Level:                level,
+					ZoneCode:             zoneCode,
+					ZoneType:             zoneType,
+					Status:               models.CourierStatusActive,
+					ManagedOPCodePrefix:  managedPrefix,
+					PerformanceScore:     95.0 + float64(level),
+					CreatedAt:            time.Now(),
+					UpdatedAt:            time.Now(),
+				}
+				
+				if err := db.Create(&courier).Error; err != nil {
+					return fmt.Errorf("failed to create courier for %s: %w", user.Username, err)
+				}
+				log.Printf("Created courier record for %s (Level %d)", user.Username, level)
+			} else {
+				return fmt.Errorf("failed to query courier: %w", err)
+			}
+		}
+		courierMap[user.Username] = &courier
+	}
+	
+	// Step 2: Establish hierarchy relationships
+	if l4 := courierMap["courier_level4"]; l4 != nil {
+		if l3 := courierMap["courier_level3"]; l3 != nil {
+			l3.ParentID = &l4.ID
+			db.Save(l3)
+			
+			if l2 := courierMap["courier_level2"]; l2 != nil {
+				l2.ParentID = &l3.ID
+				db.Save(l2)
+				
+				if l1 := courierMap["courier_level1"]; l1 != nil {
+					l1.ParentID = &l2.ID
+					db.Save(l1)
+				}
+			}
+		}
+	}
+	log.Println("Established courier hierarchy relationships")
+	
+	// Step 3: Create sample letters and tasks
+	var alice models.User
+	if err := db.Where("username = ?", "alice").First(&alice).Error; err == nil {
+		// Create sample letters
+		letters := []models.Letter{
+			{
+				ID:            uuid.New().String(),
+				UserID:        alice.ID,
+				Title:         "给远方朋友的新年祝福",
+				Content:       "新的一年，希望你一切安好...",
+				RecipientType: models.RecipientSpecific,
+				Status:        models.StatusPending,
+				IsAnonymous:   false,
+				CreatedAt:     time.Now(),
+				UpdatedAt:     time.Now(),
+			},
+			{
+				ID:            uuid.New().String(),
+				UserID:        alice.ID,
+				Title:         "感谢信",
+				Content:       "感谢你的帮助和支持...",
+				RecipientType: models.RecipientRandom,
+				Status:        models.StatusPending,
+				IsAnonymous:   false,
+				CreatedAt:     time.Now(),
+				UpdatedAt:     time.Now(),
+			},
+		}
+		
+		for _, letter := range letters {
+			db.Create(&letter)
+		}
+		
+		// Create shared courier tasks (unassigned)
+		tasks := []models.CourierTask{
+			{
+				ID:               uuid.New().String(),
+				LetterID:         letters[0].ID,
+				PickupLocation:   "北京大学5号楼",
+				DeliveryLocation: "北京大学3食堂",
+				PickupOPCode:     "BJDX5F01",
+				DeliveryOPCode:   "BJDX3D12",
+				TaskType:         models.TaskTypeStandard,
+				Status:           models.TaskStatusAvailable,
+				Priority:         models.PriorityMedium,
+				CreatedAt:        time.Now(),
+				UpdatedAt:        time.Now(),
+			},
+			{
+				ID:               uuid.New().String(),
+				LetterID:         letters[1].ID,
+				PickupLocation:   "北京大学5号楼",
+				DeliveryLocation: "清华大学3号楼",
+				PickupOPCode:     "BJDX5F01",
+				DeliveryOPCode:   "QHUA3B02",
+				TaskType:         models.TaskTypeExpress,
+				Status:           models.TaskStatusAvailable,
+				Priority:         models.PriorityHigh,
+				RequiredLevel:    3, // Inter-school requires Level 3+
+				CreatedAt:        time.Now(),
+				UpdatedAt:        time.Now(),
+			},
+		}
+		
+		for _, task := range tasks {
+			db.Create(&task)
+		}
+		log.Printf("Created %d sample letters and %d shared tasks", len(letters), len(tasks))
+	}
+	
+	log.Println("✅ Courier system initialization complete!")
 	return nil
 }
