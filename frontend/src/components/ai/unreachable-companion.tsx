@@ -24,13 +24,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { aiService } from '@/lib/services/ai-service'
 import { toast } from 'sonner'
 
@@ -238,22 +231,12 @@ ${context.letterContent}`
                   </div>
                   <div>
                     <Label htmlFor="relationship">关系</Label>
-                    <Select
+                    <Input
+                      id="relationship"
                       value={newPersona.relationship}
-                      onValueChange={(value) => setNewPersona({ ...newPersona, relationship: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择关系类型" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="已故的祖父母">已故的祖父母</SelectItem>
-                        <SelectItem value="已故的父母">已故的父母</SelectItem>
-                        <SelectItem value="已故的朋友">已故的朋友</SelectItem>
-                        <SelectItem value="失联的朋友">失联的朋友</SelectItem>
-                        <SelectItem value="分离的恋人">分离的恋人</SelectItem>
-                        <SelectItem value="其他">其他</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onChange={(e) => setNewPersona({ ...newPersona, relationship: e.target.value })}
+                      placeholder="例如：已故的祖母、失联的朋友、分离的恋人"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="lastContact">最后联系时间（可选）</Label>
