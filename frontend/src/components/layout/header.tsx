@@ -17,9 +17,17 @@ import {
   Truck,
   Crown,
   Brain,
-  MapPin
+  MapPin,
+  Wrench,
+  ChevronDown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { useAuth, usePermissions, useCourier } from '@/stores/user-store'
 import { getCourierLevelManagementPath } from '@/constants/roles'
@@ -58,9 +66,12 @@ export function Header({ className }: HeaderProps) {
     { href: '/write', label: '写信去', icon: Mail },
     { href: '/ai', label: '云锦传驿', icon: Brain },
     { href: '/plaza', label: '写作广场', icon: Send },
-    { href: '/museum', label: '信件博物馆', icon: Inbox },
     { href: '/shop', label: '信封商城', icon: Mail },
+  ]
+
+  const toolItems = [
     { href: '/postcode', label: '地址编号', icon: MapPin },
+    { href: '/museum', label: '信件博物馆', icon: Inbox },
   ]
 
   const userMenuItems = [
@@ -118,6 +129,30 @@ export function Header({ className }: HeaderProps) {
               </Link>
             )
           })}
+          
+          {/* 工具下拉菜单 */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                <Wrench className="h-4 w-4" />
+                <span>工具</span>
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {toolItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link href={item.href} className="flex items-center space-x-2">
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         {/* Desktop User Menu */}
@@ -207,6 +242,25 @@ export function Header({ className }: HeaderProps) {
                   </Link>
                 )
               })}
+              
+              {/* 工具分组 */}
+              <div className="border-t pt-2 mt-2">
+                <div className="px-3 py-1 text-xs font-semibold text-muted-foreground">工具</div>
+                {toolItems.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
               <div className="border-t pt-2 mt-2">
                 {isAuthenticated ? (
                   <>
