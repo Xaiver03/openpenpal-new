@@ -24,11 +24,12 @@ import {
   type UserRole,
   type CourierLevel 
 } from '@/constants/roles'
+import { AvatarUpload } from '@/components/profile/avatar-upload'
 
 export default function ProfilePage() {
   // Optimized state subscriptions
   const { user, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth()
-  const { username, nickname, email, updateProfile } = useUserProfile()
+  const { username, nickname, email, avatar, updateProfile } = useUserProfile()
   const { role } = useUserRoleInfo()
   const { courierInfo } = useCourierInfo()
   
@@ -142,6 +143,21 @@ export default function ProfilePage() {
           管理你的个人信息和账户设置
         </p>
       </div>
+
+      {/* Avatar Upload Card */}
+      <Card className="mb-6 border-amber-200 bg-white shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-center">头像设置</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AvatarUpload
+            currentAvatar={avatar}
+            username={username}
+            nickname={nickname}
+            className="mb-4"
+          />
+        </CardContent>
+      </Card>
 
       {/* Profile Card */}
       <Card className="border-amber-200 bg-white shadow-lg">

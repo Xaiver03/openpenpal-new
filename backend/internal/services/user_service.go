@@ -2,6 +2,10 @@ package services
 
 import (
 	"fmt"
+	"io"
+	"mime/multipart"
+	"os"
+	"path/filepath"
 	"time"
 
 	"openpenpal-backend/internal/config"
@@ -288,5 +292,72 @@ func (s *UserService) ReactivateUser(userID string) error {
 		Update("is_active", true).Error; err != nil {
 		return fmt.Errorf("failed to reactivate user: %w", err)
 	}
+	return nil
+}
+
+// SaveAvatar 保存用户头像
+func (s *UserService) SaveAvatar(userID string, file multipart.File, filename string) (string, error) {
+	// 创建上传目录
+	uploadDir := filepath.Join("uploads", "avatars")
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create upload directory: %w", err)
+	}
+
+	// 获取旧头像 URL
+	var user models.User
+	if err := s.db.Select("avatar").Where("id = ?", userID).First(&user).Error; err != nil {
+		return "", fmt.Errorf("failed to get user: %w", err)
+	}
+
+	// 如果存在旧头像，删除旧文件
+	if user.Avatar != "" {
+		oldPath := filepath.Join(".", user.Avatar)
+		_ = os.Remove(oldPath) // 忽略删除错误
+	}
+
+	// 保存新文件
+	filePath := filepath.Join(uploadDir, filename)
+	dstFile, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create file: %w", err)
+	}
+	defer dstFile.Close()
+
+	if _, err := io.Copy(dstFile, file); err != nil {
+		return "", fmt.Errorf("failed to save file: %w", err)
+	}
+
+	// 更新数据库
+	avatarURL := "/" + filepath.ToSlash(filePath)
+	if err := s.db.Model(&models.User{}).Where("id = ?", userID).
+		Update("avatar", avatarURL).Error; err != nil {
+		// 如果数据库更新失败，删除已上传的文件
+		_ = os.Remove(filePath)
+		return "", fmt.Errorf("failed to update avatar: %w", err)
+	}
+
+	return avatarURL, nil
+}
+
+// RemoveAvatar 移除用户头像
+func (s *UserService) RemoveAvatar(userID string) error {
+	// 获取当前头像 URL
+	var user models.User
+	if err := s.db.Select("avatar").Where("id = ?", userID).First(&user).Error; err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	// 删除文件
+	if user.Avatar != "" {
+		filePath := filepath.Join(".", user.Avatar)
+		_ = os.Remove(filePath) // 忽略删除错误
+	}
+
+	// 清空数据库中的头像字段
+	if err := s.db.Model(&models.User{}).Where("id = ?", userID).
+		Update("avatar", "").Error; err != nil {
+		return fmt.Errorf("failed to update avatar: %w", err)
+	}
+
 	return nil
 }

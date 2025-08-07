@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"openpenpal-backend/internal/middleware"
 	"openpenpal-backend/internal/models"
@@ -9,6 +12,7 @@ import (
 	"openpenpal-backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type UserHandler struct {
@@ -197,4 +201,71 @@ func (h *UserHandler) AdminReactivateUser(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "User reactivated successfully", nil)
+}
+
+// UploadAvatar 上传用户头像
+func (h *UserHandler) UploadAvatar(c *gin.Context) {
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not authenticated")
+		return
+	}
+
+	// 获取上传的文件
+	file, header, err := c.Request.FormFile("avatar")
+	if err != nil {
+		utils.BadRequestResponse(c, "No file uploaded", err)
+		return
+	}
+	defer file.Close()
+
+	// 验证文件类型
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	allowedExts := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".gif":  true,
+		".webp": true,
+	}
+	if !allowedExts[ext] {
+		utils.BadRequestResponse(c, "Invalid file type. Only JPG, PNG, GIF and WEBP are allowed", nil)
+		return
+	}
+
+	// 限制文件大小 (5MB)
+	if header.Size > 5*1024*1024 {
+		utils.BadRequestResponse(c, "File size too large. Maximum 5MB allowed", nil)
+		return
+	}
+
+	// 生成唯一文件名
+	filename := fmt.Sprintf("%s_%s%s", userID, uuid.New().String(), ext)
+
+	// 保存文件
+	avatarURL, err := h.userService.SaveAvatar(userID, file, filename)
+	if err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to save avatar", err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Avatar uploaded successfully", gin.H{
+		"avatar_url": avatarURL,
+	})
+}
+
+// RemoveAvatar 移除用户头像
+func (h *UserHandler) RemoveAvatar(c *gin.Context) {
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not authenticated")
+		return
+	}
+
+	if err := h.userService.RemoveAvatar(userID); err != nil {
+		utils.InternalServerErrorResponse(c, "Failed to remove avatar", err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Avatar removed successfully", nil)
 }

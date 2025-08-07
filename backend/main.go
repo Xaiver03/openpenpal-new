@@ -296,6 +296,8 @@ func main() {
 			users.POST("/me/change-password", userHandler.ChangePassword)
 			users.GET("/me/stats", userHandler.GetUserStats)
 			users.DELETE("/me", userHandler.DeactivateAccount)
+			users.POST("/avatar", userHandler.UploadAvatar)
+			users.DELETE("/avatar", userHandler.RemoveAvatar)
 		}
 
 		// 信件相关
