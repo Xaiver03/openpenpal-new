@@ -145,8 +145,8 @@ export default function DeliverPage() {
             <div class="sticker">
               <h3>OpenPenPal 信使计划</h3>
               <div class="qr-code">
-                ${letter.qrCodeUrl ? 
-                  `<img src="${letter.qrCodeUrl}" alt="QR Code" style="max-width: 100%; max-height: 100%;" />` :
+                ${letter.qr_code_url ? 
+                  `<img src="${letter.qr_code_url}" alt="QR Code" style="max-width: 100%; max-height: 100%;" />` :
                   '二维码'
                 }
               </div>
@@ -284,7 +284,7 @@ export default function DeliverPage() {
                       <CardDescription className="flex items-center gap-2 mt-1">
                         <span className="font-mono text-sm">{letter.code}</span>
                         <span>•</span>
-                        <span>{formatRelativeTime(new Date(letter.createdAt))}</span>
+                        <span>{formatRelativeTime(new Date(letter.created_at))}</span>
                         {letter.recipient_info?.name && (
                           <>
                             <span>•</span>
@@ -334,7 +334,7 @@ export default function DeliverPage() {
                           查看信件
                         </Button>
                         
-                        {letter.qrCodeUrl && (
+                        {letter.qr_code_url && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -360,9 +360,9 @@ export default function DeliverPage() {
                     {/* 二维码预览 */}
                     <div className="flex justify-center">
                       <div className="w-24 h-24 bg-white border border-border rounded-lg p-2 flex items-center justify-center">
-                        {letter.qrCodeUrl ? (
+                        {letter.qr_code_url ? (
                           <img 
-                            src={letter.qrCodeUrl} 
+                            src={letter.qr_code_url} 
                             alt="QR Code" 
                             className="w-full h-full object-contain"
                           />
@@ -423,9 +423,9 @@ export default function DeliverPage() {
             </CardHeader>
             <CardContent className="text-center">
               <div className="w-64 h-64 bg-white border rounded-lg p-4 mx-auto mb-4">
-                {selectedLetter.qrCodeUrl ? (
+                {selectedLetter.qr_code_url ? (
                   <img 
-                    src={selectedLetter.qrCodeUrl} 
+                    src={selectedLetter.qr_code_url} 
                     alt="QR Code" 
                     className="w-full h-full object-contain"
                   />

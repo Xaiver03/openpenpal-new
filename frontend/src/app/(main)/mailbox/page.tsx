@@ -120,7 +120,7 @@ export default function MailboxPage() {
                 <>来自: {letter.sender_name || '匿名'}</>
               )}
               {activeTab === 'drafts' && (
-                <>最后修改: {formatRelativeTime(new Date(letter.updatedAt))}</>
+                <>最后修改: {formatRelativeTime(new Date(letter.updated_at))}</>
               )}
             </CardDescription>
           </div>
@@ -143,8 +143,8 @@ export default function MailboxPage() {
             <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               {activeTab === 'received' 
-                ? formatRelativeTime(new Date(letter.delivered_at || letter.createdAt))
-                : formatRelativeTime(new Date(letter.createdAt))
+                ? formatRelativeTime(new Date(letter.delivered_at || letter.created_at))
+                : formatRelativeTime(new Date(letter.created_at))
               }
             </span>
           </div>

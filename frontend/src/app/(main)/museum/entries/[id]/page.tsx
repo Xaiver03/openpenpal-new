@@ -87,8 +87,8 @@ export default function MuseumEntryDetailPage() {
       // 模拟数据增强
       const enhancedEntry: ExtendedMuseumEntry = {
         ...response.data,
-        views: response.data.view_count || Math.floor(Math.random() * 5000) + 1000,
-        likes: response.data.like_count || Math.floor(Math.random() * 500) + 100,
+        views: response.data.viewCount || Math.floor(Math.random() * 5000) + 1000,
+        likes: response.data.likeCount || Math.floor(Math.random() * 500) + 100,
         shares: Math.floor(Math.random() * 200) + 50,
         comments: Math.floor(Math.random() * 100) + 20,
         theme: response.data.theme || '青春回忆',
@@ -325,11 +325,11 @@ export default function MuseumEntryDetailPage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  {formatDate(entry.created_at)}
+                  {formatDate(entry.createdAt)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  {formatRelativeTime(entry.created_at)}
+                  {formatRelativeTime(entry.createdAt)}
                 </span>
               </CardDescription>
             </div>

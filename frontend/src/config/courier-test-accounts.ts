@@ -163,11 +163,19 @@ export function getSubordinateAccounts(username: string): CourierTestAccount[] {
 
 // 生成测试账号的模拟登录数据
 export function generateCourierMockData(account: CourierTestAccount) {
+  // 根据级别映射到正确的角色
+  const roleMapping: Record<number, string> = {
+    1: 'courier_level1',
+    2: 'courier_level2', 
+    3: 'courier_level3',
+    4: 'courier_level4'
+  }
+  
   return {
     id: `courier_${account.username}`,
     username: account.username,
     email: account.email,
-    role: 'courier', // 基础角色标识
+    role: roleMapping[account.level] || 'courier_level1', // 根据级别设置角色
     courierInfo: {
       level: account.level,
       zoneCode: account.zoneCode,

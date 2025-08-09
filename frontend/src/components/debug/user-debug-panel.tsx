@@ -14,8 +14,13 @@ const UserDebugPanel = memo(function UserDebugPanel() {
   
   // Compatibility aliases
   const { username, nickname, role } = user || { username: undefined, nickname: undefined, role: undefined }
-  const canAccessAdmin = user ? hasRole('admin') : false
-  const isCourier = user ? hasRole('courier') : false
+  const canAccessAdmin = user ? hasRole('platform_admin') || hasRole('super_admin') : false
+  const isCourier = user ? (
+    hasRole('courier_level1') || 
+    hasRole('courier_level2') || 
+    hasRole('courier_level3') || 
+    hasRole('courier_level4')
+  ) : false
   
   const [isExpanded, setIsExpanded] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
@@ -43,8 +48,8 @@ const UserDebugPanel = memo(function UserDebugPanel() {
     userRole: role,
     isCourier,
     canAccessAdmin,
-    hasRoleCourier: hasRole('courier'),
-    hasRoleSchoolAdmin: hasRole('school_admin')
+    hasRoleCourier: isCourier,
+    hasRolePlatformAdmin: hasRole('platform_admin')
   }, 'UserDebugPanel')
 
   // 处理拖拽开始 - 使用 useCallback 优化性能
@@ -263,16 +268,37 @@ const UserDebugPanel = memo(function UserDebugPanel() {
               
               <div className="space-y-0.5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span>courier角色:</span>
-                  <span className={hasRole('courier') ? 'text-green-400' : 'text-red-400'}>
-                    {hasRole('courier') ? '✅' : '❌'}
+                  <span>信使等级1:</span>
+                  <span className={hasRole('courier_level1') ? 'text-green-400' : 'text-red-400'}>
+                    {hasRole('courier_level1') ? '✅' : '❌'}
                   </span>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span>school_admin:</span>
-                  <span className={hasRole('school_admin') ? 'text-green-400' : 'text-red-400'}>
-                    {hasRole('school_admin') ? '✅' : '❌'}
+                  <span>信使等级2:</span>
+                  <span className={hasRole('courier_level2') ? 'text-green-400' : 'text-red-400'}>
+                    {hasRole('courier_level2') ? '✅' : '❌'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span>信使等级3:</span>
+                  <span className={hasRole('courier_level3') ? 'text-green-400' : 'text-red-400'}>
+                    {hasRole('courier_level3') ? '✅' : '❌'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span>信使等级4:</span>
+                  <span className={hasRole('courier_level4') ? 'text-green-400' : 'text-red-400'}>
+                    {hasRole('courier_level4') ? '✅' : '❌'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span>platform_admin:</span>
+                  <span className={hasRole('platform_admin') ? 'text-green-400' : 'text-red-400'}>
+                    {hasRole('platform_admin') ? '✅' : '❌'}
                   </span>
                 </div>
                 

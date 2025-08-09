@@ -219,7 +219,7 @@ export default function ReadLetterPage() {
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            <span>{formatRelativeTime(new Date(letter.createdAt))}</span>
+            <span>{formatRelativeTime(new Date(letter.created_at))}</span>
           </div>
           <div className="flex items-center gap-1">
             <Package className="h-4 w-4" />
@@ -249,8 +249,8 @@ export default function ReadLetterPage() {
             {letter.delivery_info.courier_name && (
               <div>信使: {letter.delivery_info.courier_name}</div>
             )}
-            {letter.delivery_info.deliveryTime && (
-              <div>时间: {formatRelativeTime(new Date(letter.delivery_info.deliveryTime))}</div>
+            {letter.delivery_info.delivery_time && (
+              <div>时间: {formatRelativeTime(new Date(letter.delivery_info.delivery_time))}</div>
             )}
           </AlertDescription>
         </Alert>

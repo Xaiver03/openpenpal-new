@@ -1,16 +1,12 @@
 import { useAuth } from '@/contexts/auth-context-new'
 
-// 角色层级定义（与后端保持一致）
+// 角色层级定义（PRD简化版本，与后端保持一致）
 const ROLE_HIERARCHY: Record<string, number> = {
   'user': 1,
-  'courier': 2,
   'courier_level1': 2,
   'courier_level2': 3,
-  'senior_courier': 3,
   'courier_level3': 4,
-  'courier_coordinator': 4,
   'courier_level4': 5,
-  'school_admin': 5,
   'platform_admin': 6,
   'super_admin': 7,
 }

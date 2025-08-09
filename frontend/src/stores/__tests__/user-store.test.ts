@@ -82,10 +82,10 @@ describe('useUserStore', () => {
     
     const mockUser = {
       id: '1',
-      username: 'courier',
-      nickname: 'Courier User',
-      email: 'courier@example.com',
-      role: 'courier' as const,
+      username: 'courier_level1',
+      nickname: 'Level 1 Courier',
+      email: 'courier1@example.com',
+      role: 'courier_level1' as const,
       school_code: 'TEST01',
       school_name: 'Test School',
       avatar: '',

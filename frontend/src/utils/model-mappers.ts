@@ -1,5 +1,10 @@
 // Utility functions for model field mapping
 
+// Import types
+import type { User } from '@/types/user'
+import type { Letter } from '@/lib/services/letter-service'
+import type { Courier } from '@/types/courier'
+
 // Convert snake_case to camelCase
 export function snakeToCamel<T extends Record<string, any>>(obj: T): any {
   if (Array.isArray(obj)) {

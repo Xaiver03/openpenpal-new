@@ -1,11 +1,5 @@
-/**
- * 信使等级枚举
- */
-export type CourierLevel = 
-  | 'level1'       // 1级信使 (楼栋)
-  | 'level2'       // 2级信使 (片区)
-  | 'level3'       // 3级信使 (校区)
-  | 'level4'       // 4级信使 (城市总代)
+// Import CourierLevel from user types
+import { CourierLevel } from './user'
 
 /**
  * 任务状态枚举
@@ -29,14 +23,14 @@ export type TaskType =
  */
 export interface CourierTask {
   id: string
-  courierId: string
-  codeId: string
-  taskType: TaskType
+  courier_id: string
+  code_id: string
+  task_type: TaskType
   status: TaskStatus
   zone?: string
   priority: number
-  assignedAt: Date
-  completedAt?: Date
+  assigned_at: Date
+  completed_at?: Date
   note?: string
   description?: string
 }
@@ -46,26 +40,26 @@ export interface CourierTask {
  */
 export interface Courier {
   id: string
-  userId: string
+  user_id: string
   level: CourierLevel
   zone: string
-  schoolCode: string
-  isActive: boolean
+  school_code: string
+  is_active: boolean
   score: number
-  completedTasks: number
-  createdAt: Date
-  updatedAt: Date
+  completed_tasks: number
+  created_at: Date
+  updated_at: Date
 }
 
 /**
  * 信使统计
  */
 export interface CourierStats {
-  totalTasks: number
-  completedTasks: number
-  pendingTasks: number
-  successRate: number
-  averageDeliveryTime: number // 小时
+  total_tasks: number
+  completed_tasks: number
+  pending_tasks: number
+  success_rate: number
+  average_delivery_time: number // 小时
   ranking: number
   points: number
 }
@@ -75,7 +69,7 @@ export interface CourierStats {
  */
 export interface ScanRecord {
   id: string
-  courierId: string
+  courier_id: string
   code: string
   action: 'collect' | 'deliver'
   location?: string
@@ -88,23 +82,23 @@ export interface ScanRecord {
  */
 export interface CourierApplication {
   id: string
-  userId: string
+  user_id: string
   level: CourierLevel
   zone: string
   reason: string
   status: 'pending' | 'approved' | 'rejected'
-  appliedAt: Date
-  reviewedAt?: Date
-  reviewedBy?: string
-  reviewNote?: string
+  applied_at: Date
+  reviewed_at?: Date
+  reviewed_by?: string
+  review_note?: string
 }
 
 /**
  * 创建信使任务请求
  */
 export interface CreateTaskRequest {
-  codeId: string
-  taskType: TaskType
+  code_id: string
+  task_type: TaskType
   zone?: string
   priority?: number
   note?: string
@@ -123,8 +117,8 @@ export interface UpdateTaskStatusRequest {
  * 信使绩效
  */
 export interface CourierPerformance {
-  courierId: string
-  courierName: string
+  courier_id: string
+  courier_name: string
   level: CourierLevel
   zone: string
   period: {
@@ -132,12 +126,12 @@ export interface CourierPerformance {
     end: Date
   }
   metrics: {
-    totalTasks: number
-    completedTasks: number
-    failedTasks: number
-    averageCompletionTime: number
-    successRate: number
-    userRating: number
+    total_tasks: number
+    completed_tasks: number
+    failed_tasks: number
+    average_completion_time: number
+    success_rate: number
+    user_rating: number
   }
   ranking: number
   rewards: {

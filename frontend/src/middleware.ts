@@ -173,7 +173,7 @@ export function middleware(request: NextRequest) {
     // Token有效，检查用户角色和权限（如果需要）
     if (pathname.startsWith('/admin')) {
       const userRole = payload?.role
-      const adminRoles = ['super_admin', 'admin', 'school_admin', 'platform_admin']
+      const adminRoles = ['super_admin', 'platform_admin']
       
       if (!adminRoles.includes(userRole)) {
         console.log('🔒 Admin route access denied - insufficient role:', {
@@ -189,7 +189,7 @@ export function middleware(request: NextRequest) {
     
     if (pathname.startsWith('/courier')) {
       const userRole = payload?.role
-      const courierRoles = ['courier', 'senior_courier', 'courier_coordinator', 'super_admin']
+      const courierRoles = ['courier_level1', 'courier_level2', 'courier_level3', 'courier_level4', 'super_admin']
       
       if (!courierRoles.includes(userRole)) {
         console.log('🔒 Courier route access denied - insufficient role:', {

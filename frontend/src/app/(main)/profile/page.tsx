@@ -40,7 +40,7 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     nickname: '',
     email: '',
-    schoolCode: '',
+    school_code: '',
   })
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function ProfilePage() {
       setFormData({
         nickname: nickname || '',
         email: email || '',
-        schoolCode: user.schoolCode || '',
+        school_code: user.school_code || '',
       })
     }
   }, [user, nickname, email])
@@ -64,7 +64,7 @@ export default function ProfilePage() {
       setFormData({
         nickname: nickname || '',
         email: email || '',
-        schoolCode: user.schoolCode || '',
+        school_code: user.school_code || '',
       })
     }
     setMessage(null)
@@ -79,7 +79,7 @@ export default function ProfilePage() {
       await updateProfile({
         nickname: formData.nickname,
         email: formData.email,
-        schoolCode: formData.schoolCode
+        school_code: formData.school_code
       })
       
       setIsEditing(false)
@@ -255,7 +255,7 @@ export default function ProfilePage() {
                   id="school_code"
                   name="school_code"
                   placeholder="请输入学校代码"
-                  value={formData.schoolCode}
+                  value={formData.school_code}
                   onChange={handleChange}
                   className="pl-10"
                 />
@@ -263,7 +263,7 @@ export default function ProfilePage() {
             ) : (
               <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
                 <School className="h-4 w-4 text-amber-700" />
-                <span className="font-mono">{user.schoolCode || '未设置学校代码'}</span>
+                <span className="font-mono">{user.school_code || '未设置学校代码'}</span>
               </div>
             )}
           </div>
@@ -324,9 +324,9 @@ export default function ProfilePage() {
             <Label>账户状态</Label>
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
               <span className={`px-2 py-1 rounded text-sm ${
-                user.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                user.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
               }`}>
-                {user.isActive ? '已激活' : '未激活'}
+                {user.is_active ? '已激活' : '未激活'}
               </span>
             </div>
           </div>
@@ -335,7 +335,7 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <Label>注册时间</Label>
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
-              {new Date(user.createdAt).toLocaleString('zh-CN')}
+              {new Date(user.created_at).toLocaleString('zh-CN')}
             </div>
           </div>
 

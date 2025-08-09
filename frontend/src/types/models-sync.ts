@@ -3,6 +3,76 @@
 // DO NOT EDIT MANUALLY - Use sync-models.js to regenerate
 // Note: Field names use camelCase due to backend transformation middleware - Use sync-models.js to regenerate
 
+// Import types from other modules
+import { UserRole } from '@/constants/roles'
+
+// Enum types
+export type LetterStyle = 'classic' | 'modern' | 'elegant' | 'casual'
+export type LetterStatus = 'draft' | 'pending' | 'published' | 'delivered' | 'read' | 'replied' | 'archived'
+export type LetterVisibility = 'private' | 'school' | 'public'
+export type AIProvider = 'openai' | 'moonshot' | 'baidu' | 'custom'
+export type MuseumSourceType = 'letter' | 'submission' | 'imported'
+export type MuseumItemStatus = 'pending' | 'approved' | 'rejected' | 'archived'
+
+// Additional interfaces for referenced types
+export interface LetterCode {
+  id: string
+  letterId: string
+  code: string
+  qrCodeUrl?: string
+  isActive: boolean
+  expiresAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface StatusLog {
+  id: string
+  letterId: string
+  status: LetterStatus
+  message?: string
+  createdAt: string
+}
+
+export interface LetterPhoto {
+  id: string
+  letterId: string
+  url: string
+  caption?: string
+  order: number
+  createdAt: string
+}
+
+export interface Envelope {
+  id: string
+  letterId: string
+  designId: string
+  customizations?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface LetterLike {
+  id: string
+  letterId: string
+  userId: string
+  createdAt: string
+}
+
+export interface LetterShare {
+  id: string
+  letterId: string
+  userId: string
+  platform: string
+  sharedAt: string
+}
+
+// GORM DeletedAt type
+export interface DeletedAt {
+  time: string
+  valid: boolean
+}
+
 export interface User {
   id: string;
   username: string;
@@ -69,7 +139,7 @@ export interface Courier {
   points: number;
   createdAt: string;
   updatedAt: string;
-  deletedAt: gorm.DeletedAt;
+  deletedAt: DeletedAt;
 }
 
 export interface AIConfig {

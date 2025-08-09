@@ -33,7 +33,11 @@
     "health-check": "node scripts/check-port.js 3000 && npm run type-check",
     "test-command": "node test-launch.js && echo '测试.command脚本:' && ls -la start-openpenpal.command",
     "fix-npm": "sudo chown -R $(whoami) ~/.npm && npm cache clean --force",
-    "fix-and-start": "npm run fix-npm && npm install && npm run dev"
+    "fix-and-start": "npm run fix-npm && npm install && npm run dev",
+    "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:debug": "node --inspect-brk ./node_modules/.bin/jest --runInBand",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration"
   },
   "dependencies": {
     "@next/swc-darwin-arm64": "^15.4.3",

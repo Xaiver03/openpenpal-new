@@ -21,14 +21,20 @@ import {
 
 describe('Role System', () => {
   describe('Role Constants', () => {
-    test('ROLE_CONFIGS contains all expected roles', () => {
+    test('ROLE_CONFIGS contains all expected roles (PRD compliant)', () => {
       expect(ROLE_CONFIGS.user).toBeDefined()
-      expect(ROLE_CONFIGS.courier).toBeDefined()
-      expect(ROLE_CONFIGS.senior_courier).toBeDefined()
-      expect(ROLE_CONFIGS.courier_coordinator).toBeDefined()
-      expect(ROLE_CONFIGS.school_admin).toBeDefined()
+      expect(ROLE_CONFIGS.courier_level1).toBeDefined()
+      expect(ROLE_CONFIGS.courier_level2).toBeDefined()
+      expect(ROLE_CONFIGS.courier_level3).toBeDefined()
+      expect(ROLE_CONFIGS.courier_level4).toBeDefined()
       expect(ROLE_CONFIGS.platform_admin).toBeDefined()
       expect(ROLE_CONFIGS.super_admin).toBeDefined()
+      
+      // Verify old roles are not present
+      expect(ROLE_CONFIGS['courier' as keyof typeof ROLE_CONFIGS]).toBeUndefined()
+      expect(ROLE_CONFIGS['senior_courier' as keyof typeof ROLE_CONFIGS]).toBeUndefined()
+      expect(ROLE_CONFIGS['courier_coordinator' as keyof typeof ROLE_CONFIGS]).toBeUndefined()
+      expect(ROLE_CONFIGS['school_admin' as keyof typeof ROLE_CONFIGS]).toBeUndefined()
     })
 
     test('COURIER_LEVEL_CONFIGS contains all levels', () => {
@@ -47,12 +53,12 @@ describe('Role System', () => {
   })
 
   describe('getRoleDisplayName', () => {
-    test('returns correct display names for all roles', () => {
+    test('returns correct display names for all roles (PRD compliant)', () => {
       expect(getRoleDisplayName('user')).toBe('普通用户')
-      expect(getRoleDisplayName('courier')).toBe('信使')
-      expect(getRoleDisplayName('senior_courier')).toBe('高级信使')
-      expect(getRoleDisplayName('courier_coordinator')).toBe('信使协调员')
-      expect(getRoleDisplayName('school_admin')).toBe('学校管理员')
+      expect(getRoleDisplayName('courier_level1')).toBe('一级信使（基础投递）')
+      expect(getRoleDisplayName('courier_level2')).toBe('二级信使（片区协调员）')
+      expect(getRoleDisplayName('courier_level3')).toBe('三级信使（校区负责人）')
+      expect(getRoleDisplayName('courier_level4')).toBe('四级信使（城市负责人）')
       expect(getRoleDisplayName('platform_admin')).toBe('平台管理员')
       expect(getRoleDisplayName('super_admin')).toBe('超级管理员')
     })
@@ -113,9 +119,9 @@ describe('Role System', () => {
   })
 
   describe('hasPermission', () => {
-    test('returns true for role with specific permission', () => {
-      expect(hasPermission('courier', 'COURIER_SCAN_CODE')).toBe(true)
-      expect(hasPermission('courier', 'COURIER_DELIVER_LETTER')).toBe(true)
+    test('returns true for courier role with specific permission', () => {
+      expect(hasPermission('courier_level1', 'COURIER_SCAN_CODE')).toBe(true)
+      expect(hasPermission('courier_level1', 'COURIER_DELIVER_LETTER')).toBe(true)
     })
 
     test('returns false for role without specific permission', () => {
@@ -172,29 +178,27 @@ describe('Role System', () => {
   })
 
   describe('Role Hierarchies', () => {
-    test('roles have correct hierarchy levels', () => {
+    test('roles have correct hierarchy levels (PRD compliant)', () => {
       expect(ROLE_CONFIGS.user.hierarchy).toBe(1)
-      expect(ROLE_CONFIGS.courier.hierarchy).toBe(2)
-      expect(ROLE_CONFIGS.senior_courier.hierarchy).toBe(3)
-      expect(ROLE_CONFIGS.courier_coordinator.hierarchy).toBe(4)
-      expect(ROLE_CONFIGS.school_admin.hierarchy).toBe(5)
+      expect(ROLE_CONFIGS.courier_level1.hierarchy).toBe(2)
+      expect(ROLE_CONFIGS.courier_level2.hierarchy).toBe(3)
+      expect(ROLE_CONFIGS.courier_level3.hierarchy).toBe(4)
+      expect(ROLE_CONFIGS.courier_level4.hierarchy).toBe(5)
       expect(ROLE_CONFIGS.platform_admin.hierarchy).toBe(6)
-      expect(ROLE_CONFIGS.admin.hierarchy).toBe(6)
       expect(ROLE_CONFIGS.super_admin.hierarchy).toBe(7)
     })
 
     test('admin roles have access to admin panel', () => {
       expect(ROLE_CONFIGS.super_admin.canAccessAdmin).toBe(true)
       expect(ROLE_CONFIGS.platform_admin.canAccessAdmin).toBe(true)
-      expect(ROLE_CONFIGS.school_admin.canAccessAdmin).toBe(true)
-      expect(ROLE_CONFIGS.admin.canAccessAdmin).toBe(true)
     })
 
-    test('non-admin roles have appropriate admin access', () => {
+    test('courier roles have appropriate admin access based on level', () => {
       expect(ROLE_CONFIGS.user.canAccessAdmin).toBe(false)
-      expect(ROLE_CONFIGS.courier.canAccessAdmin).toBe(false)
-      expect(ROLE_CONFIGS.senior_courier.canAccessAdmin).toBe(true)
-      expect(ROLE_CONFIGS.courier_coordinator.canAccessAdmin).toBe(true)
+      expect(ROLE_CONFIGS.courier_level1.canAccessAdmin).toBe(false)
+      expect(ROLE_CONFIGS.courier_level2.canAccessAdmin).toBe(true)
+      expect(ROLE_CONFIGS.courier_level3.canAccessAdmin).toBe(true)
+      expect(ROLE_CONFIGS.courier_level4.canAccessAdmin).toBe(true)
     })
   })
 

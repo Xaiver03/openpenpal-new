@@ -1,16 +1,14 @@
 /**
- * 统一角色配置系统 - OpenPenPal
- * Unified Role Configuration System
+ * 统一角色配置系统 - OpenPenPal (符合PRD简化版本)
+ * Unified Role Configuration System (PRD Compliant Simplified Version)
  * 
  * 这个文件是所有角色相关配置的唯一来源
  * This file is the single source of truth for all role-related configurations
  */
 
 import { 
-  CheckCircle, 
   Mail, 
   Users, 
-  Settings, 
   Shield, 
   Crown, 
   Home, 
@@ -24,22 +22,17 @@ import {
 // ================================
 
 /**
- * 系统中所有可能的用户角色
- * All possible user roles in the system
+ * 系统中所有可能的用户角色 (只保留PRD要求的7种)
+ * All possible user roles in the system (Only 7 roles per PRD)
  */
 export type UserRole = 
   | 'user'                  // 普通用户
-  | 'courier'               // 信使 (通用)
-  | 'senior_courier'        // 高级信使
-  | 'courier_coordinator'   // 信使协调员
-  | 'school_admin'          // 学校管理员
-  | 'platform_admin'       // 平台管理员
-  | 'admin'                 // 管理员 (通用)
+  | 'courier_level1'        // 一级信使（基础投递信使）
+  | 'courier_level2'        // 二级信使（片区协调员）
+  | 'courier_level3'        // 三级信使（校区负责人）
+  | 'courier_level4'        // 四级信使（城市负责人）
+  | 'platform_admin'        // 平台管理员
   | 'super_admin'           // 超级管理员
-  | 'courier_level1'        // 一级信使
-  | 'courier_level2'        // 二级信使  
-  | 'courier_level3'        // 三级信使
-  | 'courier_level4'        // 四级信使
 
 /**
  * 信使等级 (1-4级)
@@ -142,8 +135,8 @@ export interface CourierLevelConfig {
 // ================================
 
 /**
- * 统一角色配置
- * Unified role configuration
+ * 统一角色配置 (符合PRD的7种角色)
+ * Unified role configuration (7 roles per PRD)
  */
 export const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
   // 普通用户
@@ -173,17 +166,17 @@ export const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
     isSystemRole: false
   },
 
-  // 信使 (基础)
-  courier: {
-    id: 'courier',
-    name: '信使',
-    englishName: 'Courier',
-    description: '负责信件投递的信使，可以扫码投递、管理任务',
+  // 一级信使：基础投递信使
+  courier_level1: {
+    id: 'courier_level1',
+    name: '一级信使（基础投递）',
+    englishName: 'Level 1 Courier',
+    description: '基础投递信使，负责宿舍楼栋、商店路径等具体投递任务',
     hierarchy: 2,
     color: {
       bg: 'bg-amber-600',
       text: 'text-white',
-      badge: 'bg-yellow-100 text-yellow-800',
+      badge: 'bg-amber-100 text-amber-800',
       hover: 'hover:bg-amber-700'
     },
     icon: '📮',
@@ -200,25 +193,21 @@ export const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
       'COURIER_MANAGE_PROFILE',
       'COURIER_VIEW_STATISTICS',
       'COURIER_VIEW_POINTS',
-      'COURIER_EXCHANGE_REWARDS',
-      'COURIER_VIEW_LEADERBOARD',
       'COURIER_MANAGE_SCHEDULE',
       'COURIER_VIEW_DELIVERY_AREA',
-      'COURIER_REPORT_ISSUES',
-      'COURIER_VIEW_FEEDBACK',
-      'COURIER_PARTICIPATE_ACTIVITIES'
+      'COURIER_REPORT_ISSUES'
     ],
     defaultHomePage: '/courier',
     canAccessAdmin: false,
     isSystemRole: false
   },
 
-  // 高级信使
-  senior_courier: {
-    id: 'senior_courier',
-    name: '高级信使',
-    englishName: 'Senior Courier',
-    description: '高级信使，具有更多管理权限和区域负责范围',
+  // 二级信使：片区协调员
+  courier_level2: {
+    id: 'courier_level2',
+    name: '二级信使（片区协调员）',
+    englishName: 'Level 2 Courier',
+    description: '片区协调员，管理宿舍区/楼栋组/商业片区，分发任务给一级信使',
     hierarchy: 3,
     color: {
       bg: 'bg-green-600',
@@ -245,21 +234,19 @@ export const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
       'COURIER_MANAGE_SCHEDULE',
       'COURIER_VIEW_DELIVERY_AREA',
       'COURIER_REPORT_ISSUES',
-      'COURIER_VIEW_FEEDBACK',
-      'COURIER_PARTICIPATE_ACTIVITIES',
-      'MANAGE_COURIERS'
+      'COURIER_VIEW_FEEDBACK'
     ],
     defaultHomePage: '/courier',
     canAccessAdmin: true,
     isSystemRole: false
   },
 
-  // 信使协调员
-  courier_coordinator: {
-    id: 'courier_coordinator',
-    name: '信使协调员',
-    englishName: 'Courier Coordinator',
-    description: '信使协调员，负责协调和管理信使团队',
+  // 三级信使：校区负责人
+  courier_level3: {
+    id: 'courier_level3',
+    name: '三级信使（校区负责人）',
+    englishName: 'Level 3 Courier',
+    description: '校区负责人，管理所在学校的信使网络，任命二级信使',
     hierarchy: 4,
     color: {
       bg: 'bg-blue-600',
@@ -296,39 +283,47 @@ export const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
     isSystemRole: false
   },
 
-  // 学校管理员
-  school_admin: {
-    id: 'school_admin',
-    name: '学校管理员',
-    englishName: 'School Admin',
-    description: '学校管理员，负责学校相关的管理工作',
+  // 四级信使：城市负责人
+  courier_level4: {
+    id: 'courier_level4',
+    name: '四级信使（城市负责人）',
+    englishName: 'Level 4 Courier',
+    description: '城市负责人，管理所在城市所有学校的信使网络，开通新学校',
     hierarchy: 5,
     color: {
-      bg: 'bg-blue-600',
+      bg: 'bg-purple-600',
       text: 'text-white',
-      badge: 'bg-blue-100 text-blue-800',
-      hover: 'hover:bg-blue-700'
+      badge: 'bg-purple-100 text-purple-800',
+      hover: 'hover:bg-purple-700'
     },
-    icon: '🏫',
-    iconComponent: School,
+    icon: '👑',
+    iconComponent: Crown,
     permissions: [
       'READ_LETTER',
       'WRITE_LETTER',
       'MANAGE_PROFILE',
       'VIEW_LETTER_SQUARE',
       'VIEW_MUSEUM',
-      'MANAGE_USERS',
-      'MANAGE_LETTERS',
+      'COURIER_SCAN_CODE',
+      'COURIER_DELIVER_LETTER',
+      'COURIER_VIEW_TASKS',
+      'COURIER_MANAGE_PROFILE',
+      'COURIER_VIEW_STATISTICS',
+      'COURIER_VIEW_POINTS',
+      'COURIER_EXCHANGE_REWARDS',
+      'COURIER_VIEW_LEADERBOARD',
+      'COURIER_MANAGE_SCHEDULE',
+      'COURIER_VIEW_DELIVERY_AREA',
+      'COURIER_REPORT_ISSUES',
+      'COURIER_VIEW_FEEDBACK',
+      'COURIER_PARTICIPATE_ACTIVITIES',
       'MANAGE_COURIERS',
       'MANAGE_SCHOOLS',
-      'VIEW_ANALYTICS',
-      'MANAGE_CONTENT',
-      'MODERATE_CONTENT',
-      'MANAGE_ANNOUNCEMENTS'
+      'VIEW_ANALYTICS'
     ],
-    defaultHomePage: '/admin/schools',
+    defaultHomePage: '/courier',
     canAccessAdmin: true,
-    isSystemRole: true
+    isSystemRole: false
   },
 
   // 平台管理员
@@ -337,43 +332,6 @@ export const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
     name: '平台管理员',
     englishName: 'Platform Admin',
     description: '平台管理员，具有平台级别的管理权限',
-    hierarchy: 6,
-    color: {
-      bg: 'bg-blue-600',
-      text: 'text-white',
-      badge: 'bg-blue-100 text-blue-800',
-      hover: 'hover:bg-blue-700'
-    },
-    icon: '🛡️',
-    iconComponent: Shield,
-    permissions: [
-      'READ_LETTER',
-      'WRITE_LETTER',
-      'MANAGE_PROFILE',
-      'VIEW_LETTER_SQUARE',
-      'VIEW_MUSEUM',
-      'MANAGE_USERS',
-      'MANAGE_LETTERS',
-      'MANAGE_COURIERS',
-      'MANAGE_SCHOOLS',
-      'MANAGE_SYSTEM_SETTINGS',
-      'VIEW_ANALYTICS',
-      'MANAGE_CONTENT',
-      'MODERATE_CONTENT',
-      'MANAGE_ANNOUNCEMENTS',
-      'AUDIT_LOGS'
-    ],
-    defaultHomePage: '/admin/dashboard',
-    canAccessAdmin: true,
-    isSystemRole: true
-  },
-
-  // 管理员 (通用)
-  admin: {
-    id: 'admin',
-    name: '管理员',
-    englishName: 'Admin',
-    description: '系统管理员，具有管理权限',
     hierarchy: 6,
     color: {
       bg: 'bg-blue-600',
@@ -453,177 +411,21 @@ export const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
     defaultHomePage: '/admin/dashboard',
     canAccessAdmin: true,
     isSystemRole: true
-  },
-
-  // 四级信使系统角色配置
-  courier_level1: {
-    id: 'courier_level1',
-    name: '一级信使',
-    englishName: 'Level 1 Courier',
-    description: '基础投递信使，负责宿舍楼栋、商店路径等具体投递任务',
-    hierarchy: 2,
-    color: {
-      bg: 'bg-amber-600',
-      text: 'text-white',
-      badge: 'bg-amber-100 text-amber-800',
-      hover: 'hover:bg-amber-700'
-    },
-    icon: '📮',
-    iconComponent: Mail,
-    permissions: [
-      'READ_LETTER',
-      'WRITE_LETTER',
-      'MANAGE_PROFILE',
-      'VIEW_LETTER_SQUARE',
-      'VIEW_MUSEUM',
-      'COURIER_SCAN_CODE',
-      'COURIER_DELIVER_LETTER',
-      'COURIER_VIEW_TASKS',
-      'COURIER_MANAGE_PROFILE',
-      'COURIER_VIEW_STATISTICS',
-      'COURIER_VIEW_POINTS',
-      'COURIER_MANAGE_SCHEDULE',
-      'COURIER_VIEW_DELIVERY_AREA',
-      'COURIER_REPORT_ISSUES'
-    ],
-    defaultHomePage: '/courier',
-    canAccessAdmin: false,
-    isSystemRole: false
-  },
-
-  courier_level2: {
-    id: 'courier_level2',
-    name: '二级信使',
-    englishName: 'Level 2 Courier',
-    description: '片区协调员，管理宿舍区/楼栋组/商业片区',
-    hierarchy: 3,
-    color: {
-      bg: 'bg-green-600',
-      text: 'text-white',
-      badge: 'bg-green-100 text-green-800',
-      hover: 'hover:bg-green-700'
-    },
-    icon: '📍',
-    iconComponent: MapPin,
-    permissions: [
-      'READ_LETTER',
-      'WRITE_LETTER',
-      'MANAGE_PROFILE',
-      'VIEW_LETTER_SQUARE',
-      'VIEW_MUSEUM',
-      'COURIER_SCAN_CODE',
-      'COURIER_DELIVER_LETTER',
-      'COURIER_VIEW_TASKS',
-      'COURIER_MANAGE_PROFILE',
-      'COURIER_VIEW_STATISTICS',
-      'COURIER_VIEW_POINTS',
-      'COURIER_EXCHANGE_REWARDS',
-      'COURIER_VIEW_LEADERBOARD',
-      'COURIER_MANAGE_SCHEDULE',
-      'COURIER_VIEW_DELIVERY_AREA',
-      'COURIER_REPORT_ISSUES',
-      'COURIER_VIEW_FEEDBACK',
-      'COURIER_PARTICIPATE_ACTIVITIES'
-    ],
-    defaultHomePage: '/courier',
-    canAccessAdmin: true,
-    isSystemRole: false
-  },
-
-  courier_level3: {
-    id: 'courier_level3',
-    name: '三级信使',
-    englishName: 'Level 3 Courier',
-    description: '校区负责人，管理所在学校的信使网络',
-    hierarchy: 4,
-    color: {
-      bg: 'bg-blue-600',
-      text: 'text-white',
-      badge: 'bg-blue-100 text-blue-800',
-      hover: 'hover:bg-blue-700'
-    },
-    icon: '🏫',
-    iconComponent: School,
-    permissions: [
-      'READ_LETTER',
-      'WRITE_LETTER',
-      'MANAGE_PROFILE',
-      'VIEW_LETTER_SQUARE',
-      'VIEW_MUSEUM',
-      'COURIER_SCAN_CODE',
-      'COURIER_DELIVER_LETTER',
-      'COURIER_VIEW_TASKS',
-      'COURIER_MANAGE_PROFILE',
-      'COURIER_VIEW_STATISTICS',
-      'COURIER_VIEW_POINTS',
-      'COURIER_EXCHANGE_REWARDS',
-      'COURIER_VIEW_LEADERBOARD',
-      'COURIER_MANAGE_SCHEDULE',
-      'COURIER_VIEW_DELIVERY_AREA',
-      'COURIER_REPORT_ISSUES',
-      'COURIER_VIEW_FEEDBACK',
-      'COURIER_PARTICIPATE_ACTIVITIES',
-      'MANAGE_COURIERS'
-    ],
-    defaultHomePage: '/courier',
-    canAccessAdmin: true,
-    isSystemRole: false
-  },
-
-  courier_level4: {
-    id: 'courier_level4',
-    name: '四级信使',
-    englishName: 'Level 4 Courier',
-    description: '城市负责人，管理所在城市所有学校的信使网络',
-    hierarchy: 5,
-    color: {
-      bg: 'bg-purple-600',
-      text: 'text-white',
-      badge: 'bg-purple-100 text-purple-800',
-      hover: 'hover:bg-purple-700'
-    },
-    icon: '👑',
-    iconComponent: Crown,
-    permissions: [
-      'READ_LETTER',
-      'WRITE_LETTER',
-      'MANAGE_PROFILE',
-      'VIEW_LETTER_SQUARE',
-      'VIEW_MUSEUM',
-      'COURIER_SCAN_CODE',
-      'COURIER_DELIVER_LETTER',
-      'COURIER_VIEW_TASKS',
-      'COURIER_MANAGE_PROFILE',
-      'COURIER_VIEW_STATISTICS',
-      'COURIER_VIEW_POINTS',
-      'COURIER_EXCHANGE_REWARDS',
-      'COURIER_VIEW_LEADERBOARD',
-      'COURIER_MANAGE_SCHEDULE',
-      'COURIER_VIEW_DELIVERY_AREA',
-      'COURIER_REPORT_ISSUES',
-      'COURIER_VIEW_FEEDBACK',
-      'COURIER_PARTICIPATE_ACTIVITIES',
-      'MANAGE_COURIERS',
-      'VIEW_ANALYTICS'
-    ],
-    defaultHomePage: '/courier',
-    canAccessAdmin: true,
-    isSystemRole: false
   }
 }
 
 /**
- * 信使等级配置
- * Courier level configuration
+ * 信使等级配置 (PRD中的四级信使体系)
+ * Courier level configuration (Four-level courier system per PRD)
  */
 export const COURIER_LEVEL_CONFIGS: Record<CourierLevel, CourierLevelConfig> = {
-  // 一级信使 (楼栋/班级管理)
+  // 一级信使 (基础投递信使)
   1: {
     level: 1,
     name: '一级信使',
     englishName: 'Level 1 Courier',
-    description: '楼栋/班级信使，负责具体楼栋或班级的信件投递',
-    managementArea: '楼栋/班级',
+    description: '基础投递信使，负责宿舍楼栋、商店路径等具体投递任务',
+    managementArea: '楼栋/商店',
     color: {
       bg: 'bg-amber-600',
       text: 'text-white',
@@ -639,23 +441,21 @@ export const COURIER_LEVEL_CONFIGS: Record<CourierLevel, CourierLevelConfig> = {
       'COURIER_MANAGE_PROFILE',
       'COURIER_VIEW_STATISTICS',
       'COURIER_VIEW_POINTS',
-      'COURIER_EXCHANGE_REWARDS',
       'COURIER_MANAGE_SCHEDULE',
       'COURIER_VIEW_DELIVERY_AREA',
-      'COURIER_REPORT_ISSUES',
-      'COURIER_VIEW_FEEDBACK'
+      'COURIER_REPORT_ISSUES'
     ],
-    managementPath: '/courier/building-manage',
+    managementPath: '/courier',
     canManageSublevels: false
   },
 
-  // 二级信使 (园区管理)
+  // 二级信使 (片区协调员)
   2: {
     level: 2,
     name: '二级信使',
     englishName: 'Level 2 Courier',
-    description: '园区信使，负责学校园区范围的信件投递和管理',
-    managementArea: '园区',
+    description: '片区协调员，管理宿舍区/楼栋组/商业片区',
+    managementArea: '片区',
     color: {
       bg: 'bg-green-600',
       text: 'text-white',
@@ -676,19 +476,18 @@ export const COURIER_LEVEL_CONFIGS: Record<CourierLevel, CourierLevelConfig> = {
       'COURIER_MANAGE_SCHEDULE',
       'COURIER_VIEW_DELIVERY_AREA',
       'COURIER_REPORT_ISSUES',
-      'COURIER_VIEW_FEEDBACK',
-      'COURIER_PARTICIPATE_ACTIVITIES'
+      'COURIER_VIEW_FEEDBACK'
     ],
     managementPath: '/courier/zone-manage',
     canManageSublevels: true
   },
 
-  // 三级信使 (学校管理)
+  // 三级信使 (校区负责人)
   3: {
     level: 3,
     name: '三级信使',
     englishName: 'Level 3 Courier',
-    description: '学校信使，负责整个学校的信件投递协调和管理',
+    description: '校区负责人，管理所在学校的信使网络',
     managementArea: '学校',
     color: {
       bg: 'bg-blue-600',
@@ -718,12 +517,12 @@ export const COURIER_LEVEL_CONFIGS: Record<CourierLevel, CourierLevelConfig> = {
     canManageSublevels: true
   },
 
-  // 四级信使 (城市管理)
+  // 四级信使 (城市负责人)
   4: {
     level: 4,
     name: '四级信使',
     englishName: 'Level 4 Courier',
-    description: '城市信使，负责城市级别的信件投递网络管理',
+    description: '城市负责人，管理所在城市所有学校的信使网络',
     managementArea: '城市',
     color: {
       bg: 'bg-purple-600',
@@ -818,15 +617,8 @@ export function getRolePermissions(role: UserRole): Permission[] {
 /**
  * 检查角色是否拥有特定权限
  * Check if role has specific permission
- * @deprecated 建议使用 permissionService.hasRolePermission
  */
 export function hasPermission(role: UserRole, permission: Permission): boolean {
-  // 兼容性处理：如果有动态权限服务，优先使用
-  if (typeof window !== 'undefined' && (window as any).permissionService) {
-    return (window as any).permissionService.hasRolePermission(role, permission)
-  }
-  
-  // 回退到静态检查
   return getRolePermissions(role).includes(permission)
 }
 
@@ -841,15 +633,8 @@ export function getRoleDefaultHomePage(role: UserRole): string {
 /**
  * 检查角色是否可以访问管理后台
  * Check if role can access admin panel
- * @deprecated 建议使用 permissionService.canRoleAccessAdmin
  */
 export function canAccessAdmin(role: UserRole): boolean {
-  // 兼容性处理：如果有动态权限服务，优先使用
-  if (typeof window !== 'undefined' && (window as any).permissionService) {
-    return (window as any).permissionService.canRoleAccessAdmin(role)
-  }
-  
-  // 回退到静态检查
   return ROLE_CONFIGS[role]?.canAccessAdmin || false
 }
 
@@ -904,6 +689,24 @@ export function canManageSublevels(level: CourierLevel): boolean {
 }
 
 /**
+ * 检查是否为信使角色
+ * Check if it's a courier role
+ */
+export function isCourierRole(role: UserRole): boolean {
+  return role.startsWith('courier_level')
+}
+
+/**
+ * 从角色获取信使等级
+ * Get courier level from role
+ */
+export function getCourierLevelFromRole(role: UserRole): CourierLevel | null {
+  if (!isCourierRole(role)) return null
+  const level = parseInt(role.split('courier_level')[1])
+  return (level >= 1 && level <= 4) ? level as CourierLevel : null
+}
+
+/**
  * 获取所有角色选项 (用于下拉选择等)
  * Get all role options (for dropdowns, etc.)
  */
@@ -952,6 +755,8 @@ export default {
   getCourierLevelName,
   getCourierLevelManagementPath,
   canManageSublevels,
+  isCourierRole,
+  getCourierLevelFromRole,
   getAllRoleOptions,
   getAllCourierLevelOptions
 }
