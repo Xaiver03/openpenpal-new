@@ -580,7 +580,7 @@ func main() {
 		}
 		user := userInterface.(*models.User)
 		// 检查是否是任何管理员角色
-		if user.Role == "admin" || user.Role == models.RoleSchoolAdmin || 
+		if user.Role == "admin" || user.Role == models.RoleCourierLevel3 || 
 		   user.Role == models.RolePlatformAdmin || user.Role == models.RoleSuperAdmin {
 			c.Next()
 			return

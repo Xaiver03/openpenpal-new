@@ -1,0 +1,398 @@
+package services
+
+import (
+	"testing"
+	"time"
+
+	"openpenpal-backend/internal/models"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
+
+// CourierServiceTestSuite 信使服务测试套件
+type CourierServiceTestSuite struct {
+	suite.Suite
+	db      *gorm.DB
+	service *CourierService
+}
+
+func (suite *CourierServiceTestSuite) SetupSuite() {
+	// 设置测试数据库
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	suite.NoError(err)
+	suite.db = db
+
+	// 迁移表结构
+	err = db.AutoMigrate(&models.User{}, &models.Courier{}, &models.CourierTask{})
+	suite.NoError(err)
+
+	// 创建服务实例
+	suite.service = NewCourierService(db)
+}
+
+func (suite *CourierServiceTestSuite) SetupTest() {
+	// 创建测试数据：四级信使体系
+	users := []models.User{
+		{
+			ID:       "user-l4",
+			Username: "courier_level4",
+			Role:     models.RoleCourierLevel4,
+			IsActive: true,
+		},
+		{
+			ID:       "user-l3",
+			Username: "courier_level3",
+			Role:     models.RoleCourierLevel3,
+			IsActive: true,
+		},
+		{
+			ID:       "user-l2",
+			Username: "courier_level2",
+			Role:     models.RoleCourierLevel2,
+			IsActive: true,
+		},
+		{
+			ID:       "user-l1",
+			Username: "courier_level1",
+			Role:     models.RoleCourierLevel1,
+			IsActive: true,
+		},
+	}
+	suite.db.Create(&users)
+
+	couriers := []models.Courier{
+		{
+			ID:                  "courier-l4",
+			UserID:              "user-l4",
+			Name:                "四级信使",
+			School:              "全市",
+			Zone:                "BEIJING",
+			Level:               4,
+			Status:              "approved",
+			ManagedOPCodePrefix: "BJ",
+		},
+		{
+			ID:                  "courier-l3",
+			UserID:              "user-l3",
+			Name:                "三级信使",
+			School:              "北京大学",
+			Zone:                "BJDX",
+			Level:               3,
+			Status:              "approved",
+			ManagedOPCodePrefix: "PK",
+		},
+		{
+			ID:                  "courier-l2",
+			UserID:              "user-l2",
+			Name:                "二级信使",
+			School:              "北京大学",
+			Zone:                "BJDX-NORTH",
+			Level:               2,
+			Status:              "approved",
+			ManagedOPCodePrefix: "PK5F",
+		},
+		{
+			ID:                  "courier-l1",
+			UserID:              "user-l1",
+			Name:                "一级信使",
+			School:              "北京大学",
+			Zone:                "BJDX-A-101",
+			Level:               1,
+			Status:              "approved",
+			ManagedOPCodePrefix: "PK5F01",
+		},
+	}
+	suite.db.Create(&couriers)
+}
+
+func (suite *CourierServiceTestSuite) TearDownTest() {
+	// 清理测试数据
+	suite.db.Exec("DELETE FROM courier_tasks")
+	suite.db.Exec("DELETE FROM couriers")
+	suite.db.Exec("DELETE FROM users")
+}
+
+// TestValidateOPCodeAccess_L4Courier L4信使可以访问任何区域
+func (suite *CourierServiceTestSuite) TestValidateOPCodeAccess_L4Courier() {
+	tests := []struct {
+		targetOPCode string
+		expected     bool
+	}{
+		{"PK5F01", true},  // 北大5号楼
+		{"QH3B02", true},  // 清华3号楼
+		{"BD2G15", true},  // 北交大2号门
+		{"FD1A03", true},  // 复旦1号楼
+	}
+
+	for _, tt := range tests {
+		result := suite.service.ValidateOPCodeAccess(4, tt.targetOPCode, "BJ")
+		suite.Equal(tt.expected, result, "L4信使应该能访问 %s", tt.targetOPCode)
+	}
+}
+
+// TestValidateOPCodeAccess_L3Courier L3信使只能访问同学校
+func (suite *CourierServiceTestSuite) TestValidateOPCodeAccess_L3Courier() {
+	tests := []struct {
+		targetOPCode string
+		courierPrefix string
+		expected     bool
+		description  string
+	}{
+		{"PK5F01", "PK", true, "同学校北大"},
+		{"PK3D12", "PK", true, "同学校北大不同楼"},
+		{"QH3B02", "PK", false, "不同学校清华"},
+		{"BD2G15", "PK", false, "不同学校北交大"},
+	}
+
+	for _, tt := range tests {
+		result := suite.service.ValidateOPCodeAccess(3, tt.targetOPCode, tt.courierPrefix)
+		suite.Equal(tt.expected, result, tt.description)
+	}
+}
+
+// TestValidateOPCodeAccess_L2Courier L2信使只能访问同片区
+func (suite *CourierServiceTestSuite) TestValidateOPCodeAccess_L2Courier() {
+	tests := []struct {
+		targetOPCode string
+		courierPrefix string
+		expected     bool
+		description  string
+	}{
+		{"PK5F01", "PK5F", true, "同片区北大5号楼"},
+		{"PK5F99", "PK5F", true, "同片区不同房间"},
+		{"PK3D12", "PK5F", false, "不同片区北大3食堂"},
+		{"QH3B02", "PK5F", false, "不同学校"},
+	}
+
+	for _, tt := range tests {
+		result := suite.service.ValidateOPCodeAccess(2, tt.targetOPCode, tt.courierPrefix)
+		suite.Equal(tt.expected, result, tt.description)
+	}
+}
+
+// TestValidateOPCodeAccess_L1Courier L1信使只能访问相同前缀
+func (suite *CourierServiceTestSuite) TestValidateOPCodeAccess_L1Courier() {
+	tests := []struct {
+		targetOPCode string
+		courierPrefix string
+		expected     bool
+		description  string
+	}{
+		{"PK5F01", "PK5F", true, "匹配前4位"},
+		{"PK5F02", "PK5F", true, "匹配前4位不同末尾"},
+		{"PK5G01", "PK5F", false, "不匹配第4位"},
+		{"PK3D12", "PK5F", false, "完全不同片区"},
+	}
+
+	for _, tt := range tests {
+		result := suite.service.ValidateOPCodeAccess(1, tt.targetOPCode, tt.courierPrefix)
+		suite.Equal(tt.expected, result, tt.description)
+	}
+}
+
+// TestCreateSubordinateCourier 测试创建下级信使
+func (suite *CourierServiceTestSuite) TestCreateSubordinateCourier() {
+	// L3信使创建L2信使
+	req := &models.CreateCourierRequest{
+		Username: "new_l2_courier",
+		Name:     "新二级信使",
+		Contact:  "13800138000",
+		School:   "北京大学",
+		Zone:     "BJDX-SOUTH",
+	}
+
+	newCourier, err := suite.service.CreateSubordinateCourier("courier-l3", 3, req)
+	
+	suite.NoError(err)
+	suite.NotNil(newCourier)
+	suite.Equal(2, newCourier.Level)
+	suite.Equal("BJDX-SOUTH", newCourier.Zone)
+	suite.Equal("approved", newCourier.Status)
+}
+
+// TestCreateSubordinateCourier_InvalidLevel 测试创建无效层级
+func (suite *CourierServiceTestSuite) TestCreateSubordinateCourier_InvalidLevel() {
+	// L2信使不能创建L3信使
+	req := &models.CreateCourierRequest{
+		Username: "invalid_courier",
+		Name:     "无效信使",
+		Contact:  "13800138000",
+		School:   "北京大学",
+		Zone:     "BJDX",
+	}
+
+	newCourier, err := suite.service.CreateSubordinateCourier("courier-l2", 2, req)
+	
+	suite.Error(err)
+	suite.Nil(newCourier)
+	suite.Contains(err.Error(), "无权创建")
+}
+
+// TestAssignTask 测试任务分配
+func (suite *CourierServiceTestSuite) TestAssignTask() {
+	// 创建测试任务
+	task := &models.CourierTask{
+		ID:             "task-1",
+		LetterCode:     "LC123456",
+		Title:          "测试信件",
+		SenderName:     "发件人",
+		TargetLocation: "北大5号楼303室",
+		PickupOPCode:   "PK5F01",
+		DeliveryOPCode: "PK5F03",
+		Status:         "pending",
+		Priority:       "normal",
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}
+	suite.db.Create(task)
+
+	// 分配给L1信使
+	err := suite.service.AssignTask(task.ID, "courier-l1")
+	suite.NoError(err)
+
+	// 验证任务已分配
+	var updatedTask models.CourierTask
+	suite.db.First(&updatedTask, "id = ?", task.ID)
+	suite.Equal("courier-l1", updatedTask.CourierID)
+	suite.Equal("accepted", updatedTask.Status)
+}
+
+// TestGetCourierHierarchy 测试获取信使层级结构
+func (suite *CourierServiceTestSuite) TestGetCourierHierarchy() {
+	hierarchy, err := suite.service.GetCourierHierarchy("courier-l3")
+	
+	suite.NoError(err)
+	suite.NotNil(hierarchy)
+	suite.Equal(3, hierarchy.Level)
+	suite.Len(hierarchy.Subordinates, 1) // 应该有1个L2下属
+}
+
+// TestCalculatePerformanceScore 测试绩效计算
+func (suite *CourierServiceTestSuite) TestCalculatePerformanceScore() {
+	// 创建已完成的任务
+	completedTasks := []models.CourierTask{
+		{
+			ID:          "task-1",
+			CourierID:   "courier-l1",
+			Status:      "delivered",
+			CompletedAt: timePtr(time.Now().Add(-1 * time.Hour)),
+			CreatedAt:   time.Now().Add(-2 * time.Hour),
+		},
+		{
+			ID:          "task-2",
+			CourierID:   "courier-l1",
+			Status:      "delivered",
+			CompletedAt: timePtr(time.Now().Add(-30 * time.Minute)),
+			CreatedAt:   time.Now().Add(-1 * time.Hour),
+		},
+	}
+	suite.db.Create(&completedTasks)
+
+	score, metrics, err := suite.service.CalculatePerformanceScore("courier-l1", time.Now().Add(-24*time.Hour), time.Now())
+	
+	suite.NoError(err)
+	suite.Greater(score, 0.0)
+	suite.Equal(2, metrics.CompletedTasks)
+	suite.Greater(metrics.AverageDeliveryTime, 0.0)
+}
+
+// TestPromoteCourier 测试信使晋升
+func (suite *CourierServiceTestSuite) TestPromoteCourier() {
+	// 设置L1信使的高绩效
+	courier := models.Courier{}
+	suite.db.First(&courier, "id = ?", "courier-l1")
+	courier.Points = 1000 // 足够晋升的积分
+	suite.db.Save(&courier)
+
+	// 执行晋升
+	err := suite.service.PromoteCourier("courier-l1")
+	
+	suite.NoError(err)
+
+	// 验证晋升结果
+	var promoted models.Courier
+	suite.db.First(&promoted, "id = ?", "courier-l1")
+	suite.Equal(2, promoted.Level) // 从L1晋升到L2
+}
+
+// TestGetAvailableTasks 测试获取可用任务
+func (suite *CourierServiceTestSuite) TestGetAvailableTasks() {
+	// 创建不同OP Code的任务
+	tasks := []models.CourierTask{
+		{
+			ID:             "task-1",
+			PickupOPCode:   "PK5F01",
+			DeliveryOPCode: "PK5F03",
+			Status:         "pending",
+		},
+		{
+			ID:             "task-2",
+			PickupOPCode:   "PK3D01",
+			DeliveryOPCode: "PK3D12",
+			Status:         "pending",
+		},
+		{
+			ID:             "task-3",
+			PickupOPCode:   "QH3B01",
+			DeliveryOPCode: "QH3B02",
+			Status:         "pending",
+		},
+	}
+	suite.db.Create(&tasks)
+
+	// L1信使只能看到自己区域的任务
+	availableTasks, err := suite.service.GetAvailableTasks("courier-l1", 1, 10)
+	
+	suite.NoError(err)
+	suite.Len(availableTasks, 1) // 只有task-1符合PK5F前缀
+	suite.Equal("task-1", availableTasks[0].ID)
+}
+
+// 辅助函数
+func timePtr(t time.Time) *time.Time {
+	return &t
+}
+
+// 运行测试套件
+func TestCourierServiceSuite(t *testing.T) {
+	suite.Run(t, new(CourierServiceTestSuite))
+}
+
+// 基准测试：任务分配算法
+func BenchmarkTaskAssignment(b *testing.B) {
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db.AutoMigrate(&models.Courier{}, &models.CourierTask{})
+	
+	service := NewCourierService(db)
+	
+	// 创建100个信使
+	for i := 0; i < 100; i++ {
+		courier := models.Courier{
+			ID:     fmt.Sprintf("courier-%d", i),
+			UserID: fmt.Sprintf("user-%d", i),
+			Level:  1 + (i % 4),
+			Zone:   fmt.Sprintf("ZONE-%d", i%10),
+			Status: "approved",
+		}
+		db.Create(&courier)
+	}
+	
+	// 创建1000个任务
+	for i := 0; i < 1000; i++ {
+		task := models.CourierTask{
+			ID:           fmt.Sprintf("task-%d", i),
+			PickupOPCode: fmt.Sprintf("PK%02d%02d", i%10, i%100),
+			Status:       "pending",
+		}
+		db.Create(&task)
+	}
+	
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// 测试任务分配性能
+		_ = service.AutoAssignTasks()
+	}
+}

@@ -225,7 +225,7 @@ func LegacySeedData(db *gorm.DB) error {
 			Email:        "courier1@example.com",
 			PasswordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMye.Lf/rSDRfYHYxX1dpIjJJNzTHFN1UTO", // secret
 			Nickname:     "普通信使",
-			Role:         models.RoleCourierLevel1,
+			Role:         models.RoleCourier,
 			SchoolCode:   "BJDX01",
 			IsActive:     true,
 		},
@@ -236,7 +236,7 @@ func LegacySeedData(db *gorm.DB) error {
 			Email:        "senior@example.com",
 			PasswordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMye.Lf/rSDRfYHYxX1dpIjJJNzTHFN1UTO", // secret
 			Nickname:     "高级信使",
-			Role:         models.RoleCourierLevel2,
+			Role:         models.RoleSeniorCourier,
 			SchoolCode:   "BJDX01",
 			IsActive:     true,
 		},
@@ -247,7 +247,7 @@ func LegacySeedData(db *gorm.DB) error {
 			Email:        "coordinator@example.com",
 			PasswordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMye.Lf/rSDRfYHYxX1dpIjJJNzTHFN1UTO", // secret
 			Nickname:     "信使协调员",
-			Role:         models.RoleCourierLevel3,
+			Role:         models.RoleCourierCoordinator,
 			SchoolCode:   "BJDX01",
 			IsActive:     true,
 		},
@@ -258,7 +258,7 @@ func LegacySeedData(db *gorm.DB) error {
 			Email:        "school_admin@example.com",
 			PasswordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMye.Lf/rSDRfYHYxX1dpIjJJNzTHFN1UTO", // secret
 			Nickname:     "北大管理员",
-			Role:         models.RoleCourierLevel3,
+			Role:         models.RoleSchoolAdmin,
 			SchoolCode:   "BJDX01",
 			IsActive:     true,
 		},
@@ -331,7 +331,7 @@ func LegacySeedData(db *gorm.DB) error {
 			Email:        "courier_building@penpal.com",
 			PasswordHash: "$2a$10$Cm0hFv7kUKfUc5Q6booKiehnQsHSFF7.4LYuqWVkgFqCYda3qqGCS", // courier001
 			Nickname:     "楼层信使",
-			Role:         models.RoleCourierLevel1,
+			Role:         models.RoleCourier,
 			SchoolCode:   "PKU001",
 			IsActive:     true,
 		},
@@ -341,7 +341,7 @@ func LegacySeedData(db *gorm.DB) error {
 			Email:        "courier_area@penpal.com",
 			PasswordHash: "$2a$10$b75vhT53SdpdtJRcf4WzrOOpLAaBRgZ9Ix.AEfrH/UngIxoxscQNm", // courier002
 			Nickname:     "片区信使",
-			Role:         models.RoleCourierLevel2,
+			Role:         models.RoleSeniorCourier,
 			SchoolCode:   "PKU001",
 			IsActive:     true,
 		},
@@ -351,7 +351,7 @@ func LegacySeedData(db *gorm.DB) error {
 			Email:        "courier_school@penpal.com",
 			PasswordHash: "$2a$10$ClnxSMuPM6YdlWXuswYE1OjWm06yR48cdGEqp0/YP/h9OI/u2gwvm", // courier003
 			Nickname:     "学校信使",
-			Role:         models.RoleCourierLevel3,
+			Role:         models.RoleCourierCoordinator,
 			SchoolCode:   "PKU001",
 			IsActive:     true,
 		},

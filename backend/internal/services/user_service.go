@@ -77,21 +77,10 @@ func (s *UserService) Register(req *models.RegisterRequest) (*models.User, error
 
 // getSystemConfig 获取系统配置
 func (s *UserService) getSystemConfig() (*models.SystemConfig, error) {
-	var config models.SystemConfig
-	// 尝试从数据库获取配置（系统配置表只有一条记录）
-	err := s.db.First(&config).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			// 如果没有配置，创建默认配置
-			config = *models.DefaultSystemConfig()
-			if err := s.db.Create(&config).Error; err != nil {
-				return nil, err
-			}
-			return &config, nil
-		}
-		return nil, err
-	}
-	return &config, nil
+	// 使用 SystemSettingsService 来获取配置
+	// SystemConfig 不是一个数据库表，而是从 SystemSettings 表构建的结构体
+	settingsService := NewSystemSettingsService(s.db, s.config)
+	return settingsService.GetSystemConfig()
 }
 
 // GetSystemConfig 公开方法获取系统配置

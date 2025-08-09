@@ -9,19 +9,18 @@ import (
 type UserRole string
 
 const (
-	RoleUser               UserRole = "user"                // 普通用户
-	RoleCourier            UserRole = "courier"             // 普通信使
-	RoleSeniorCourier      UserRole = "senior_courier"      // 高级信使
-	RoleCourierCoordinator UserRole = "courier_coordinator" // 信使协调员
-	RoleSchoolAdmin        UserRole = "school_admin"        // 学校管理员
-	RolePlatformAdmin      UserRole = "platform_admin"      // 平台管理员
-	RoleSuperAdmin         UserRole = "super_admin"         // 超级管理员
-
-	// 分级信使系统 (兼容性)
-	RoleCourierLevel1 UserRole = "courier_level1" // 一级信使
-	RoleCourierLevel2 UserRole = "courier_level2" // 二级信使
-	RoleCourierLevel3 UserRole = "courier_level3" // 三级信使
-	RoleCourierLevel4 UserRole = "courier_level4" // 四级信使
+	// 基础角色
+	RoleUser UserRole = "user" // 普通用户
+	
+	// 四级信使体系 - 符合PRD设计
+	RoleCourierLevel1 UserRole = "courier_level1" // 一级信使（基础投递信使）
+	RoleCourierLevel2 UserRole = "courier_level2" // 二级信使（片区协调员）
+	RoleCourierLevel3 UserRole = "courier_level3" // 三级信使（校区负责人）
+	RoleCourierLevel4 UserRole = "courier_level4" // 四级信使（城市负责人）
+	
+	// 管理角色
+	RolePlatformAdmin UserRole = "platform_admin" // 平台管理员
+	RoleSuperAdmin    UserRole = "super_admin"    // 超级管理员
 )
 
 // String 返回角色字符串
@@ -31,19 +30,13 @@ func (r UserRole) String() string {
 
 // RoleHierarchy 角色层级（数字越大权限越高）
 var RoleHierarchy = map[UserRole]int{
-	RoleUser:               1,
-	RoleCourier:            2,
-	RoleSeniorCourier:      3,
-	RoleCourierCoordinator: 4,
-	RoleSchoolAdmin:        5,
-	RolePlatformAdmin:      6,
-	RoleSuperAdmin:         7,
-
-	// 分级信使系统映射
+	RoleUser:          1,
 	RoleCourierLevel1: 2,
 	RoleCourierLevel2: 3,
 	RoleCourierLevel3: 4,
 	RoleCourierLevel4: 5,
+	RolePlatformAdmin: 6,
+	RoleSuperAdmin:    7,
 }
 
 // Permission 权限类型
@@ -77,81 +70,15 @@ const (
 	PermissionSystemConfig   Permission = "system_config"
 )
 
-// RolePermissions 角色权限映射
+// RolePermissions 角色权限映射 - 简化版本符合PRD
 var RolePermissions = map[UserRole][]Permission{
 	RoleUser: {
 		PermissionWriteLetter,
 		PermissionReadLetter,
 		PermissionManageProfile,
 	},
-	RoleCourier: {
-		PermissionWriteLetter,
-		PermissionReadLetter,
-		PermissionManageProfile,
-		PermissionDeliverLetter,
-		PermissionScanCode,
-		PermissionViewTasks,
-	},
-	RoleSeniorCourier: {
-		PermissionWriteLetter,
-		PermissionReadLetter,
-		PermissionManageProfile,
-		PermissionDeliverLetter,
-		PermissionScanCode,
-		PermissionViewTasks,
-		PermissionViewReports,
-	},
-	RoleCourierCoordinator: {
-		PermissionWriteLetter,
-		PermissionReadLetter,
-		PermissionManageProfile,
-		PermissionDeliverLetter,
-		PermissionScanCode,
-		PermissionViewTasks,
-		PermissionManageCouriers,
-		PermissionAssignTasks,
-		PermissionViewReports,
-	},
-	RoleSchoolAdmin: {
-		PermissionWriteLetter,
-		PermissionReadLetter,
-		PermissionManageProfile,
-		PermissionManageUsers,
-		PermissionManageCouriers,
-		PermissionAssignTasks,
-		PermissionViewReports,
-		PermissionManageSchool,
-		PermissionViewAnalytics,
-	},
-	RolePlatformAdmin: {
-		PermissionWriteLetter,
-		PermissionReadLetter,
-		PermissionManageProfile,
-		PermissionManageUsers,
-		PermissionManageCouriers,
-		PermissionAssignTasks,
-		PermissionViewReports,
-		PermissionManageSchool,
-		PermissionViewAnalytics,
-		PermissionManageSystem,
-	},
-	RoleSuperAdmin: {
-		PermissionWriteLetter,
-		PermissionReadLetter,
-		PermissionManageProfile,
-		PermissionManageUsers,
-		PermissionManageCouriers,
-		PermissionAssignTasks,
-		PermissionViewReports,
-		PermissionManageSchool,
-		PermissionViewAnalytics,
-		PermissionManageSystem,
-		PermissionManagePlatform,
-		PermissionManageAdmins,
-		PermissionSystemConfig,
-	},
 
-	// 分级信使系统权限映射 (兼容性)
+	// 一级信使：基础投递
 	RoleCourierLevel1: {
 		PermissionWriteLetter,
 		PermissionReadLetter,
@@ -160,6 +87,8 @@ var RolePermissions = map[UserRole][]Permission{
 		PermissionScanCode,
 		PermissionViewTasks,
 	},
+
+	// 二级信使：片区协调员 - 可以分发任务给一级信使
 	RoleCourierLevel2: {
 		PermissionWriteLetter,
 		PermissionReadLetter,
@@ -167,8 +96,10 @@ var RolePermissions = map[UserRole][]Permission{
 		PermissionDeliverLetter,
 		PermissionScanCode,
 		PermissionViewTasks,
-		PermissionViewReports,
+		PermissionAssignTasks, // 分发任务给一级信使
 	},
+
+	// 三级信使：校区负责人 - 可以任命二级信使，查看报告
 	RoleCourierLevel3: {
 		PermissionWriteLetter,
 		PermissionReadLetter,
@@ -176,11 +107,39 @@ var RolePermissions = map[UserRole][]Permission{
 		PermissionDeliverLetter,
 		PermissionScanCode,
 		PermissionViewTasks,
-		PermissionManageCouriers,
 		PermissionAssignTasks,
-		PermissionViewReports,
+		PermissionManageCouriers, // 任命二级信使
+		PermissionViewReports,    // 查看报告
 	},
+
+	// 四级信使：城市负责人 - 拥有城市级权限
 	RoleCourierLevel4: {
+		PermissionWriteLetter,
+		PermissionReadLetter,
+		PermissionManageProfile,
+		PermissionDeliverLetter,
+		PermissionScanCode,
+		PermissionViewTasks,
+		PermissionAssignTasks,
+		PermissionManageCouriers,
+		PermissionViewReports,
+		PermissionManageSchool,   // 开通新学校
+		PermissionViewAnalytics,  // 查看城市级数据
+	},
+
+	// 平台管理员
+	RolePlatformAdmin: {
+		PermissionWriteLetter,
+		PermissionReadLetter,
+		PermissionManageProfile,
+		PermissionManageUsers,
+		PermissionViewReports,
+		PermissionViewAnalytics,
+		PermissionManageSystem,
+	},
+
+	// 超级管理员 - 拥有所有权限
+	RoleSuperAdmin: {
 		PermissionWriteLetter,
 		PermissionReadLetter,
 		PermissionManageProfile,
@@ -190,7 +149,13 @@ var RolePermissions = map[UserRole][]Permission{
 		PermissionManageCouriers,
 		PermissionAssignTasks,
 		PermissionViewReports,
+		PermissionManageUsers,
 		PermissionManageSchool,
+		PermissionViewAnalytics,
+		PermissionManageSystem,
+		PermissionManagePlatform,
+		PermissionManageAdmins,
+		PermissionSystemConfig,
 	},
 }
 
@@ -316,19 +281,13 @@ func (u *User) HasRole(role UserRole) bool {
 // GetRoleDisplayName 获取角色显示名称
 func (u *User) GetRoleDisplayName() string {
 	roleNames := map[UserRole]string{
-		RoleUser:               "普通用户",
-		RoleCourier:            "信使",
-		RoleSeniorCourier:      "高级信使",
-		RoleCourierCoordinator: "信使协调员",
-		RoleSchoolAdmin:        "学校管理员",
-		RolePlatformAdmin:      "平台管理员",
-		RoleSuperAdmin:         "超级管理员",
-
-		// 分级信使系统显示名称
-		RoleCourierLevel1: "一级信使",
-		RoleCourierLevel2: "二级信使",
-		RoleCourierLevel3: "三级信使",
-		RoleCourierLevel4: "四级信使",
+		RoleUser:          "普通用户",
+		RoleCourierLevel1: "一级信使（基础投递）",
+		RoleCourierLevel2: "二级信使（片区协调员）",
+		RoleCourierLevel3: "三级信使（校区负责人）",
+		RoleCourierLevel4: "四级信使（城市负责人）",
+		RolePlatformAdmin: "平台管理员",
+		RoleSuperAdmin:    "超级管理员",
 	}
 
 	if name, exists := roleNames[u.Role]; exists {

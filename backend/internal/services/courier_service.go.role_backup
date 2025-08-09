@@ -427,7 +427,7 @@ func (s *CourierService) GetCourierInfoByUser(user *models.User) (*models.Courie
 			info.Region = "全国"
 			info.School = "平台管理"
 			info.Zone = "全区域"
-		case models.RoleCourierLevel3:
+		case models.RoleSchoolAdmin:
 			info.Region = user.SchoolCode
 			info.School = user.SchoolCode
 			info.Zone = "校区管理"
@@ -468,6 +468,15 @@ func (s *CourierService) getUserLevel(role models.UserRole) int {
 	// 管理员角色拥有最高级别权限
 	case models.RoleSuperAdmin, models.RolePlatformAdmin:
 		return 4
+	case models.RoleSchoolAdmin:
+		return 3
+	// 兼容旧角色名称
+	case models.RoleCourier:
+		return 1
+	case models.RoleSeniorCourier:
+		return 2
+	case models.RoleCourierCoordinator:
+		return 3
 	default:
 		return 0
 	}

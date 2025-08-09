@@ -1,0 +1,176 @@
+package handlers
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"openpenpal-backend/internal/config"
+	"openpenpal-backend/internal/models"
+	"openpenpal-backend/internal/services"
+	"testing"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
+
+// MockAuthService is a mock implementation of AuthService
+type MockAuthService struct {
+	mock.Mock
+}
+
+func (m *MockAuthService) Login(username, password string) (*models.User, string, error) {
+	args := m.Called(username, password)
+	if args.Get(0) == nil {
+		return nil, "", args.Error(2)
+	}
+	return args.Get(0).(*models.User), args.String(1), args.Error(2)
+}
+
+func (m *MockAuthService) Register(req *models.RegisterRequest) (*models.User, error) {
+	args := m.Called(req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+// Add other method implementations...
+
+func setupTestDB() *gorm.DB {
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db.AutoMigrate(&models.User{})
+	return db
+}
+
+func setupTestRouter() *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	return gin.New()
+}
+
+func TestAuthHandler_Login(t *testing.T) {
+	// Setup
+	db := setupTestDB()
+	cfg := &config.Config{
+		JWTSecret: "test-secret",
+	}
+	
+	mockAuthService := new(MockAuthService)
+	authHandler := NewAuthHandler(mockAuthService, nil, cfg, db)
+	
+	router := setupTestRouter()
+	router.POST("/api/v1/auth/login", authHandler.Login)
+	
+	// Test cases
+	tests := []struct {
+		name           string
+		requestBody    models.LoginRequest
+		mockSetup      func()
+		expectedStatus int
+		expectedBody   map[string]interface{}
+	}{
+		{
+			name: "Successful login",
+			requestBody: models.LoginRequest{
+				Username: "testuser",
+				Password: "password123",
+			},
+			mockSetup: func() {
+				user := &models.User{
+					ID:       "user-123",
+					Username: "testuser",
+					Email:    "test@example.com",
+					Role:     "user",
+					IsActive: true,
+				}
+				mockAuthService.On("Login", "testuser", "password123").
+					Return(user, "mock-token", nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: map[string]interface{}{
+				"success": true,
+				"message": "登录成功",
+			},
+		},
+		{
+			name: "Invalid credentials",
+			requestBody: models.LoginRequest{
+				Username: "testuser",
+				Password: "wrongpassword",
+			},
+			mockSetup: func() {
+				mockAuthService.On("Login", "testuser", "wrongpassword").
+					Return(nil, "", models.ErrInvalidCredentials)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedBody: map[string]interface{}{
+				"success": false,
+				"message": "用户名或密码错误",
+			},
+		},
+		{
+			name: "Empty username",
+			requestBody: models.LoginRequest{
+				Username: "",
+				Password: "password123",
+			},
+			mockSetup:      func() {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: map[string]interface{}{
+				"success": false,
+				"message": "请求数据无效",
+			},
+		},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset mock
+			mockAuthService.ExpectedCalls = nil
+			
+			// Setup mock expectations
+			tt.mockSetup()
+			
+			// Create request
+			jsonBody, _ := json.Marshal(tt.requestBody)
+			req := httptest.NewRequest("POST", "/api/v1/auth/login", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			
+			// Create response recorder
+			w := httptest.NewRecorder()
+			
+			// Perform request
+			router.ServeHTTP(w, req)
+			
+			// Assert status code
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			
+			// Assert response body
+			var response map[string]interface{}
+			err := json.Unmarshal(w.Body.Bytes(), &response)
+			assert.NoError(t, err)
+			
+			assert.Equal(t, tt.expectedBody["success"], response["success"])
+			assert.Equal(t, tt.expectedBody["message"], response["message"])
+			
+			// Verify mock expectations
+			mockAuthService.AssertExpectations(t)
+		})
+	}
+}
+
+func TestAuthHandler_Register(t *testing.T) {
+	// Similar test structure for Register endpoint
+}
+
+func TestAuthHandler_GetCurrentUser(t *testing.T) {
+	// Test for getting current user with JWT middleware
+}
+
+func TestAuthHandler_RefreshToken(t *testing.T) {
+	// Test for token refresh functionality
+}

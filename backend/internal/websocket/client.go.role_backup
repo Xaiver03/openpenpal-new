@@ -102,9 +102,9 @@ func (c *Client) joinDefaultRooms() {
 
 	// 加入角色房间
 	switch c.user.Role {
-	case models.RoleCourierLevel1, models.RoleCourierLevel2, models.RoleCourierLevel3, models.RoleCourierLevel4:
+	case models.RoleCourier, models.RoleSeniorCourier, models.RoleCourierCoordinator:
 		c.JoinRoom(string(RoomCouriers))
-	case models.RolePlatformAdmin, models.RoleSuperAdmin:
+	case models.RoleSchoolAdmin, models.RolePlatformAdmin, models.RoleSuperAdmin:
 		c.JoinRoom(string(RoomAdmins))
 	default:
 		c.JoinRoom(string(RoomUsers))
@@ -228,7 +228,7 @@ func (c *Client) handleHeartbeat(message *Message) {
 // handleLocationUpdate 处理位置更新
 func (c *Client) handleLocationUpdate(message *Message) {
 	// 验证用户是否有信使权限
-	if !c.user.HasRole(models.RoleCourierLevel1) {
+	if !c.user.HasRole(models.RoleCourier) {
 		c.sendError("PERMISSION_DENIED", "Only couriers can update location")
 		return
 	}

@@ -15,7 +15,7 @@ func GetDefaultRoleMapping() *RoleMapping {
 		FrontendToBackend: map[string]UserRole{
 			// Direct mappings
 			"user":           RoleUser,
-			"school_admin":   RoleCourierLevel3, // Map school_admin to courier level 3
+			"school_admin":   RoleSchoolAdmin,
 			"platform_admin": RolePlatformAdmin,
 			"super_admin":    RoleSuperAdmin,
 
@@ -37,6 +37,7 @@ func GetDefaultRoleMapping() *RoleMapping {
 			RoleCourierLevel2: "courier_level2",
 			RoleCourierLevel3: "courier_level3",
 			RoleCourierLevel4: "courier_level4",
+			RoleSchoolAdmin:   "school_admin",
 			RolePlatformAdmin: "platform_admin",
 			RoleSuperAdmin:    "super_admin",
 		},

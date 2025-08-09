@@ -201,19 +201,36 @@ func (h *LetterHandler) GetUserStats(c *gin.Context) {
 func (h *LetterHandler) MarkAsRead(c *gin.Context) {
 	resp := response.NewGinResponse()
 
-	code := c.Param("code")
-	if code == "" {
-		resp.BadRequest(c, "Letter code is required")
+	letterID := c.Param("id")
+	if letterID == "" {
+		resp.BadRequest(c, "Letter ID is required")
 		return
 	}
 
-	// 获取用户ID（可选，因为可能是匿名读取）
-	userID := "anonymous"
-	if id, exists := middleware.GetUserID(c); exists {
-		userID = id
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		resp.Unauthorized(c, "User not authenticated")
+		return
 	}
 
-	if err := h.letterService.MarkAsRead(code, userID); err != nil {
+	// 先获取信件的code
+	letter, err := h.letterService.GetLetterByID(letterID, userID)
+	if err != nil {
+		if err.Error() == "letter not found" || err.Error() == "unauthorized to view this letter" {
+			resp.NotFound(c, err.Error())
+		} else {
+			resp.InternalServerError(c, err.Error())
+		}
+		return
+	}
+
+	// 获取信件的code
+	if letter.Code == nil {
+		resp.BadRequest(c, "Letter code not generated yet")
+		return
+	}
+
+	if err := h.letterService.MarkAsRead(letter.Code.Code, userID); err != nil {
 		resp.InternalServerError(c, err.Error())
 		return
 	}
@@ -286,7 +303,14 @@ func (h *LetterHandler) UpdateLetter(c *gin.Context) {
 		return
 	}
 
-	resp.OK(c, "Letter updated successfully")
+	// 获取更新后的信件数据
+	updatedLetter, err := h.letterService.GetLetterByID(letterID, userID)
+	if err != nil {
+		resp.InternalServerError(c, "Failed to retrieve updated letter")
+		return
+	}
+
+	resp.SuccessWithMessage(c, "Letter updated successfully", updatedLetter)
 }
 
 // GetPublicLetters 获取广场公开信件列表

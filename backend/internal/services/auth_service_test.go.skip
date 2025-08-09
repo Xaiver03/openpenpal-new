@@ -1,0 +1,369 @@
+package services
+
+import (
+	"errors"
+	"testing"
+	"time"
+
+	"openpenpal-backend/internal/config"
+	"openpenpal-backend/internal/models"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
+
+// AuthServiceTestSuite 认证服务测试套件
+type AuthServiceTestSuite struct {
+	suite.Suite
+	db      *gorm.DB
+	service *AuthService
+	config  *config.Config
+}
+
+func (suite *AuthServiceTestSuite) SetupSuite() {
+	// 设置测试数据库
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	suite.NoError(err)
+	suite.db = db
+
+	// 迁移表结构
+	err = db.AutoMigrate(&models.User{})
+	suite.NoError(err)
+
+	// 设置测试配置
+	suite.config = &config.Config{
+		JWTSecret:     "test-jwt-secret",
+		JWTExpiration: 24 * time.Hour,
+		AppEnv:        "test",
+	}
+
+	// 创建服务实例
+	suite.service = NewAuthService(db, suite.config)
+}
+
+func (suite *AuthServiceTestSuite) TearDownTest() {
+	// 清理测试数据
+	suite.db.Exec("DELETE FROM users")
+}
+
+// TestLogin_Success 测试成功登录
+func (suite *AuthServiceTestSuite) TestLogin_Success() {
+	// 准备：创建测试用户
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	user := &models.User{
+		ID:           "test-user-id",
+		Username:     "testuser",
+		Email:        "test@example.com",
+		PasswordHash: string(hashedPassword),
+		Role:         models.RoleUser,
+		IsActive:     true,
+	}
+	suite.db.Create(user)
+
+	// 执行：尝试登录
+	loggedInUser, token, err := suite.service.Login("testuser", "password123")
+
+	// 断言
+	suite.NoError(err)
+	suite.NotNil(loggedInUser)
+	suite.Equal(user.ID, loggedInUser.ID)
+	suite.NotEmpty(token)
+}
+
+// TestLogin_InvalidUsername 测试无效用户名
+func (suite *AuthServiceTestSuite) TestLogin_InvalidUsername() {
+	// 执行：使用不存在的用户名登录
+	loggedInUser, token, err := suite.service.Login("nonexistent", "password123")
+
+	// 断言
+	suite.Error(err)
+	suite.Nil(loggedInUser)
+	suite.Empty(token)
+	suite.Contains(err.Error(), "用户不存在")
+}
+
+// TestLogin_InvalidPassword 测试错误密码
+func (suite *AuthServiceTestSuite) TestLogin_InvalidPassword() {
+	// 准备：创建测试用户
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	user := &models.User{
+		ID:           "test-user-id",
+		Username:     "testuser",
+		Email:        "test@example.com",
+		PasswordHash: string(hashedPassword),
+		Role:         models.RoleUser,
+		IsActive:     true,
+	}
+	suite.db.Create(user)
+
+	// 执行：使用错误密码登录
+	loggedInUser, token, err := suite.service.Login("testuser", "wrongpassword")
+
+	// 断言
+	suite.Error(err)
+	suite.Nil(loggedInUser)
+	suite.Empty(token)
+	suite.Contains(err.Error(), "密码错误")
+}
+
+// TestLogin_InactiveUser 测试未激活用户
+func (suite *AuthServiceTestSuite) TestLogin_InactiveUser() {
+	// 准备：创建未激活的用户
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	user := &models.User{
+		ID:           "test-user-id",
+		Username:     "testuser",
+		Email:        "test@example.com",
+		PasswordHash: string(hashedPassword),
+		Role:         models.RoleUser,
+		IsActive:     false, // 未激活
+	}
+	suite.db.Create(user)
+
+	// 执行：尝试登录
+	loggedInUser, token, err := suite.service.Login("testuser", "password123")
+
+	// 断言
+	suite.Error(err)
+	suite.Nil(loggedInUser)
+	suite.Empty(token)
+	suite.Contains(err.Error(), "账号已被禁用")
+}
+
+// TestRegister_Success 测试成功注册
+func (suite *AuthServiceTestSuite) TestRegister_Success() {
+	// 准备
+	req := &models.RegisterRequest{
+		Username: "newuser",
+		Email:    "newuser@example.com",
+		Password: "password123",
+		Nickname: "新用户",
+	}
+
+	// 执行
+	user, err := suite.service.Register(req)
+
+	// 断言
+	suite.NoError(err)
+	suite.NotNil(user)
+	suite.Equal("newuser", user.Username)
+	suite.Equal("newuser@example.com", user.Email)
+	suite.Equal("新用户", user.Nickname)
+	suite.Equal(models.RoleUser, user.Role)
+	suite.True(user.IsActive)
+
+	// 验证密码已加密
+	suite.NotEqual("password123", user.PasswordHash)
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte("password123"))
+	suite.NoError(err)
+}
+
+// TestRegister_DuplicateUsername 测试重复用户名
+func (suite *AuthServiceTestSuite) TestRegister_DuplicateUsername() {
+	// 准备：创建已存在的用户
+	existingUser := &models.User{
+		ID:       "existing-user-id",
+		Username: "existinguser",
+		Email:    "existing@example.com",
+		Role:     models.RoleUser,
+		IsActive: true,
+	}
+	suite.db.Create(existingUser)
+
+	// 执行：尝试使用相同用户名注册
+	req := &models.RegisterRequest{
+		Username: "existinguser",
+		Email:    "another@example.com",
+		Password: "password123",
+		Nickname: "另一个用户",
+	}
+	user, err := suite.service.Register(req)
+
+	// 断言
+	suite.Error(err)
+	suite.Nil(user)
+	suite.Contains(err.Error(), "用户名已存在")
+}
+
+// TestRegister_DuplicateEmail 测试重复邮箱
+func (suite *AuthServiceTestSuite) TestRegister_DuplicateEmail() {
+	// 准备：创建已存在的用户
+	existingUser := &models.User{
+		ID:       "existing-user-id",
+		Username: "existinguser",
+		Email:    "existing@example.com",
+		Role:     models.RoleUser,
+		IsActive: true,
+	}
+	suite.db.Create(existingUser)
+
+	// 执行：尝试使用相同邮箱注册
+	req := &models.RegisterRequest{
+		Username: "anotheruser",
+		Email:    "existing@example.com",
+		Password: "password123",
+		Nickname: "另一个用户",
+	}
+	user, err := suite.service.Register(req)
+
+	// 断言
+	suite.Error(err)
+	suite.Nil(user)
+	suite.Contains(err.Error(), "邮箱已被使用")
+}
+
+// TestGenerateJWT 测试JWT生成
+func (suite *AuthServiceTestSuite) TestGenerateJWT() {
+	// 准备
+	user := &models.User{
+		ID:       "test-user-id",
+		Username: "testuser",
+		Role:     models.RoleUser,
+	}
+
+	// 执行
+	token, err := suite.service.GenerateJWT(user)
+
+	// 断言
+	suite.NoError(err)
+	suite.NotEmpty(token)
+
+	// 验证token可以被解析
+	claims, err := suite.service.ValidateJWT(token)
+	suite.NoError(err)
+	suite.Equal(user.ID, claims.UserID)
+	suite.Equal(string(user.Role), claims.Role)
+}
+
+// TestValidateJWT_InvalidToken 测试无效JWT
+func (suite *AuthServiceTestSuite) TestValidateJWT_InvalidToken() {
+	// 执行：验证无效token
+	claims, err := suite.service.ValidateJWT("invalid.token.here")
+
+	// 断言
+	suite.Error(err)
+	suite.Nil(claims)
+}
+
+// TestValidateJWT_ExpiredToken 测试过期JWT
+func (suite *AuthServiceTestSuite) TestValidateJWT_ExpiredToken() {
+	// 准备：创建一个已过期的配置
+	expiredConfig := &config.Config{
+		JWTSecret:     "test-jwt-secret",
+		JWTExpiration: -1 * time.Hour, // 负数表示已过期
+		AppEnv:        "test",
+	}
+	expiredService := NewAuthService(suite.db, expiredConfig)
+
+	user := &models.User{
+		ID:       "test-user-id",
+		Username: "testuser",
+		Role:     models.RoleUser,
+	}
+
+	// 生成过期token
+	token, err := expiredService.GenerateJWT(user)
+	suite.NoError(err)
+
+	// 执行：验证过期token
+	claims, err := suite.service.ValidateJWT(token)
+
+	// 断言
+	suite.Error(err)
+	suite.Nil(claims)
+	suite.Contains(err.Error(), "expired")
+}
+
+// TestUpdateLastLogin 测试更新最后登录时间
+func (suite *AuthServiceTestSuite) TestUpdateLastLogin() {
+	// 准备：创建用户
+	user := &models.User{
+		ID:       "test-user-id",
+		Username: "testuser",
+		Email:    "test@example.com",
+		Role:     models.RoleUser,
+		IsActive: true,
+	}
+	suite.db.Create(user)
+
+	// 记录原始时间
+	originalTime := user.LastLoginAt
+
+	// 等待一秒确保时间差异
+	time.Sleep(1 * time.Second)
+
+	// 执行
+	err := suite.service.UpdateLastLogin(user.ID)
+	suite.NoError(err)
+
+	// 验证
+	var updatedUser models.User
+	suite.db.First(&updatedUser, "id = ?", user.ID)
+	
+	if originalTime != nil {
+		suite.True(updatedUser.LastLoginAt.After(*originalTime))
+	} else {
+		suite.NotNil(updatedUser.LastLoginAt)
+	}
+}
+
+// 运行测试套件
+func TestAuthServiceSuite(t *testing.T) {
+	suite.Run(t, new(AuthServiceTestSuite))
+}
+
+// 基准测试
+func BenchmarkGenerateJWT(b *testing.B) {
+	// 设置
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db.AutoMigrate(&models.User{})
+	
+	cfg := &config.Config{
+		JWTSecret:     "test-jwt-secret",
+		JWTExpiration: 24 * time.Hour,
+		AppEnv:        "test",
+	}
+	
+	service := NewAuthService(db, cfg)
+	user := &models.User{
+		ID:       "test-user-id",
+		Username: "testuser",
+		Role:     models.RoleUser,
+	}
+
+	// 运行基准测试
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = service.GenerateJWT(user)
+	}
+}
+
+func BenchmarkValidateJWT(b *testing.B) {
+	// 设置
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db.AutoMigrate(&models.User{})
+	
+	cfg := &config.Config{
+		JWTSecret:     "test-jwt-secret",
+		JWTExpiration: 24 * time.Hour,
+		AppEnv:        "test",
+	}
+	
+	service := NewAuthService(db, cfg)
+	user := &models.User{
+		ID:       "test-user-id",
+		Username: "testuser",
+		Role:     models.RoleUser,
+	}
+	
+	token, _ := service.GenerateJWT(user)
+
+	// 运行基准测试
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = service.ValidateJWT(token)
+	}
+}
