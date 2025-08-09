@@ -67,7 +67,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	user, err := h.userService.Register(&req)
 	if err != nil {
 		if err.Error() == "username or email already exists" {
-			utils.BadRequestResponse(c, "用户名或邮箱已存在", err)
+			utils.ConflictResponse(c, "用户名或邮箱已存在", err)
 			return
 		}
 		utils.BadRequestResponse(c, "注册失败", err)
@@ -113,7 +113,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		case "invalid username or password":
 			utils.UnauthorizedResponse(c, "用户名或密码错误")
 		case "user account is disabled":
-			utils.UnauthorizedResponse(c, "账户已被禁用")
+			utils.ForbiddenResponse(c, "账号已被禁用")
 		default:
 			utils.UnauthorizedResponse(c, "登录失败")
 		}
@@ -244,7 +244,6 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 // Helper functions
 func isCourierRole(role string) bool {
 	courierRoles := []string{
-		"courier", "senior_courier", "courier_coordinator",
 		"courier_level1", "courier_level2", "courier_level3", "courier_level4",
 	}
 	for _, r := range courierRoles {

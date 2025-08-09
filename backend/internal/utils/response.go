@@ -84,6 +84,11 @@ func BadRequestResponse(c *gin.Context, message string, err error) {
 	ErrorResponse(c, http.StatusBadRequest, message, err)
 }
 
+// ConflictResponse 冲突响应
+func ConflictResponse(c *gin.Context, message string, err error) {
+	ErrorResponse(c, http.StatusConflict, message, err)
+}
+
 // Pagination 分页结构
 type Pagination struct {
 	Page       int   `json:"page"`
