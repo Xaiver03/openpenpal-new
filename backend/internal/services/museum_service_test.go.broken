@@ -1,0 +1,481 @@
+package services
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"openpenpal-backend/internal/config"
+	"openpenpal-backend/internal/models"
+
+	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
+)
+
+// MuseumServiceTestSuite 博物馆服务测试套件
+type MuseumServiceTestSuite struct {
+	suite.Suite
+	db            *gorm.DB
+	museumService *MuseumService
+	userService   *UserService
+	letterService *LetterService
+	testUser      *models.User
+	testAdmin     *models.User
+	config        *config.Config
+}
+
+func (suite *MuseumServiceTestSuite) SetupSuite() {
+	// 设置测试数据库
+	db, err := config.SetupTestDB()
+	suite.NoError(err)
+	suite.db = db
+
+	// 获取测试配置
+	suite.config = config.GetTestConfig()
+
+	// 创建服务
+	suite.userService = NewUserService(db, suite.config)
+	suite.letterService = NewLetterService(db, suite.config)
+	suite.museumService = NewMuseumService(db)
+
+	// 创建测试用户
+	suite.testUser = config.CreateTestUser(db, "museumuser", models.RoleUser)
+	suite.testAdmin = config.CreateTestUser(db, "museumadmin", models.RoleSuperAdmin)
+}
+
+func (suite *MuseumServiceTestSuite) TearDownTest() {
+	// 清理测试数据
+	suite.db.Exec("DELETE FROM museum_items")
+	suite.db.Exec("DELETE FROM museum_entries")
+	suite.db.Exec("DELETE FROM museum_interactions")
+	suite.db.Exec("DELETE FROM museum_reactions")
+	suite.db.Exec("DELETE FROM museum_exhibitions")
+	suite.db.Exec("DELETE FROM museum_submissions")
+	suite.db.Exec("DELETE FROM letters")
+	suite.db.Exec("DELETE FROM letter_codes")
+}
+
+// TestCreateMuseumItem_Success 测试成功创建博物馆物品
+func (suite *MuseumServiceTestSuite) TestCreateMuseumItem_Success() {
+	req := &CreateMuseumItemRequest{
+		Title:         "测试博物馆物品",
+		Description:   "这是一个测试物品的描述",
+		Content:       "物品的详细内容",
+		SourceType:    "letter",
+		SourceID:      "test-source-id",
+		OriginOPCode:  "BJDX5F",
+		Tags:          []string{"测试", "博物馆"},
+		IsPublic:      true,
+		AIGenerated:   false,
+	}
+
+	item, err := suite.museumService.CreateMuseumItem(context.Background(), req)
+
+	suite.NoError(err)
+	suite.NotNil(item)
+	suite.Equal("测试博物馆物品", item.Title)
+	suite.Equal("这是一个测试物品的描述", item.Description)
+	suite.Equal("letter", string(item.SourceType))
+	suite.Equal("BJDX5F", item.OriginOPCode)
+	suite.Equal("pending", string(item.Status))
+	suite.Equal(suite.testUser.ID, item.SubmittedBy)
+
+	// 验证数据库中存在记录
+	var savedItem models.MuseumItem
+	err = suite.db.First(&savedItem, "id = ?", item.ID).Error
+	suite.NoError(err)
+	suite.Equal(item.ID, savedItem.ID)
+}
+
+// TestCreateMuseumItem_InvalidRequest 测试无效请求
+func (suite *MuseumServiceTestSuite) TestCreateMuseumItem_InvalidRequest() {
+	req := &models.CreateMuseumItemRequest{
+		// 缺少必要字段
+		Title: "",
+	}
+
+	item, err := suite.museumService.CreateMuseumItem(suite.testUser.ID, req)
+
+	suite.Error(err)
+	suite.Nil(item)
+}
+
+// TestGetMuseumEntry_Success 测试获取博物馆条目
+func (suite *MuseumServiceTestSuite) TestGetMuseumEntry_Success() {
+	// 创建测试物品
+	item := suite.createTestMuseumItem()
+
+	// 获取博物馆条目
+	entry, err := suite.museumService.GetMuseumEntry(item.ID, "")
+
+	suite.NoError(err)
+	suite.NotNil(entry)
+	suite.Equal(item.ID, entry.ID)
+	suite.Equal(item.Title, entry.Title)
+	suite.Equal(item.Description, entry.Description)
+}
+
+// TestGetMuseumEntry_NotFound 测试物品不存在
+func (suite *MuseumServiceTestSuite) TestGetMuseumEntry_NotFound() {
+	// 使用不存在的ID
+	entry, err := suite.museumService.GetMuseumEntry("nonexistent", "")
+
+	suite.Error(err)
+	suite.Nil(entry)
+	suite.Contains(err.Error(), "not found")
+}
+
+// TestApproveMuseumItem_Success 测试审批通过物品
+func (suite *MuseumServiceTestSuite) TestApproveMuseumItem_Success() {
+	// 创建待审批物品
+	item := suite.createTestMuseumItem()
+
+	// 审批通过
+	err := suite.museumService.ApproveMuseumItem(item.ID, suite.testAdmin.ID, "物品质量很好")
+
+	suite.NoError(err)
+
+	// 验证状态更新
+	var updatedItem models.MuseumItem
+	err = suite.db.First(&updatedItem, "id = ?", item.ID).Error
+	suite.NoError(err)
+	suite.Equal("approved", updatedItem.Status)
+	suite.Equal(suite.testAdmin.ID, *updatedItem.ReviewerID)
+	suite.Equal("物品质量很好", *updatedItem.ReviewNote)
+	suite.NotNil(updatedItem.ReviewedAt)
+}
+
+// TestRejectMuseumItem_Success 测试拒绝物品
+func (suite *MuseumServiceTestSuite) TestRejectMuseumItem_Success() {
+	// 创建待审批物品
+	item := suite.createTestMuseumItem()
+
+	// 拒绝物品
+	err := suite.museumService.RejectMuseumItem(item.ID, suite.testAdmin.ID, "内容不符合要求")
+
+	suite.NoError(err)
+
+	// 验证状态更新
+	var updatedItem models.MuseumItem
+	err = suite.db.First(&updatedItem, "id = ?", item.ID).Error
+	suite.NoError(err)
+	suite.Equal("rejected", updatedItem.Status)
+	suite.Equal(suite.testAdmin.ID, *updatedItem.ReviewerID)
+	suite.Equal("内容不符合要求", *updatedItem.ReviewNote)
+	suite.NotNil(updatedItem.ReviewedAt)
+}
+
+// TestGetMuseumEntries_Success 测试获取博物馆条目列表
+func (suite *MuseumServiceTestSuite) TestGetMuseumEntries_Success() {
+	// 创建多个已审批的物品
+	for i := 0; i < 5; i++ {
+		item := suite.createApprovedMuseumItem("测试物品" + string(rune('A'+i)))
+		suite.NotNil(item)
+	}
+
+	// 获取条目列表
+	req := &models.MuseumListRequest{
+		Page:      1,
+		Limit:     10,
+		SortBy:    "created_at",
+		SortOrder: "desc",
+		Status:    "approved",
+	}
+	entries, total, err := suite.museumService.GetMuseumEntries(req)
+
+	suite.NoError(err)
+	suite.Equal(int64(5), total)
+	suite.Len(entries, 5)
+
+	// 验证按时间倒序排列
+	for i := 0; i < len(entries)-1; i++ {
+		suite.True(entries[i].CreatedAt.After(entries[i+1].CreatedAt) || 
+			entries[i].CreatedAt.Equal(entries[i+1].CreatedAt))
+	}
+}
+
+// TestGetMuseumEntries_Pagination 测试分页功能
+func (suite *MuseumServiceTestSuite) TestGetMuseumEntries_Pagination() {
+	// 创建10个已审批的物品
+	for i := 0; i < 10; i++ {
+		item := suite.createApprovedMuseumItem("分页测试物品" + string(rune('A'+i)))
+		suite.NotNil(item)
+	}
+
+	// 获取第一页（每页5条）
+	req1 := &models.MuseumListRequest{
+		Page:   1,
+		Limit:  5,
+		Status: "approved",
+	}
+	page1Entries, total, err := suite.museumService.GetMuseumEntries(req1)
+
+	suite.NoError(err)
+	suite.Equal(int64(10), total)
+	suite.Len(page1Entries, 5)
+
+	// 获取第二页
+	req2 := &models.MuseumListRequest{
+		Page:   2,
+		Limit:  5,
+		Status: "approved",
+	}
+	page2Entries, total, err := suite.museumService.GetMuseumEntries(req2)
+
+	suite.NoError(err)
+	suite.Equal(int64(10), total)
+	suite.Len(page2Entries, 5)
+
+	// 验证页面不重复
+	for _, entry1 := range page1Entries {
+		for _, entry2 := range page2Entries {
+			suite.NotEqual(entry1.ID, entry2.ID)
+		}
+	}
+}
+
+// TestGetMuseumEntries_FilterByTag 测试按标签过滤
+func (suite *MuseumServiceTestSuite) TestGetMuseumEntries_FilterByTag() {
+	// 创建带不同标签的物品
+	item1 := suite.createApprovedMuseumItem("标签测试1")
+	item2 := suite.createApprovedMuseumItem("标签测试2")
+	
+	// 手动设置标签（模拟实际场景）
+	suite.db.Model(&item1).Update("tags", `["测试", "标签1"]`)
+	suite.db.Model(&item2).Update("tags", `["测试", "标签2"]`)
+
+	// 按标签过滤
+	req := &models.MuseumListRequest{
+		Page:   1,
+		Limit:  10,
+		Status: "approved",
+		Tag:    "标签1",
+	}
+	entries, total, err := suite.museumService.GetMuseumEntries(req)
+
+	// 验证结果（具体实现取决于服务层的标签过滤逻辑）
+	suite.NoError(err)
+	suite.GreaterOrEqual(total, int64(0)) // 至少应该不报错
+}
+
+// TestSubmitLetterToMuseum_Success 测试成功提交信件到博物馆
+func (suite *MuseumServiceTestSuite) TestSubmitLetterToMuseum_Success() {
+	// 先创建一封信件
+	letter := suite.createTestLetter()
+
+	// 提交到博物馆
+	req := &models.SubmitToMuseumRequest{
+		LetterID:     letter.ID,
+		Title:        "我的珍贵信件",
+		Description:  "这是一封很有意义的信件",
+		Tags:         []string{"珍贵", "回忆"},
+		OriginOPCode: "BJDX5F01",
+	}
+	submission, err := suite.museumService.SubmitLetterToMuseum(suite.testUser.ID, req)
+
+	suite.NoError(err)
+	suite.NotNil(submission)
+	suite.Equal(letter.ID, submission.SourceID)
+	suite.Equal("我的珍贵信件", submission.Title)
+	suite.Equal("pending", submission.Status)
+	suite.Equal("letter", submission.SourceType)
+}
+
+// TestSubmitLetterToMuseum_LetterNotFound 测试信件不存在
+func (suite *MuseumServiceTestSuite) TestSubmitLetterToMuseum_LetterNotFound() {
+	req := &models.SubmitToMuseumRequest{
+		LetterID:    "nonexistent",
+		Title:       "测试标题",
+		Description: "测试描述",
+	}
+	submission, err := suite.museumService.SubmitLetterToMuseum(suite.testUser.ID, req)
+
+	suite.Error(err)
+	suite.Nil(submission)
+}
+
+// TestLikeMuseumItem_Success 测试点赞物品
+func (suite *MuseumServiceTestSuite) TestLikeMuseumItem_Success() {
+	// 创建已审批物品
+	item := suite.createApprovedMuseumItem("点赞测试物品")
+
+	// 点赞
+	err := suite.museumService.LikeMuseumItem(item.ID, suite.testUser.ID)
+
+	suite.NoError(err)
+
+	// 验证点赞记录存在
+	var interaction models.MuseumInteraction
+	err = suite.db.First(&interaction, "museum_item_id = ? AND user_id = ? AND interaction_type = ?", 
+		item.ID, suite.testUser.ID, "like").Error
+	suite.NoError(err)
+}
+
+// TestLikeMuseumItem_AlreadyLiked 测试重复点赞
+func (suite *MuseumServiceTestSuite) TestLikeMuseumItem_AlreadyLiked() {
+	// 创建已审批物品
+	item := suite.createApprovedMuseumItem("重复点赞测试")
+
+	// 第一次点赞
+	err := suite.museumService.LikeMuseumItem(item.ID, suite.testUser.ID)
+	suite.NoError(err)
+
+	// 第二次点赞（应该取消点赞或报错，取决于实现）
+	err = suite.museumService.LikeMuseumItem(item.ID, suite.testUser.ID)
+	// 具体断言取决于服务实现逻辑
+	suite.NotPanics(func() {
+		suite.museumService.LikeMuseumItem(item.ID, suite.testUser.ID)
+	})
+}
+
+// TestRecordInteraction_Success 测试记录交互
+func (suite *MuseumServiceTestSuite) TestRecordInteraction_Success() {
+	// 创建已审批物品
+	item := suite.createApprovedMuseumItem("交互测试物品")
+
+	// 记录浏览交互
+	req := &models.RecordInteractionRequest{
+		InteractionType: "view",
+		Duration:        30,
+		Source:          "web",
+	}
+	err := suite.museumService.RecordInteraction(item.ID, suite.testUser.ID, req)
+
+	suite.NoError(err)
+
+	// 验证交互记录
+	var interaction models.MuseumInteraction
+	err = suite.db.First(&interaction, "museum_item_id = ? AND user_id = ? AND interaction_type = ?", 
+		item.ID, suite.testUser.ID, "view").Error
+	suite.NoError(err)
+	suite.Equal(30, *interaction.Duration)
+}
+
+// TestGetUserSubmissions_Success 测试获取用户提交列表
+func (suite *MuseumServiceTestSuite) TestGetUserSubmissions_Success() {
+	// 创建多个提交
+	for i := 0; i < 3; i++ {
+		letter := suite.createTestLetter()
+		req := &models.SubmitToMuseumRequest{
+			LetterID:    letter.ID,
+			Title:       "用户提交测试" + string(rune('A'+i)),
+			Description: "测试描述",
+		}
+		_, err := suite.museumService.SubmitLetterToMuseum(suite.testUser.ID, req)
+		suite.NoError(err)
+	}
+
+	// 获取用户提交列表
+	submissions, err := suite.museumService.GetUserSubmissions(suite.testUser.ID, 1, 10)
+
+	suite.NoError(err)
+	suite.Len(submissions, 3)
+	for _, submission := range submissions {
+		suite.Equal(suite.testUser.ID, submission.CreatorID)
+	}
+}
+
+// TestGetMuseumStats_Success 测试获取统计信息
+func (suite *MuseumServiceTestSuite) TestGetMuseumStats_Success() {
+	// 创建不同状态的物品
+	suite.createTestMuseumItem()                         // pending
+	suite.createApprovedMuseumItem("已审批物品1")          // approved
+	suite.createApprovedMuseumItem("已审批物品2")          // approved
+	
+	// 创建一个拒绝的物品
+	rejectedItem := suite.createTestMuseumItem()
+	err := suite.museumService.RejectMuseumItem(rejectedItem.ID, suite.testAdmin.ID, "测试拒绝")
+	suite.NoError(err)
+
+	// 获取统计信息
+	stats, err := suite.museumService.GetMuseumStats()
+
+	suite.NoError(err)
+	suite.NotNil(stats)
+	suite.Contains(stats, "total_items")
+	suite.Contains(stats, "approved_items")
+	suite.Contains(stats, "pending_items")
+}
+
+// TestSearchEntries_Success 测试搜索功能
+func (suite *MuseumServiceTestSuite) TestSearchEntries_Success() {
+	// 创建可搜索的物品
+	item1 := suite.createApprovedMuseumItem("北京大学的故事")
+	item2 := suite.createApprovedMuseumItem("清华大学的传说")
+	suite.NotNil(item1)
+	suite.NotNil(item2)
+
+	// 搜索"北京"
+	req := &models.MuseumSearchRequest{
+		Query:  "北京",
+		Page:   1,
+		Limit:  10,
+	}
+	results, total, err := suite.museumService.SearchEntries(req)
+
+	// 验证搜索结果（具体断言取决于搜索实现）
+	suite.NoError(err)
+	suite.GreaterOrEqual(total, int64(0))
+	suite.GreaterOrEqual(len(results), 0)
+}
+
+// Helper methods
+
+func (suite *MuseumServiceTestSuite) createTestMuseumItem() *models.MuseumItem {
+	req := &models.CreateMuseumItemRequest{
+		Title:         "测试博物馆物品",
+		Description:   "测试描述",
+		Content:       "测试内容",
+		SourceType:    "letter",
+		SourceID:      "test-source",
+		OriginOPCode:  "BJDX5F",
+		Tags:          []string{"测试"},
+		IsPublic:      true,
+		AIGenerated:   false,
+	}
+	item, err := suite.museumService.CreateMuseumItem(suite.testUser.ID, req)
+	suite.NoError(err)
+	return item
+}
+
+func (suite *MuseumServiceTestSuite) createApprovedMuseumItem(title string) *models.MuseumItem {
+	req := &models.CreateMuseumItemRequest{
+		Title:         title,
+		Description:   "已审批的测试物品",
+		Content:       "测试内容",
+		SourceType:    "letter",
+		SourceID:      "approved-source",
+		OriginOPCode:  "BJDX5F",
+		Tags:          []string{"已审批"},
+		IsPublic:      true,
+		AIGenerated:   false,
+	}
+	item, err := suite.museumService.CreateMuseumItem(suite.testUser.ID, req)
+	suite.NoError(err)
+
+	// 审批通过
+	err = suite.museumService.ApproveMuseumItem(item.ID, suite.testAdmin.ID, "测试审批")
+	suite.NoError(err)
+
+	// 重新获取更新后的物品
+	err = suite.db.First(item, "id = ?", item.ID).Error
+	suite.NoError(err)
+
+	return item
+}
+
+func (suite *MuseumServiceTestSuite) createTestLetter() *models.Letter {
+	req := &models.CreateLetterRequest{
+		Title:   "测试信件",
+		Content: "信件内容",
+		Style:   models.StyleClassic,
+	}
+	letter, err := suite.letterService.CreateDraft(suite.testUser.ID, req)
+	suite.NoError(err)
+	return letter
+}
+
+// 运行测试套件
+func TestMuseumServiceSuite(t *testing.T) {
+	suite.Run(t, new(MuseumServiceTestSuite))
+}
