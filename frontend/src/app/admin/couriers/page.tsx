@@ -174,7 +174,7 @@ export default function CouriersPage() {
       const mockCouriers: Courier[] = [
         {
           id: '1',
-          userId: 'user_001',
+          user_id: 'user_001',
           username: 'courier_level4_city',
           nickname: '城市总代-张三',
           email: 'zhang.san@example.com',
@@ -183,14 +183,14 @@ export default function CouriersPage() {
           zone: 'BEIJING',
           zone_name: '北京市',
           points: 2850,
-          taskCount: 125,
+          task_count: 125,
           success_rate: 98.5,
           created_at: '2024-01-15T10:30:00Z',
           last_active_at: '2024-01-21T09:45:00Z'
         },
         {
           id: '2',
-          userId: 'user_002',
+          user_id: 'user_002',
           username: 'courier_level3_school',
           nickname: '校级信使-李四',
           email: 'li.si@bjdx.edu.cn',
@@ -199,14 +199,14 @@ export default function CouriersPage() {
           zone: 'BJDX',
           zone_name: '北京大学',
           points: 1820,
-          taskCount: 89,
+          task_count: 89,
           success_rate: 96.2,
           created_at: '2024-01-16T14:20:00Z',
           last_active_at: '2024-01-21T08:30:00Z'
         },
         {
           id: '3',
-          userId: 'user_003',
+          user_id: 'user_003',
           username: 'courier_level2_zone',
           nickname: '片区信使-王五',
           email: 'wang.wu@bjdx.edu.cn',
@@ -215,14 +215,14 @@ export default function CouriersPage() {
           zone: 'BJDX-A',
           zone_name: '北京大学A区',
           points: 1240,
-          taskCount: 67,
+          task_count: 67,
           success_rate: 94.8,
           created_at: '2024-01-17T16:45:00Z',
           last_active_at: '2024-01-21T07:15:00Z'
         },
         {
           id: '4',
-          userId: 'user_004',
+          user_id: 'user_004',
           username: 'courier_level1_building',
           nickname: '楼栋信使-赵六',
           email: 'zhao.liu@bjdx.edu.cn',
@@ -231,7 +231,7 @@ export default function CouriersPage() {
           zone: 'BJDX-A-101',
           zone_name: '北京大学A区101楼',
           points: 350,
-          taskCount: 23,
+          task_count: 23,
           success_rate: 91.3,
           created_at: '2024-01-20T11:00:00Z',
           last_active_at: '2024-01-20T18:20:00Z'
@@ -241,7 +241,7 @@ export default function CouriersPage() {
       const mockTasks: CourierTask[] = [
         {
           id: 'task_001',
-          courierId: '1',
+          courier_id: '1',
           letter_code: 'LTR-20240121-001',
           status: 'delivered',
           priority: 'high',
@@ -253,7 +253,7 @@ export default function CouriersPage() {
         },
         {
           id: 'task_002',
-          courierId: '2',
+          courier_id: '2',
           letter_code: 'LTR-20240121-002',
           status: 'in_transit',
           priority: 'normal',
@@ -337,7 +337,7 @@ export default function CouriersPage() {
   // 过滤任务
   const filteredTasks = tasks.filter(task => {
     if (!selectedCourier) return true
-    return task.courierId === selectedCourier.id
+    return task.courier_id === selectedCourier.id
   })
 
   if (loading) {
@@ -539,7 +539,7 @@ export default function CouriersPage() {
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div className="font-medium">{courier.taskCount} 个</div>
+                              <div className="font-medium">{courier.task_count} 个</div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -637,7 +637,7 @@ export default function CouriersPage() {
                             </div>
                             <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
                               <span>积分: {courier.points}</span>
-                              <span>任务: {courier.taskCount}</span>
+                              <span>任务: {courier.task_count}</span>
                               <span>成功率: {courier.success_rate.toFixed(1)}%</span>
                             </div>
                           </div>
@@ -714,7 +714,7 @@ export default function CouriersPage() {
                   <div className="text-sm text-muted-foreground">总积分</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{selectedCourier.taskCount}</div>
+                  <div className="text-2xl font-bold text-green-600">{selectedCourier.task_count}</div>
                   <div className="text-sm text-muted-foreground">完成任务</div>
                 </div>
                 <div className="text-center">

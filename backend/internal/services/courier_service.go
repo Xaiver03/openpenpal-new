@@ -88,7 +88,7 @@ func (s *CourierService) ApplyCourier(userID string, req *models.CourierApplicat
 	}
 
 	// 加载用户关联数据
-	if err := s.db.Preload("User").First(&courier, courier.ID).Error; err != nil {
+	if err := s.db.Preload("User").Where("id = ?", courier.ID).First(&courier).Error; err != nil {
 		return nil, fmt.Errorf("获取申请信息失败: %v", err)
 	}
 
@@ -958,7 +958,7 @@ func (s *CourierService) generateMockTasks(userID string) []models.CourierTask {
 // ValidateOPCodeAccess 验证信使是否有权限访问某个OP Code
 func (s *CourierService) ValidateOPCodeAccess(courierID string, targetOPCode string) (bool, error) {
 	var courier models.Courier
-	if err := s.db.First(&courier, "user_id = ?", courierID).Error; err != nil {
+	if err := s.db.Where("user_id = ?", courierID).First(&courier).Error; err != nil {
 		return false, fmt.Errorf("courier not found: %w", err)
 	}
 
@@ -1036,7 +1036,7 @@ func (s *CourierService) AssignTaskByOPCode(letterCode string, pickupOPCode stri
 // UpdateTaskLocation 更新任务位置（使用OP Code）
 func (s *CourierService) UpdateTaskLocation(taskID string, currentOPCode string, status string) error {
 	task := &models.CourierTask{}
-	if err := s.db.First(task, "id = ?", taskID).Error; err != nil {
+	if err := s.db.Where("id = ?", taskID).First(task).Error; err != nil {
 		return fmt.Errorf("task not found: %w", err)
 	}
 

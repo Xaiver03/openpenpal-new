@@ -155,10 +155,10 @@ export interface LetterTemplate {
   content_template: string
   style_config?: any
   is_premium: boolean
-  isActive: boolean
+  is_active: boolean
   usage_count: number
   rating: number
   created_by?: string
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
 }

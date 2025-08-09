@@ -66,7 +66,7 @@ func (suite *CourierServiceSimpleTestSuite) TestApplyCourier_Success() {
 	suite.Equal(suite.testUser.ID, courier.UserID)
 	suite.Equal("test@example.com", courier.Contact)
 	suite.Equal("北京大学", courier.School)
-	suite.Equal("pending", courier.Status)
+	suite.Equal("approved", courier.Status) // Auto-approved based on criteria
 	suite.Equal(1, courier.Level) // Default level 1
 }
 
@@ -115,9 +115,11 @@ func (suite *CourierServiceSimpleTestSuite) TestGetCourierStatus_NotApplied() {
 	// 获取未申请用户的状态
 	status, err := suite.courierService.GetCourierStatus(suite.testUser.ID)
 
-	suite.Error(err)
-	suite.Nil(status)
-	suite.Contains(err.Error(), "courier not found")
+	suite.NoError(err)
+	suite.NotNil(status)
+	suite.False(status.IsApplied)
+	suite.Equal("", status.Status)
+	suite.Equal(0, status.Level)
 }
 
 // TestGetCourierByUserID_Success 测试通过用户ID获取信使
@@ -159,14 +161,14 @@ func (suite *CourierServiceSimpleTestSuite) TestGetCourierByUserID_NotFound() {
 
 // TestGetPendingApplications_Success 测试获取待审批申请
 func (suite *CourierServiceSimpleTestSuite) TestGetPendingApplications_Success() {
-	// 创建多个待审批申请
+	// 创建多个待审批申请（使用不会自动审批的条件）
 	for i := 0; i < 3; i++ {
 		user := config.CreateTestUser(suite.db, "pending_user_"+string(rune('A'+i)), models.RoleUser)
 		req := &models.CourierApplication{
 			Name:            "申请信使" + string(rune('A'+i)),
 			Contact:         "test" + string(rune('A'+i)) + "@example.com",
 			School:          "北京大学",
-			Zone:            "BJDX",
+			Zone:            "BJDX*", // 申请整层楼，不会自动审批
 			HasPrinter:      "yes",
 			SelfIntro:       "申请成为信使",
 			CanMentor:       "maybe",
