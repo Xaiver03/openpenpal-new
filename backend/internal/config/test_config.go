@@ -21,6 +21,7 @@ func SetupTestDB() (*gorm.DB, error) {
 	// 自动迁移所有模型
 	err = db.AutoMigrate(
 		&models.User{},
+		&models.UserProfile{}, // 添加UserProfile模型
 		&models.Letter{},
 		&models.LetterCode{},
 		&models.StatusLog{}, // 添加StatusLog模型
@@ -102,7 +103,7 @@ func CreateTestUser(db *gorm.DB, username string, role models.UserRole) *models.
 		PasswordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy", // password: "password123"
 		Nickname:     "Test " + username,
 		Role:         role,
-		SchoolCode:   "BJDX",
+		SchoolCode:   "BJDX01", // 6-character valid school code
 		IsActive:     true,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
