@@ -261,7 +261,10 @@ export default function CourierTasksPage() {
   // 创建任务
   const handleCreateTask = async () => {
     try {
-      await courierApi.createTask(createForm)
+      await courierApi.createTask({
+        ...createForm,
+        courierId: createForm.courier_id
+      })
       
       // 模拟添加到本地状态
       const newTask: CourierTask = {
