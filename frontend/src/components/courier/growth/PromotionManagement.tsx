@@ -34,7 +34,7 @@ export function PromotionManagement() {
     queryKey: ['upgrade-requests'],
     queryFn: async () => {
       const response = await courierGrowthAPI.getUpgradeRequests();
-      return response.data;
+      return (response as any).data;
     },
   });
 
@@ -115,8 +115,8 @@ export function PromotionManagement() {
             {['pending', 'approved', 'rejected'].map((status) => (
               <TabsContent key={status} value={status} className="space-y-4">
                 {requests
-                  .filter((req) => req.status === status)
-                  .map((request) => (
+                  .filter((req: any) => req.status === status)
+                  .map((request: any) => (
                     <Card key={request.id}>
                       <CardContent className="pt-6">
                         <div className="flex items-start justify-between">
@@ -189,7 +189,7 @@ export function PromotionManagement() {
                     </Card>
                   ))}
                   
-                {requests.filter((req) => req.status === status).length === 0 && (
+                {requests.filter((req: any) => req.status === status).length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     暂无{statusConfig[status as keyof typeof statusConfig].label}的申请
                   </div>

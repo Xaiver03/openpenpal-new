@@ -18,13 +18,13 @@ export interface User {
   nickname: string
   email: string
   role: UserRole
-  schoolCode: string
-  school_name: string
+  school_code: string
+  school_name?: string
   avatar?: string
   bio?: string
   address?: string
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
   last_login_at?: string
   status: 'active' | 'inactive' | 'banned'
   is_active?: boolean
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const user: User | null = storeUser ? {
     ...storeUser,
     permissions: storeUser.permissions
-  } : null
+  } as User : null
 
   const permissions = storeUser?.permissions || []
 

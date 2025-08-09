@@ -298,7 +298,7 @@ export default function UsersManagePage() {
       email: user.email,
       role: user.role,
       school_code: user.school_code,
-      is_active: user.is_active
+      is_active: user.is_active ?? true
     })
     setShowEditDialog(true)
   }, [])

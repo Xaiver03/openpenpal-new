@@ -71,7 +71,7 @@ export function WelcomeBanner({
   const getWelcomeMessage = () => {
     switch (user.role) {
       case 'super_admin':
-      case 'admin':
+      case 'platform_admin':
         return {
           title: `欢迎，${roleDescription}！`,
           message: '您现在可以管理系统用户、查看数据分析、配置系统设置等。',
@@ -82,9 +82,10 @@ export function WelcomeBanner({
             '系统配置和设置'
           ]
         }
-      case 'courier':
-      case 'courier_coordinator': 
-      case 'senior_courier':
+      case 'courier_level1':
+      case 'courier_level2': 
+      case 'courier_level3':
+      case 'courier_level4':
         return {
           title: `欢迎，${roleDescription}！`,
           message: '您现在可以管理信件投递、扫码收发、查看任务等。',

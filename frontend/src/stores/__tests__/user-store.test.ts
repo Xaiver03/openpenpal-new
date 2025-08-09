@@ -138,14 +138,15 @@ describe('useUserStore', () => {
           role: 'user',
           school_code: 'TEST01',
           school_name: 'Test School',
+          is_active: true,
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
           status: 'active' as const,
           permissions: ['WRITE_LETTER']
         },
         token: 'mock-token',
-        refresh_token: 'mock-refresh-token',
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        refreshToken: 'mock-refresh-token',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       }
     })
 

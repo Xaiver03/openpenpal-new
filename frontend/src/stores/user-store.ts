@@ -27,14 +27,14 @@ export interface User {
   email: string
   role: UserRole
   school_code: string
-  school_name: string
+  school_name?: string
   avatar?: string
   bio?: string
   address?: string
   created_at: string
   updated_at: string
   last_login_at?: string
-  status: 'active' | 'inactive' | 'banned'
+  status?: 'active' | 'inactive' | 'banned'
   is_active?: boolean
   permissions: Permission[]
   courierInfo?: CourierInfo
@@ -218,7 +218,7 @@ export const useUserStore = create<UserStoreState>()(
             const response = await AuthService.login(credentials)
             
             if (response.success && response.data?.user) {
-              setUser(response.data.user)
+              setUser(response.data.user as any)
               setLoading({ isLoading: false })
               
               // 登录成功后启动token自动刷新
@@ -268,7 +268,7 @@ export const useUserStore = create<UserStoreState>()(
             const response = await AuthService.getCurrentUser()
             
             if (response.success && response.data) {
-              setUser(response.data)
+              setUser(response.data as any)
             } else {
               // If refresh fails, clear the user state
               setUser(null)

@@ -64,7 +64,7 @@ export function CourierGrowthPath() {
 
       {/* 晋升路径 */}
       <div className="space-y-4">
-        {growthPath.paths.map((path) => (
+        {growthPath.paths.map((path: any) => (
           <Card key={path.target_level} className={path.can_upgrade ? 'border-primary' : ''}>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -87,7 +87,7 @@ export function CourierGrowthPath() {
                 <div>
                   <p className="text-sm font-medium mb-2">解锁权限</p>
                   <div className="flex flex-wrap gap-1">
-                    {path.permissions.slice(0, 3).map((perm) => (
+                    {path.permissions.slice(0, 3).map((perm: string) => (
                       <Badge key={perm} variant="outline" className="text-xs">
                         {perm}
                       </Badge>
@@ -115,7 +115,7 @@ export function CourierGrowthPath() {
                       <Progress value={path.completion_rate} className="mb-3" />
                     )}
                     <div className="space-y-2">
-                      {path.detailed_requirements.map((req, index) => (
+                      {path.detailed_requirements.map((req: any, index: number) => (
                         <RequirementItem key={index} requirement={req} />
                       ))}
                     </div>

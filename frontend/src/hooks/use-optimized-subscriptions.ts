@@ -228,7 +228,7 @@ export function useBatchUserData() {
         
         // School info
         school: {
-          schoolCode: user.schoolCode,
+          schoolCode: user.school_code,
           school_name: user.school_name
         },
         
@@ -244,8 +244,8 @@ export function useBatchUserData() {
         // Status
         status: {
           status: user.status,
-          isActive: user.isActive,
-          lastLoginAt: user.lastLoginAt
+          isActive: user.is_active,
+          lastLoginAt: user.last_login_at
         }
       }
     }, []),

@@ -36,28 +36,8 @@ export async function GET(request: NextRequest) {
       getSchoolStats()
     ])
 
-    // 转换数据格式以匹配前端期望
-    const transformedSchools = schoolsResult.data.map(school => ({
-      code: school.code,
-      name: school.name,
-      fullName: school.full_name,
-      englishName: school.english_name,
-      province: school.province,
-      city: school.city,
-      district: school.district,
-      address: school.address,
-      type: school.school_type,
-      level: school.school_level,
-      is985: school.is_985,
-      is211: school.is_211,
-      isDoubleFirstClass: school.is_double_first_class,
-      isActive: school.status === 'active',
-      website: school.website,
-      establishedYear: school.established_year,
-      userCount: school.user_count,
-      letterCount: school.letter_count,
-      courierCount: school.courier_count
-    }))
+    // Return data directly without transformation
+    const transformedSchools = schoolsResult.data
 
     return NextResponse.json({
       code: 0,

@@ -209,7 +209,7 @@ async function handleLogin(request: NextRequest | Request) {
             email: user.email,
             role: user.role,
             permissions: user.permissions,
-            schoolCode: user.schoolCode
+            schoolCode: (user as any).schoolCode || (user as any).school_code
           })
 
           // 创建会话
@@ -239,8 +239,8 @@ async function handleLogin(request: NextRequest | Request) {
                 role: safeUserData.role,
                 permissions: safeUserData.permissions,
                 schoolCode: safeUserData.schoolCode,
-                schoolCode: safeUserData.schoolCode,
                 schoolName: safeUserData.school_name,
+                school_code: safeUserData.schoolCode,
                 school_name: safeUserData.school_name,
                 status: safeUserData.status,
                 createdAt: safeUserData.createdAt,
@@ -326,7 +326,7 @@ async function handleLogin(request: NextRequest | Request) {
         email: user.email,
         role: user.role,
         permissions: user.permissions,
-        schoolCode: user.schoolCode
+        schoolCode: user.school_code
       })
 
       // 创建会话

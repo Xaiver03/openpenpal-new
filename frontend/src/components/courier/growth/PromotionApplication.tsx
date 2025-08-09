@@ -26,7 +26,7 @@ export function PromotionApplication() {
     queryKey: ['courier-level-check'],
     queryFn: async () => {
       const response = await courierGrowthAPI.checkLevel();
-      return response.data;
+      return (response as any).data;
     },
   });
 
@@ -34,7 +34,7 @@ export function PromotionApplication() {
     queryKey: ['courier-growth-progress'],
     queryFn: async () => {
       const response = await courierGrowthAPI.getGrowthProgress();
-      return response.data;
+      return (response as any).data;
     },
   });
 
@@ -89,7 +89,7 @@ export function PromotionApplication() {
           <div>
             <h3 className="font-medium mb-3">晋升条件检查</h3>
             <div className="space-y-2">
-              {growthProgress.requirements.map((req, index) => (
+              {growthProgress.requirements.map((req: any, index: number) => (
                 <div key={index} className="flex items-center gap-2 text-sm">
                   {req.completed ? (
                     <CheckCircle2 className="h-4 w-4 text-green-500" />

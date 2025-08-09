@@ -86,7 +86,7 @@ export function PermissionConfigManager({ className }: PermissionConfigManagerPr
     setLoading(true)
     try {
       // 加载角色权限
-      const roles: UserRole[] = ['user', 'courier', 'senior_courier', 'courier_coordinator', 'school_admin', 'platform_admin', 'admin', 'super_admin']
+      const roles: UserRole[] = ['user', 'courier_level1', 'courier_level2', 'courier_level3', 'courier_level4', 'platform_admin', 'super_admin']
       const rolePerms = {} as Record<UserRole, string[]>
       roles.forEach(role => {
         rolePerms[role] = permissionService.getRolePermissions(role)

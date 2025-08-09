@@ -378,7 +378,7 @@ export default function HomePage() {
                         </span>
                         <div className="flex items-center gap-1 text-amber-600">
                           <Heart className="w-4 h-4" />
-                          <span className="text-sm">{letter.likeCount || 0}</span>
+                          <span className="text-sm">{letter.like_count || 0}</span>
                         </div>
                       </div>
                       <CardTitle className="font-serif text-lg text-amber-900 line-clamp-2">
@@ -391,7 +391,7 @@ export default function HomePage() {
                       </p>
                       <div className="flex items-center justify-between text-sm text-amber-600">
                         <span>{letter.sender_name || '匿名用户'}</span>
-                        <span>{new Date(letter.createdAt).toLocaleDateString('zh-CN')}</span>
+                        <span>{new Date(letter.created_at).toLocaleDateString('zh-CN')}</span>
                       </div>
                     </CardContent>
                   </Card>

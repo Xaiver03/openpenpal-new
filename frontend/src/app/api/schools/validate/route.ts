@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { schoolCode } = body
 
-    if (!school_code) {
+    if (!schoolCode) {
       return NextResponse.json({
         code: 400,
         msg: '学校代码不能为空',
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const codeUpper = school_code.toUpperCase()
+    const codeUpper = schoolCode.toUpperCase()
     
     // 验证代码格式
     if (!/^[A-Z0-9]{4,10}$/.test(codeUpper)) {

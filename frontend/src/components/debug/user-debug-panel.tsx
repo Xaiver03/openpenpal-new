@@ -235,7 +235,7 @@ const UserDebugPanel = memo(function UserDebugPanel() {
               <div className="flex items-center justify-between">
                 <span>学校代码:</span>
                 <span className="text-gray-300 truncate max-w-[120px]">
-                  {user?.schoolCode || 'null'}
+                  {user?.school_code || 'null'}
                 </span>
               </div>
               

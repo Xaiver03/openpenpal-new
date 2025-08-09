@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (parseError) {
       console.error('❌ Failed to parse backend response:', parseError)
-      throw new Error(`Failed to parse backend response: ${parseError.message}`)
+      throw new Error(`Failed to parse backend response: ${parseError instanceof Error ? parseError.message : String(parseError)}`)
     }
     console.log('📥 Backend response data:', backendData.success ? 'success' : 'failed')
     

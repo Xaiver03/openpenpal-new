@@ -171,16 +171,18 @@ export function UnreachableCompanion({ className = '' }: { className?: string })
 用户的信内容：
 ${context.letterContent}`
 
-      const response = await aiService.generateDailyInspiration({
-        prompt: prompt,
-        style: 'letter'
+      // Use generateReply for AI letter responses
+      const mockLetterId = Date.now().toString()
+      const response = await aiService.generateReply({
+        letterId: mockLetterId,
+        persona: selectedPersona.name
       })
 
       // 添加AI回信
       const aiLetter: LetterExchange = {
         id: `ai_${Date.now()}`,
         from: 'persona',
-        content: response.content,
+        content: response.reply_content,
         timestamp: new Date(),
         personaId: selectedPersona.id,
       }

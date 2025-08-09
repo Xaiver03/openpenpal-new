@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const { refreshToken } = body
     
     // 输入验证
-    if (!refresh_token) {
+    if (!refreshToken) {
       return NextResponse.json({
         code: 400,
         message: 'Refresh token不能为空',
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // 验证refresh token
     let refreshPayload: { userId: string; jti: string }
     try {
-      refreshPayload = JWTUtils.verifyRefreshToken(refresh_token)
+      refreshPayload = JWTUtils.verifyRefreshToken(refreshToken)
     } catch (error) {
       return NextResponse.json({
         code: 401,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
           message: 'Token刷新成功',
           data: {
             accessToken: result.data.accessToken || result.data.token,
-            refreshToken: result.data.refreshToken || refresh_token,
+            refreshToken: result.data.refreshToken || refreshToken,
             expiresAt: result.data.expiresAt || new Date(Date.now() + 15 * 60 * 1000).toISOString(),
             tokenType: 'Bearer'
           }
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         role: user.role,
         permissions: user.permissions,
-        schoolCode: user.schoolCode
+        schoolCode: user.school_code
       })
 
       return NextResponse.json({
