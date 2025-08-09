@@ -137,7 +137,9 @@ export class ErrorHandler {
     // Limit stored reports
     if (this.errorReports.size > 100) {
       const firstKey = this.errorReports.keys().next().value
-      this.errorReports.delete(firstKey)
+      if (firstKey) {
+        this.errorReports.delete(firstKey)
+      }
     }
   }
   
