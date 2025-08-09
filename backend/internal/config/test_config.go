@@ -23,6 +23,7 @@ func SetupTestDB() (*gorm.DB, error) {
 		&models.User{},
 		&models.Letter{},
 		&models.LetterCode{},
+		&models.StatusLog{}, // 添加StatusLog模型
 		&models.Courier{},
 		&models.CourierTask{},
 		&models.Notification{},
