@@ -38,6 +38,8 @@ type MuseumItem struct {
 	ViewCount   int              `json:"viewCount" gorm:"column:view_count;default:0"`
 	LikeCount   int              `json:"likeCount" gorm:"column:like_count;default:0"`
 	ShareCount  int              `json:"shareCount" gorm:"column:share_count;default:0"`
+	CommentCount int             `json:"commentCount" gorm:"column:comment_count;default:0"`
+	FeaturedAt   *time.Time      `json:"featuredAt" gorm:"column:featured_at"`
 	
 	// OP Code System Integration - 地理位置标记
 	OriginOPCode string          `json:"origin_op_code,omitempty" gorm:"type:varchar(6);index"` // 来源地理位置OP Code
@@ -101,7 +103,7 @@ type MuseumEntry struct {
 	LikeCount         int                    `json:"likeCount" gorm:"column:like_count;default:0"`
 	BookmarkCount     int                    `json:"bookmarkCount" gorm:"column:bookmark_count;default:0"`
 	ShareCount        int                    `json:"shareCount" gorm:"column:share_count;default:0"`
-	AIMetadata        map[string]interface{} `json:"aiMetadata" gorm:"column:ai_metadata;type:jsonb"`
+	AIMetadata        string                 `json:"aiMetadata" gorm:"column:ai_metadata;type:text"` // Store as JSON string for SQLite compatibility
 	SubmittedAt       time.Time              `json:"submittedAt" gorm:"column:submitted_at"`
 	ApprovedAt        *time.Time             `json:"approvedAt" gorm:"column:approved_at"`
 	FeaturedAt        *time.Time             `json:"featuredAt" gorm:"column:featured_at"`

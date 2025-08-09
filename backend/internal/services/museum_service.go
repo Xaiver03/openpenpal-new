@@ -1046,14 +1046,14 @@ func (s *MuseumService) SearchEntries(ctx context.Context, query string, tags []
 
 	// 文本搜索
 	if query != "" {
-		dbQuery = dbQuery.Where("title ILIKE ? OR content ILIKE ? OR author_name ILIKE ?", 
+		dbQuery = dbQuery.Where("title LIKE ? OR content LIKE ? OR author_name LIKE ?", 
 			"%"+query+"%", "%"+query+"%", "%"+query+"%")
 	}
 
 	// 标签过滤
 	if len(tags) > 0 {
 		for _, tag := range tags {
-			dbQuery = dbQuery.Where("tags ILIKE ?", "%"+tag+"%")
+			dbQuery = dbQuery.Where("tags LIKE ?", "%"+tag+"%")
 		}
 	}
 

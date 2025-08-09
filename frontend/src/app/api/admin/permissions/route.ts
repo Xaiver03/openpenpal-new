@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
             }
           })
         } else {
-          const allRoles: UserRole[] = ['user', 'courier', 'senior_courier', 'courier_coordinator', 'school_admin', 'platform_admin', 'admin', 'super_admin']
+          const allRoles: UserRole[] = ['user', 'courier_level1', 'courier_level2', 'courier_level3', 'courier_level4', 'platform_admin', 'super_admin']
           const rolesData = allRoles.map(role => ({
             role,
             permissions: permissionService.getRolePermissions(role),
@@ -314,7 +314,7 @@ export async function DELETE(request: NextRequest) {
 
       case 'all':
         // 重置所有配置
-        const roles: UserRole[] = ['user', 'courier', 'senior_courier', 'courier_coordinator', 'school_admin', 'platform_admin', 'admin', 'super_admin']
+        const roles: UserRole[] = ['user', 'courier_level1', 'courier_level2', 'courier_level3', 'courier_level4', 'platform_admin', 'super_admin']
         const levels: CourierLevel[] = [1, 2, 3, 4]
         
         await Promise.all([

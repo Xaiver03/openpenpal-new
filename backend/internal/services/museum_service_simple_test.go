@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"testing"
+	"time"
 
 	"openpenpal-backend/internal/config"
 	"openpenpal-backend/internal/models"
@@ -103,15 +104,15 @@ func (suite *MuseumServiceSimpleTestSuite) TestCreateMuseumItem_InvalidSourceTyp
 
 // TestGetMuseumEntry_Success 测试获取博物馆条目
 func (suite *MuseumServiceSimpleTestSuite) TestGetMuseumEntry_Success() {
-	// 先创建一个博物馆物品
-	item := suite.createTestMuseumItem()
+	// 先创建一个博物馆条目
+	entry := suite.createTestMuseumEntry()
 
 	// 获取博物馆条目
-	entry, err := suite.museumService.GetMuseumEntry(context.Background(), item.ID)
+	retrievedEntry, err := suite.museumService.GetMuseumEntry(context.Background(), entry.ID)
 
 	suite.NoError(err)
-	suite.NotNil(entry)
-	suite.Equal(item.ID, entry.ID)
+	suite.NotNil(retrievedEntry)
+	suite.Equal(entry.ID, retrievedEntry.ID)
 }
 
 // TestGetMuseumEntry_NotFound 测试物品不存在
@@ -222,6 +223,29 @@ func (suite *MuseumServiceSimpleTestSuite) createTestMuseumItem() *models.Museum
 	item, err := suite.museumService.CreateMuseumItem(context.Background(), req)
 	suite.NoError(err)
 	return item
+}
+
+func (suite *MuseumServiceSimpleTestSuite) createTestMuseumEntry() *models.MuseumEntry {
+	// 创建一个MuseumEntry直接到数据库
+	entry := &models.MuseumEntry{
+		ID:                "123e4567-e89b-12d3-a456-426614174000", // 使用有效的UUID格式
+		LetterID:          "test-letter-id",
+		DisplayTitle:      "测试博物馆条目",
+		AuthorDisplayType: "anonymous",
+		CuratorType:       "system",
+		CuratorID:         suite.testAdmin.ID,
+		Status:            models.MuseumItemPending,
+		ModerationStatus:  models.MuseumItemPending,
+		ViewCount:         0,
+		LikeCount:         0,
+		AIMetadata:        "{}", // JSON字符串格式
+		SubmittedAt:       time.Now(),
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+	}
+	err := suite.db.Create(entry).Error
+	suite.NoError(err)
+	return entry
 }
 
 func (suite *MuseumServiceSimpleTestSuite) createTestLetter() *models.Letter {

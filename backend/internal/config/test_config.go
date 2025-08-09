@@ -31,6 +31,13 @@ func SetupTestDB() (*gorm.DB, error) {
 		&models.NotificationPreference{},
 		&models.MuseumItem{},
 		&models.MuseumExhibition{},
+		&models.MuseumExhibitionEntry{}, // 缺失的展览条目表
+		&models.MuseumEntry{},           // 缺失的博物馆条目表
+		&models.MuseumReaction{},        // 缺失的反应表
+		&models.MuseumInteraction{},     // 缺失的互动表
+		&models.MuseumTag{},             // 缺失的标签表
+		&models.MuseumSubmission{},      // 缺失的提交记录表
+		&models.MuseumCollection{},      // 缺失的收藏表
 		&models.Envelope{},
 		&models.EnvelopeDesign{},
 		&models.EnvelopeOrder{},

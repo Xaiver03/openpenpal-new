@@ -154,8 +154,8 @@ export default function UsersManagePage() {
           is_active: true,
           is_verified: true,
           last_login_at: '2024-01-20T10:30:00Z',
-          created_at: '2024-01-15T08:00:00Z',
-          updated_at: '2024-01-20T10:30:00Z',
+          createdAt: '2024-01-15T08:00:00Z',
+          updatedAt: '2024-01-20T10:30:00Z',
           status: 'active',
           stats: {
             letters_sent: 25,
@@ -167,14 +167,14 @@ export default function UsersManagePage() {
           username: 'courier002',
           email: 'courier002@pku.edu.cn',
           nickname: '快递小王',
-          role: 'courier',
+          role: 'courier_level1',
           school_code: 'BJDX01',
           school_name: '北京大学',
           is_active: true,
           is_verified: true,
           last_login_at: '2024-01-21T14:20:00Z',
-          created_at: '2024-01-10T08:00:00Z',
-          updated_at: '2024-01-21T14:20:00Z',
+          createdAt: '2024-01-10T08:00:00Z',
+          updatedAt: '2024-01-21T14:20:00Z',
           status: 'active',
           stats: {
             letters_sent: 45,
@@ -188,14 +188,14 @@ export default function UsersManagePage() {
           username: 'admin003',
           email: 'admin003@pku.edu.cn',
           nickname: '管理员李',
-          role: 'school_admin',
+          role: 'platform_admin',
           school_code: 'BJDX01',
           school_name: '北京大学',
           is_active: true,
           is_verified: true,
           last_login_at: '2024-01-21T16:45:00Z',
-          created_at: '2024-01-01T08:00:00Z',
-          updated_at: '2024-01-21T16:45:00Z',
+          createdAt: '2024-01-01T08:00:00Z',
+          updatedAt: '2024-01-21T16:45:00Z',
           status: 'active',
           stats: {
             letters_sent: 12,
@@ -674,7 +674,7 @@ export default function UsersManagePage() {
                     <Calendar className="w-3 h-3" />
                     <span className="font-medium">注册时间</span>
                   </div>
-                  <p>{new Date(selectedUser.created_at).toLocaleDateString()}</p>
+                  <p>{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-1 mb-1">
