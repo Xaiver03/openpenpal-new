@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"math/rand"
 	"openpenpal-backend/internal/config"
 	"openpenpal-backend/internal/models"
 	"time"
@@ -49,8 +50,9 @@ func (s *AdminService) GetDashboardStats() (*models.AdminDashboardStats, error) 
 		return nil, fmt.Errorf("failed to count letters today: %w", err)
 	}
 
-	// 活跃信使数量
-	if err := s.db.Model(&models.User{}).Where("role = ? AND is_active = ?", "courier", true).Count(&stats.ActiveCouriers).Error; err != nil {
+	// 活跃信使数量（包含所有级别的信使）
+	courierRoles := []string{"courier", "courier_level1", "courier_level2", "courier_level3", "courier_level4"}
+	if err := s.db.Model(&models.User{}).Where("role IN ? AND is_active = ?", courierRoles, true).Count(&stats.ActiveCouriers).Error; err != nil {
 		return nil, fmt.Errorf("failed to count active couriers: %w", err)
 	}
 
@@ -278,11 +280,11 @@ func (s *AdminService) InjectSeedData() error {
 			return fmt.Errorf("failed to create letter: %w", err)
 		}
 
-		// 为每封信生成编号
+		// 为每封信生成唯一编号
 		letterCode := &models.LetterCode{
 			ID:         uuid.New().String(),
 			LetterID:   letter.ID,
-			Code:       fmt.Sprintf("OPP%d", time.Now().Unix()+int64(len(letters))),
+			Code:       fmt.Sprintf("OPP%d%d", time.Now().Unix(), len(letters)*1000+rand.Intn(1000)),
 			QRCodeURL:  fmt.Sprintf("/qr/%s.png", letter.ID),
 			QRCodePath: fmt.Sprintf("/uploads/qr/%s.png", letter.ID),
 		}
@@ -296,7 +298,7 @@ func (s *AdminService) InjectSeedData() error {
 	envelopeDesigns := []models.EnvelopeDesign{
 		{
 			ID:           uuid.New().String(),
-			SchoolCode:   "BJDX",
+			SchoolCode:   "BJDX01",
 			Type:         "school",
 			Theme:        "经典白色",
 			ImageURL:     "/envelopes/classic-white.png",
@@ -313,7 +315,7 @@ func (s *AdminService) InjectSeedData() error {
 		},
 		{
 			ID:           uuid.New().String(),
-			SchoolCode:   "BJDX",
+			SchoolCode:   "BJDX01",
 			Type:         "school",
 			Theme:        "温馨粉色",
 			ImageURL:     "/envelopes/warm-pink.png",
@@ -330,7 +332,7 @@ func (s *AdminService) InjectSeedData() error {
 		},
 		{
 			ID:           uuid.New().String(),
-			SchoolCode:   "BJDX",
+			SchoolCode:   "BJDX01",
 			Type:         "school",
 			Theme:        "复古牛皮",
 			ImageURL:     "/envelopes/vintage-kraft.png",
