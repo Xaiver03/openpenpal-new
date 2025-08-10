@@ -17,10 +17,13 @@ import {
   CheckCircle,
   Clock,
   Package,
-  AlertCircle
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react'
 import { formatRelativeTime } from '@/lib/utils'
 import { LetterService, type Letter } from '@/lib/services/letter-service'
+import { CommentList, CommentStats } from '@/components/comments'
+import { Separator } from '@/components/ui/separator'
 
 interface LetterData extends Letter {
   deliveryNote?: string
@@ -320,7 +323,30 @@ export default function ReadLetterPage() {
           <Heart className="mr-2 h-5 w-5" />
           收藏
         </Button>
+        
+        <CommentStats 
+          letter_id={letter.id!}
+          show_icon={true}
+          format="compact"
+          className="border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-8 py-2"
+        />
       </div>
+
+      {/* Comment Section */}
+      {letter.id && (
+        <div className="mt-12 mb-8">
+          <Separator className="mb-8" />
+          <CommentList
+            letter_id={letter.id}
+            max_depth={3}
+            enable_nested={true}
+            show_stats={true}
+            allow_comments={true}
+            initial_sort="created_at"
+            className="border-0 shadow-none bg-transparent"
+          />
+        </div>
+      )}
 
       {/* 提示信息 */}
       <Card className="mt-8">

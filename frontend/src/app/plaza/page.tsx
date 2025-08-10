@@ -24,6 +24,7 @@ import {
   Star,
   BookOpen
 } from 'lucide-react'
+import { CommentCountBadge } from '@/components/comments'
 
 // 动态加载大型组件
 const CommunityStats = dynamic(
@@ -286,6 +287,7 @@ export default function PlazaPage() {
                           (data.data?.data && Array.isArray(data.data.data)) ? data.data.data : []
         const formattedPosts = letterData.map((letter: any) => ({
           id: letter.id,
+          code: letter.code,
           title: letter.title || '无标题',
           excerpt: (letter.content || '').substring(0, 100) + '...',
           author: letter.user?.nickname || letter.author_name || '匿名作者',
@@ -294,7 +296,6 @@ export default function PlazaPage() {
           publishDate: new Date(letter.created_at).toISOString().split('T')[0],
           likes: letter.like_count || Math.floor(Math.random() * 300) + 50,
           views: letter.view_count || Math.floor(Math.random() * 1500) + 200,
-          comments: Math.floor(Math.random() * 50) + 5, // 临时数据
           tags: getTagsForLetter(letter.content || ''),
           featured: Math.random() > 0.7
         }))
@@ -595,26 +596,27 @@ export default function PlazaPage() {
             {!loading && !error && posts.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {sortedPosts.map((post: any) => (
-                  <Card key={post.id} className={`group hover:shadow-lg transition-all duration-300 h-fit ${
-                    post.featured ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50' : 'border-amber-200'
-                  }`}>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">
-                          {post.categoryLabel}
-                        </span>
-                        {post.featured && (
-                          <Star className="w-3 h-3 text-amber-500 fill-current" />
-                        )}
-                      </div>
-                      <CardTitle className="font-serif text-base xl:text-lg text-amber-900 line-clamp-2 group-hover:text-amber-700 transition-colors">
-                        {post.title}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-amber-700 text-xs xl:text-sm line-clamp-2 xl:line-clamp-3 mb-3 leading-relaxed">
-                        {post.excerpt}
-                      </p>
+                  <Link key={post.id} href={`/read/${post.code}`}>
+                    <Card className={`group hover:shadow-lg transition-all duration-300 h-fit cursor-pointer ${
+                      post.featured ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50' : 'border-amber-200'
+                    }`}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">
+                            {post.categoryLabel}
+                          </span>
+                          {post.featured && (
+                            <Star className="w-3 h-3 text-amber-500 fill-current" />
+                          )}
+                        </div>
+                        <CardTitle className="font-serif text-base xl:text-lg text-amber-900 line-clamp-2 group-hover:text-amber-700 transition-colors">
+                          {post.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-amber-700 text-xs xl:text-sm line-clamp-2 xl:line-clamp-3 mb-3 leading-relaxed">
+                          {post.excerpt}
+                        </p>
                       
                       {/* Tags - 限制显示数量以适应较小空间 */}
                       <div className="flex flex-wrap gap-1 mb-3">
@@ -632,7 +634,9 @@ export default function PlazaPage() {
                       <div className="flex items-center justify-between text-xs text-amber-600 mb-2">
                         <div className="flex items-center gap-2">
                           <button 
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               try {
                                 await LetterService.likeLetter(post.id)
                                 toast.success('点赞成功！')
@@ -657,8 +661,14 @@ export default function PlazaPage() {
                             <Eye className="w-3 h-3" />
                             {post.views > 999 ? `${Math.round(post.views/1000)}k` : post.views}
                           </span>
+                          <CommentCountBadge 
+                            letter_id={post.id}
+                            className="flex items-center gap-1 text-amber-600 bg-transparent p-0 h-auto border-0"
+                          />
                           <button 
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               try {
                                 await LetterService.shareLetter(post.id, {
                                   platform: 'clipboard',
@@ -687,6 +697,7 @@ export default function PlazaPage() {
                       </div>
                     </CardContent>
                   </Card>
+                  </Link>
                 ))}
               </div>
             )}
