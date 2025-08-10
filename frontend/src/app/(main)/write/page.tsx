@@ -237,7 +237,7 @@ export default function WritePage() {
       if (result.data) {
         const codeData = result.data as any
         setGeneratedCode(codeData.letter_code)
-        setQrCodeImage(codeData.qrCodeUrl)
+        setQrCodeImage(codeData.qr_code_url || codeData.qrCodeUrl)
       }
       setError(null)
     } catch (error) {

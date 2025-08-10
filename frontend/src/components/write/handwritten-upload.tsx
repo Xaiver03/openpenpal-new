@@ -136,7 +136,7 @@ export function HandwrittenUpload({
         formData.append('is_public', 'false')
 
         // 上传单个图片
-        const response = await apiClient.post<{ url: string }>('/storage/upload', formData, {
+        const response = await apiClient.post<{ url: string }>('/api/v1/storage/upload', formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
