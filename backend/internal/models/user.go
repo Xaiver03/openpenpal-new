@@ -212,9 +212,10 @@ type LoginRequest struct {
 
 // LoginResponse 登录响应
 type LoginResponse struct {
-	Token     string    `json:"token"`
-	User      *User     `json:"user"`
-	ExpiresAt time.Time `json:"expires_at"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"` // 刷新令牌，与前端类型保持一致
+	User         *User     `json:"user"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }
 
 // UpdateProfileRequest 更新档案请求

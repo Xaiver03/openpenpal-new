@@ -116,13 +116,13 @@ export interface LoginResponse {
 }
 
 /**
- * 用户统计信息
+ * 用户统计信息 - 字段命名与后端保持一致
  */
 export interface UserStats {
-  lettersSent: number
-  lettersReceived: number
-  draftsCount: number
-  deliveredCount?: number  // 仅信使角色
+  letters_sent: number       // 与后端 JSON 字段一致
+  letters_received: number   // 与后端 JSON 字段一致
+  drafts_count: number       // 与后端 JSON 字段一致
+  delivered_count: number    // 与后端 JSON 字段一致（仅信使角色）
 }
 
 /**
