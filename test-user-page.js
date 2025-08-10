@@ -22,7 +22,11 @@ async function testUserPageAPI() {
       username: aliceProfileResponse.data.data.username,
       nickname: aliceProfileResponse.data.data.nickname,
       role: aliceProfileResponse.data.data.role,
-      school: aliceProfileResponse.data.data.school
+      school: aliceProfileResponse.data.data.school,
+      opCode: aliceProfileResponse.data.data.opCode,
+      writingLevel: aliceProfileResponse.data.data.writingLevel,
+      courierLevel: aliceProfileResponse.data.data.courierLevel,
+      achievements: aliceProfileResponse.data.data.stats?.achievements?.length || 0
     });
 
     console.log('\n  测试 admin 用户资料:');
@@ -32,6 +36,10 @@ async function testUserPageAPI() {
       username: adminProfileResponse.data.data.username,
       nickname: adminProfileResponse.data.data.nickname,
       role: adminProfileResponse.data.data.role,
+      opCode: adminProfileResponse.data.data.opCode,
+      writingLevel: adminProfileResponse.data.data.writingLevel,
+      courierLevel: adminProfileResponse.data.data.courierLevel,
+      achievements: adminProfileResponse.data.data.stats?.achievements?.length || 0
     });
 
     console.log('\n  测试不存在的用户:');
