@@ -121,6 +121,7 @@ func main() {
 	moderationHandler := handlers.NewModerationHandler(moderationService)
 	shopHandler := handlers.NewShopHandler(shopService, userService)
 	commentHandler := handlers.NewCommentHandler(commentService)
+	userProfileHandler := handlers.NewUserProfileHandler(db) // 用户档案处理器
 	// opcodeHandler := handlers.NewOPCodeHandler(opcodeService, courierService) // OP Code处理器 - Temporarily disabled
 	
 	// QR扫描服务和处理器 - SOTA集成：复用现有依赖 - Temporarily disabled
@@ -184,7 +185,7 @@ func main() {
 	})
 
 	// 设置API路由别名 - SOTA解决方案
-	routes.SetupAPIAliases(router)
+	routes.SetupAPIAliases(router, userProfileHandler)
 
 	// API版本组
 	v1 := router.Group("/api/v1")

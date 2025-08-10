@@ -11,7 +11,7 @@ import (
 
 // SetupAPIAliases creates route aliases to fix frontend-backend API mismatches
 // This is a SOTA solution that maintains backward compatibility
-func SetupAPIAliases(router *gin.Engine) {
+func SetupAPIAliases(router *gin.Engine, userProfileHandler interface{ GetUserProfile(*gin.Context); GetUserLetters(*gin.Context) }) {
 	v1 := router.Group("/api")
 	
 	// Authentication route aliases
@@ -392,151 +392,11 @@ func SetupAPIAliases(router *gin.Engine) {
 	// User profile endpoints
 	usersAlias := v1.Group("/users")
 	{
-		// Get user profile by username
-		usersAlias.GET("/:username/profile", func(c *gin.Context) {
-			username := c.Param("username")
-			if username == "" {
-				utils.BadRequestResponse(c, "用户名不能为空", nil)
-				return
-			}
-			
-			// Mock user profile - TODO: Implement real user profile service
-			profiles := map[string]gin.H{
-				"alice": {
-					"id":       1,
-					"username": "alice",
-					"nickname": "Alice Smith",
-					"email":    "alice@example.com",
-					"role":     "student",
-					"bio":      "爱好写信的学生，希望通过文字传递温暖",
-					"school":   "北京大学",
-					"created_at": "2024-01-15T08:00:00Z",
-					"op_code":  "PK5F3D",
-					"writing_level": 3,
-					"courier_level": 0,
-					"stats": gin.H{
-						"letters_sent":        15,
-						"letters_received":    12,
-						"museum_contributions": 3,
-						"total_points":        450,
-						"writing_points":      320,
-						"courier_points":      0,
-						"current_streak":      7,
-						"achievements":        []string{"first_letter", "active_writer", "museum_contributor"},
-					},
-					"privacy": gin.H{
-						"show_email":    false,
-						"show_op_code":  true,
-						"show_stats":    true,
-						"op_code_privacy": "partial", // full, partial, hidden
-					},
-				},
-				"admin": {
-					"id":       2,
-					"username": "admin",
-					"nickname": "系统管理员",
-					"role":     "super_admin",
-					"bio":      "OpenPenPal系统管理员，维护平台运行",
-					"school":   "北京大学",
-					"created_at": "2024-01-01T00:00:00Z",
-					"op_code":  "PK1L01",
-					"writing_level": 5,
-					"courier_level": 4,
-					"stats": gin.H{
-						"letters_sent":        5,
-						"letters_received":    8,
-						"museum_contributions": 10,
-						"total_points":        1000,
-						"writing_points":      600,
-						"courier_points":      400,
-						"current_streak":      30,
-						"achievements":        []string{"system_admin", "master_writer", "city_coordinator", "museum_curator"},
-					},
-					"privacy": gin.H{
-						"show_email":    false,
-						"show_op_code":  true,
-						"show_stats":    true,
-						"op_code_privacy": "full",
-					},
-				},
-			}
-			
-			if profile, exists := profiles[username]; exists {
-				utils.SuccessResponse(c, 200, "获取用户资料成功", profile)
-			} else {
-				utils.NotFoundResponse(c, "用户不存在")
-			}
-		})
+		// Get user profile by username - 使用真实的处理器
+		usersAlias.GET("/:username/profile", userProfileHandler.GetUserProfile)
 		
-		// Get user letters by username
-		usersAlias.GET("/:username/letters", func(c *gin.Context) {
-			username := c.Param("username")
-			publicOnly := c.Query("public") == "true"
-			
-			if username == "" {
-				utils.BadRequestResponse(c, "用户名不能为空", nil)
-				return
-			}
-			
-			// Mock user letters - TODO: Implement real letter service integration
-			userLetters := map[string][]gin.H{
-				"alice": {
-					{
-						"id":              1,
-						"title":           "给远方朋友的问候",
-						"content_preview": "亲爱的朋友，最近过得怎么样？我想和你分享一些生活中的小确幸...",
-						"created_at":      "2024-01-20T10:30:00Z",
-						"status":          "delivered",
-						"recipient_username": "bob",
-						"sender_username":   "alice",
-						"is_public":        true,
-					},
-					{
-						"id":              2,
-						"title":           "冬日暖阳",
-						"content_preview": "今天的阳光特别温暖，让我想起了童年的冬天...",
-						"created_at":      "2024-01-18T15:20:00Z",
-						"status":          "delivered",
-						"recipient_username": "carol",
-						"sender_username":   "alice",
-						"is_public":        true,
-					},
-				},
-				"admin": {
-					{
-						"id":              3,
-						"title":           "系统维护通知",
-						"content_preview": "亲爱的用户们，系统将于本周末进行例行维护...",
-						"created_at":      "2024-01-15T09:00:00Z",
-						"status":          "delivered",
-						"recipient_username": "all_users",
-						"sender_username":   "admin",
-						"is_public":        true,
-					},
-				},
-			}
-			
-			letters, exists := userLetters[username]
-			if !exists {
-				letters = []gin.H{}
-			}
-			
-			// Filter public letters if requested
-			if publicOnly {
-				publicLetters := []gin.H{}
-				for _, letter := range letters {
-					if isPublic, ok := letter["is_public"].(bool); ok && isPublic {
-						publicLetters = append(publicLetters, letter)
-					}
-				}
-				letters = publicLetters
-			}
-			
-			utils.SuccessResponse(c, 200, "获取用户信件成功", gin.H{
-				"letters": letters,
-				"count":   len(letters),
-			})
-		})
+		// Get user letters by username - 使用真实的处理器
+		usersAlias.GET("/:username/letters", userProfileHandler.GetUserLetters)
 	}
 
 	// Error reporting endpoint
