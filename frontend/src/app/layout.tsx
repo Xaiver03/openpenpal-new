@@ -3,6 +3,7 @@ import { Inter, Noto_Serif_SC } from 'next/font/google'
 import './globals.css'
 import { cn } from '@/lib/utils'
 import { AuthProvider } from '@/contexts/auth-context-new'
+import { AuthProviderEnhanced, AuthDebugWidget as EnhancedAuthDebugWidget } from '@/app/providers/auth-provider-enhanced'
 import { AuthInitializer } from '@/components/providers/auth-initializer'
 import { WebSocketErrorBoundary, PageErrorBoundary } from '@/components/error-boundary'
 import { QueryProvider } from '@/components/providers/query-provider'
@@ -10,6 +11,7 @@ import { WebSocketProvider, PerformanceMonitor } from '@/components/providers/cl
 import { NotificationManager } from '@/components/realtime/notification-center'
 import { LazyWrapper } from '@/components/optimization/performance-wrapper'
 import { AuthDebugPanel } from '@/components/debug/auth-debug-panel'
+import AuthDebugWidget from '@/components/debug/auth-debug-widget'
 import { TokenRefreshProvider } from '@/components/providers/token-refresh-provider'
 
 const inter = Inter({
@@ -69,22 +71,26 @@ export default function RootLayout({
         <PageErrorBoundary>
           <LazyWrapper enableLazyLoading={true}>
             <QueryProvider>
-              <AuthProvider>
-                <AuthInitializer>
-                  <TokenRefreshProvider>
-                    <WebSocketErrorBoundary fallback={<div className="hidden"></div>}>
-                      <WebSocketProvider>
-                        <div className="relative flex min-h-screen flex-col">
-                          <main className="flex-1">{children}</main>
-                          <NotificationManager />
-                          <PerformanceMonitor />
-                          <AuthDebugPanel />
-                        </div>
-                      </WebSocketProvider>
-                    </WebSocketErrorBoundary>
-                  </TokenRefreshProvider>
-                </AuthInitializer>
-              </AuthProvider>
+              <AuthProviderEnhanced>
+                <AuthProvider>
+                  <AuthInitializer>
+                    <TokenRefreshProvider>
+                      <WebSocketErrorBoundary fallback={<div className="hidden"></div>}>
+                        <WebSocketProvider>
+                          <div className="relative flex min-h-screen flex-col">
+                            <main className="flex-1">{children}</main>
+                            <NotificationManager />
+                            <PerformanceMonitor />
+                            <AuthDebugPanel />
+                            <AuthDebugWidget />
+                            <EnhancedAuthDebugWidget />
+                          </div>
+                        </WebSocketProvider>
+                      </WebSocketErrorBoundary>
+                    </TokenRefreshProvider>
+                  </AuthInitializer>
+                </AuthProvider>
+              </AuthProviderEnhanced>
             </QueryProvider>
           </LazyWrapper>
         </PageErrorBoundary>

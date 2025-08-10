@@ -10,6 +10,7 @@ import { useUserStore, useAuth as useAuthStore, usePermissions, useUser, type Co
 import { TokenManager, wsManager } from '@/lib/api-client'
 import { type UserRole, type Permission } from '@/constants/roles'
 import { log } from '@/utils/logger'
+import { EnhancedAuthService } from '@/lib/services/auth-service-enhanced'
 
 // Legacy interfaces for backward compatibility
 export interface User {
@@ -90,8 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timeoutId = setTimeout(() => {
       if (isAuthenticated && user) {
         console.log('🔐 Auth state: User authenticated, connecting WebSocket')
-        // Connect WebSocket
-        wsManager.connect().catch(console.error)
+        // Connect WebSocket with error handling
+        wsManager.connect().catch((error) => {
+          console.error('📡 WebSocket connection failed:', error)
+          // Don't trigger logout on WebSocket failure
+        })
         
         // Emit auth events for legacy components
         const authEvent = new CustomEvent('auth:login', { 
@@ -100,21 +104,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.dispatchEvent(authEvent)
       } else if (!isLoading) {
         // 只有在不处于加载状态时才处理登出
-        // 这避免了初始化期间的临时未认证状态触发登出
         console.log('🔐 Auth state: User not authenticated, disconnecting WebSocket')
         // Disconnect WebSocket
         wsManager.disconnect()
         
-        // 只有当确实存在token但认证失败时才触发logout事件
-        // 这避免了页面刷新或初始化时的误触发
-        const hasToken = TokenManager.get()
-        if (hasToken && !isAuthenticated) {
-          console.log('🔐 Token exists but user not authenticated, triggering logout')
-          const logoutEvent = new CustomEvent('auth:logout')
-          window.dispatchEvent(logoutEvent)
-        }
+        // Don't trigger logout event here - let other systems handle it
+        // This prevents cascading logout events during initialization
       }
-    }, 100) // 100ms防抖，给状态变化一些时间稳定
+    }, 300) // 300ms防抖，给状态变化更多时间稳定
 
     return () => clearTimeout(timeoutId)
   }, [isAuthenticated, user, isLoading])
@@ -123,11 +120,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (data: LoginRequest) => {
     clearError()
     
-    const result = await storeLogin(data)
-    if (!result.success) {
-      throw new Error(result.error || 'Login failed')
+    try {
+      // 使用增强版认证服务
+      const response = await EnhancedAuthService.login(data)
+      if (response.success && response.data) {
+        // 用户状态已由EnhancedAuthService通过AuthOrchestrator设置
+        return
+      } else {
+        throw new Error(response.message || 'Login failed')
+      }
+    } catch (error) {
+      throw error
     }
-  }, [storeLogin, clearError])
+  }, [clearError])
 
   // Enhanced register with error handling
   const register = useCallback(async (data: RegisterRequest): Promise<{ success: boolean; message?: string }> => {
@@ -137,14 +142,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Enhanced logout
   const logout = useCallback(async () => {
-    await storeLogout()
-    TokenManager.clear()
-  }, [storeLogout])
+    // 使用增强版认证服务
+    await EnhancedAuthService.logout()
+  }, [])
 
   // Enhanced refresh with optimistic updates
   const refreshUser = useCallback(async () => {
-    await storeRefreshUser()
-  }, [storeRefreshUser])
+    await EnhancedAuthService.refreshAuth()
+  }, [])
 
   // Legacy permission check
   const checkPermission = useCallback((permission: Permission): boolean => {

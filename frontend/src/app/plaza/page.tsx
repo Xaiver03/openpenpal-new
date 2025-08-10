@@ -97,7 +97,7 @@ const AdvancedSearch = smartMemo(({ onSearch }: { onSearch: (query: string) => v
       </Button>
     </div>
   )
-}
+})
 
 // Main Plaza Page Component with SOTA optimizations
 const PlazaPageComponent = () => {

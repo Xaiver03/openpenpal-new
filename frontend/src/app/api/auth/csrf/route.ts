@@ -50,14 +50,19 @@ export async function GET() {
       }
     })
     
-    // Set the cookie directly on the response
+    // Set the cookie directly on the response with explicit domain
+    const isProduction = process.env.NODE_ENV === 'production'
     response.cookies.set('csrf-token', token, {
       httpOnly: false, // Allow JavaScript to read
-      secure: false, // Not using HTTPS in dev
+      secure: isProduction, // HTTPS only in production
       sameSite: 'lax',
       path: '/',
-      maxAge: 86400 // 24 hours
+      maxAge: 86400, // 24 hours
+      domain: undefined // Let browser handle domain
     })
+    
+    // Also set via headers for better compatibility
+    response.headers.set('X-CSRF-Token', token)
     
     return response
   } catch (error) {

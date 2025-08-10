@@ -7,6 +7,8 @@ import React from 'react'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { AuthService } from '@/lib/services/auth-service'
+import { EnhancedAuthService } from '@/lib/services/auth-service-enhanced'
+import { AuthOrchestrator } from '@/lib/auth/auth-orchestrator'
 import { 
   hasPermission, 
   canAccessAdmin, 
@@ -215,7 +217,8 @@ export const useUserStore = create<UserStoreState>()(
           setLoading({ isLoading: true, error: null })
           
           try {
-            const response = await AuthService.login(credentials)
+            // 使用增强版认证服务
+        const response = await EnhancedAuthService.login(credentials)
             
             if (response.success && response.data?.user) {
               setUser(response.data.user as any)
@@ -223,8 +226,13 @@ export const useUserStore = create<UserStoreState>()(
               
               // 登录成功后启动token自动刷新
               if (typeof window !== 'undefined') {
-                tokenRefreshInterceptor.initialize()
-                window.dispatchEvent(new CustomEvent('auth:login'))
+                // Delay token refresh initialization to avoid conflicts
+                setTimeout(() => {
+                  tokenRefreshInterceptor.initialize()
+                }, 1000)
+                window.dispatchEvent(new CustomEvent('auth:login', {
+                  detail: { user: response.data.user }
+                }))
               }
               
               return { success: true }
@@ -245,16 +253,19 @@ export const useUserStore = create<UserStoreState>()(
           setLoading({ isLoading: true })
           
           try {
-            await AuthService.logout()
+            // 使用增强版认证服务
+        await EnhancedAuthService.logout()
           } catch (error) {
             console.error('Logout error:', error)
           } finally {
             setUser(null)
             setLoading({ isLoading: false, error: null })
             
-            // 触发登出事件
+            // 触发登出事件（标记为用户主动登出）
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('auth:logout'))
+              window.dispatchEvent(new CustomEvent('auth:logout', {
+                detail: { source: 'user_action' }
+              }))
             }
           }
         },
@@ -265,7 +276,8 @@ export const useUserStore = create<UserStoreState>()(
           setLoading({ isRefreshing: true, error: null })
           
           try {
-            const response = await AuthService.getCurrentUser()
+            // 使用增强版认证服务
+        const response = await EnhancedAuthService.getCurrentUser()
             
             if (response.success && response.data) {
               setUser(response.data as any)

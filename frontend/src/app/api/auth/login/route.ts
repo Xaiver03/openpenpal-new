@@ -108,15 +108,20 @@ export async function POST(request: NextRequest) {
     }
     
     // 7. 转换后端响应格式为前端期望格式
+    // 注意：前端 AuthService 期望的字段名
     const responseData = {
       code: 0,
       message: '登录成功',
       data: {
-        access_token: backendData.data.token,
-        refresh_token: backendData.data.refresh_token || backendData.data.token,
-        expires_at: backendData.data.expires_at,
-        token_type: 'Bearer',
+        // Token fields
+        accessToken: backendData.data.token,
+        token: backendData.data.token, // Fallback field
+        refreshToken: backendData.data.refresh_token || backendData.data.token,
+        expiresAt: backendData.data.expires_at,
+        // User data - pass through all fields
         user: {
+          ...backendData.data.user,
+          // Ensure required fields are present
           id: backendData.data.user.id,
           username: backendData.data.user.username,
           email: backendData.data.user.email,
@@ -126,7 +131,7 @@ export async function POST(request: NextRequest) {
           created_at: backendData.data.user.created_at,
           updated_at: backendData.data.user.updated_at,
           last_login_at: backendData.data.user.last_login_at,
-          is_active: backendData.data.user.is_active
+          is_active: backendData.data.user.is_active !== undefined ? backendData.data.user.is_active : true
         }
       },
       timestamp: new Date().toISOString()
