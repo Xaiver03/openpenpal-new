@@ -2,24 +2,24 @@
 
 export interface MuseumEntry {
   id: string;
-  letterId: string;
+  letter_id: string;
   submission_id?: string;
-  displayTitle: string;
-  authorDisplayType: 'anonymous' | 'penName' | 'realName';
+  display_title: string;
+  author_display_type: 'anonymous' | 'penName' | 'realName';
   author_display_name?: string;
-  curatorType: 'system' | 'user' | 'admin';
-  curatorId: string;
+  curator_type: 'system' | 'user' | 'admin';
+  curator_id: string;
   categories: string[];
   tags: string[];
   status: MuseumItemStatus;
-  moderationStatus: MuseumItemStatus;
-  viewCount: number;
-  likeCount: number;
-  bookmarkCount: number;
-  shareCount: number;
+  moderation_status: MuseumItemStatus;
+  view_count: number;
+  like_count: number;
+  bookmark_count: number;
+  share_count: number;
   ai_metadata?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   published_at?: string;
   featured_at?: string;
   
@@ -33,7 +33,7 @@ export type MuseumItemStatus = 'pending' | 'approved' | 'rejected' | 'archived' 
 
 export interface MuseumSubmission {
   id: string;
-  letterId: string;
+  letter_id: string;
   submitter_id: string;
   display_preference: 'anonymous' | 'penName' | 'realName';
   pen_name?: string;
@@ -53,12 +53,12 @@ export interface MuseumExhibition {
   cover_image?: string;
   start_date: string;
   end_date?: string;
-  curatorId: string;
+  curator_id: string;
   status: 'draft' | 'active' | 'ended' | 'archived';
   entry_ids: string[];
-  viewCount: number;
-  createdAt: string;
-  updatedAt: string;
+  view_count: number;
+  created_at: string;
+  updated_at: string;
   
   // Relations
   entries?: MuseumEntry[];
@@ -70,7 +70,7 @@ export interface MuseumTag {
   name: string;
   category: string;
   usage_count: number;
-  createdAt: string;
+  created_at: string;
 }
 
 export interface MuseumListRequest {
@@ -92,7 +92,7 @@ export interface MuseumListResponse {
 }
 
 export interface SubmissionRequest {
-  letterId: string;
+  letter_id: string;
   display_preference: 'anonymous' | 'penName' | 'realName';
   pen_name?: string;
   submission_reason: string;

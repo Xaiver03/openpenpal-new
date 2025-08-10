@@ -27,9 +27,9 @@ export interface LetterDraft {
   title?: string
   content: string
   style: LetterStyle
-  replyTo?: string
-  createdAt: Date
-  updatedAt: Date
+  reply_to?: string
+  created_at: Date
+  updated_at: Date
 }
 
 /**
@@ -37,11 +37,11 @@ export interface LetterDraft {
  */
 export interface LetterCode {
   id: string
-  letterId: string
+  letter_id: string
   code: string
-  qrCodeUrl?: string
-  generatedAt: Date
-  expiresAt?: Date
+  qr_code_url?: string
+  generated_at: Date
+  expires_at?: Date
 }
 
 /**
@@ -49,15 +49,15 @@ export interface LetterCode {
  */
 export interface Letter {
   id: string
-  userId: string
+  user_id: string
   title?: string
   content: string
   style: LetterStyle
   status: LetterStatus
-  replyTo?: string
+  reply_to?: string
   code?: LetterCode
-  createdAt: Date
-  updatedAt: Date
+  created_at: Date
+  updated_at: Date
 }
 
 /**
@@ -65,10 +65,10 @@ export interface Letter {
  */
 export interface LetterPhoto {
   id: string
-  letterId: string
-  imageUrl: string
-  isPublic: boolean
-  createdAt: Date
+  letter_id: string
+  image_url: string
+  is_public: boolean
+  created_at: Date
 }
 
 /**
@@ -76,19 +76,19 @@ export interface LetterPhoto {
  */
 export interface StatusLog {
   id: string
-  codeId: string
+  code_id: string
   status: LetterStatus
-  updatedBy: string
+  updated_by: string
   location?: string
   note?: string
-  createdAt: Date
+  created_at: Date
 }
 
 /**
  * 发送的信件
  */
 export interface SentLetter extends Letter {
-  statusLogs: StatusLog[]
+  status_logs: StatusLog[]
   photos: LetterPhoto[]
 }
 
@@ -96,8 +96,8 @@ export interface SentLetter extends Letter {
  * 收到的信件
  */
 export interface ReceivedLetter extends Letter {
-  senderNickname?: string
-  readAt?: Date
+  sender_nickname?: string
+  read_at?: Date
 }
 
 /**
@@ -107,7 +107,7 @@ export interface CreateLetterRequest {
   title?: string
   content: string
   style: LetterStyle
-  replyTo?: string
+  reply_to?: string
 }
 
 /**
@@ -128,17 +128,17 @@ export interface LetterListParams {
   status?: LetterStatus
   style?: LetterStyle
   search?: string
-  sortBy?: 'createdAt' | 'updatedAt'
-  sortOrder?: 'asc' | 'desc'
+  sort_by?: 'created_at' | 'updated_at'
+  sort_order?: 'asc' | 'desc'
 }
 
 /**
  * 信件统计
  */
 export interface LetterStats {
-  totalSent: number
-  totalReceived: number
-  inTransit: number
+  total_sent: number
+  total_received: number
+  in_transit: number
   delivered: number
   drafts: number
 }

@@ -39,8 +39,8 @@ interface EnvelopeOrder {
   payment_id: string
   delivery_method: string
   delivery_info: string
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
 }
 
 export default function OrdersPage() {
@@ -180,7 +180,7 @@ export default function OrdersPage() {
                                 订单号：{order.id}
                               </p>
                               <p className="text-sm text-gray-500">
-                                下单时间：{new Date(order.createdAt).toLocaleString()}
+                                下单时间：{new Date(order.created_at).toLocaleString()}
                               </p>
                             </div>
                             {getStatusBadge(order.status)}

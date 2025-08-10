@@ -32,27 +32,27 @@ interface User {
   currentRole: string
   schoolCode?: string
   schoolName?: string
-  joinDate: string
-  lastActive: string
-  lettersSent: number
-  lettersReceived: number
-  courierTasks?: number
-  averageRating?: number
+  join_date: string
+  last_active: string
+  letters_sent: number
+  letters_received: number
+  courier_tasks?: number
+  average_rating?: number
 }
 
 interface AppointmentRecord {
   id: string
-  appointerId: string
-  appointerName: string
-  targetUserId: string
-  targetUserName: string
-  fromRole: string
-  toRole: string
+  appointer_id: string
+  appointer_name: string
+  target_user_id: string
+  target_user_name: string
+  from_role: string
+  to_role: string
   reason: string
   status: 'pending' | 'approved' | 'rejected'
-  createdAt: string
-  approvedAt?: string
-  approvedBy?: string
+  created_at: string
+  approved_at?: string
+  approved_by?: string
 }
 
 const ROLE_HIERARCHY = {
@@ -115,12 +115,12 @@ export default function AppointmentPage() {
           currentRole: apiUser.role,
           schoolCode: apiUser.school_code,
           schoolName: '学校名称', // TODO: 从API获取完整学校信息
-          joinDate: apiUser.created_at,
-          lastActive: apiUser.created_at, // TODO: 从API获取最后活跃时间
-          lettersSent: 0, // TODO: 从API获取信件统计
-          lettersReceived: 0, // TODO: 从API获取信件统计
-          courierTasks: 0, // TODO: 从API获取信使任务数
-          averageRating: 4.8 // TODO: 从API获取评分
+          join_date: apiUser.created_at,
+          last_active: apiUser.created_at, // TODO: 从API获取最后活跃时间
+          letters_sent: 0, // TODO: 从API获取信件统计
+          letters_received: 0, // TODO: 从API获取信件统计
+          courier_tasks: 0, // TODO: 从API获取信使任务数
+          average_rating: 4.8 // TODO: 从API获取评分
         }))
         
         setUsers(transformedUsers)
@@ -134,17 +134,17 @@ export default function AppointmentPage() {
         // 转换任命记录数据格式
         const transformedRecords: AppointmentRecord[] = recordsData.map((record: any) => ({
           id: record.id,
-          appointerId: record.appointed_by,
-          appointerName: '任命者', // TODO: 从API获取任命者姓名
-          targetUserId: record.user_id,
-          targetUserName: '目标用户', // TODO: 从API获取目标用户姓名
-          fromRole: record.old_role,
-          toRole: record.new_role,
+          appointer_id: record.appointed_by,
+          appointer_name: '任命者', // TODO: 从API获取任命者姓名
+          target_user_id: record.user_id,
+          target_user_name: '目标用户', // TODO: 从API获取目标用户姓名
+          from_role: record.old_role,
+          to_role: record.new_role,
           reason: record.reason,
           status: record.status,
-          createdAt: record.appointed_at,
-          approvedAt: record.appointed_at,
-          approvedBy: record.appointed_by
+          created_at: record.appointed_at,
+          approved_at: record.appointed_at,
+          approved_by: record.appointed_by
         }))
         
         setAppointmentRecords(transformedRecords)
@@ -160,10 +160,10 @@ export default function AppointmentPage() {
           currentRole: 'user',
           schoolCode: 'PKU001',
           schoolName: '北京大学',
-          joinDate: '2024-01-15',
-          lastActive: '2024-01-21T11:30:00Z',
-          lettersSent: 25,
-          lettersReceived: 18
+          join_date: '2024-01-15',
+          last_active: '2024-01-21T11:30:00Z',
+          letters_sent: 25,
+          letters_received: 18
         },
         {
           id: 'u002',
@@ -172,12 +172,12 @@ export default function AppointmentPage() {
           currentRole: 'courier',
           schoolCode: 'PKU001',
           schoolName: '北京大学',
-          joinDate: '2024-01-10',
-          lastActive: '2024-01-21T10:45:00Z',
-          lettersSent: 45,
-          lettersReceived: 32,
-          courierTasks: 89,
-          averageRating: 4.8
+          join_date: '2024-01-10',
+          last_active: '2024-01-21T10:45:00Z',
+          letters_sent: 45,
+          letters_received: 32,
+          courier_tasks: 89,
+          average_rating: 4.8
         },
         {
           id: 'u003',
@@ -186,12 +186,12 @@ export default function AppointmentPage() {
           currentRole: 'courier',
           schoolCode: 'PKU001',
           schoolName: '北京大学',
-          joinDate: '2024-01-05',
-          lastActive: '2024-01-21T09:20:00Z',
-          lettersSent: 67,
-          lettersReceived: 54,
-          courierTasks: 156,
-          averageRating: 4.9
+          join_date: '2024-01-05',
+          last_active: '2024-01-21T09:20:00Z',
+          letters_sent: 67,
+          letters_received: 54,
+          courier_tasks: 156,
+          average_rating: 4.9
         }
         ]
         setUsers(mockUsers)
@@ -241,15 +241,15 @@ export default function AppointmentPage() {
       // 创建新的任命记录
       const newRecord: AppointmentRecord = {
         id: `a${Date.now()}`,
-        appointerId: user.id,
-        appointerName: user.username,
-        targetUserId: selectedUser.id,
-        targetUserName: selectedUser.username,
-        fromRole: selectedUser.currentRole,
-        toRole: appointmentForm.newRole,
+        appointer_id: user.id,
+        appointer_name: user.username,
+        target_user_id: selectedUser.id,
+        target_user_name: selectedUser.username,
+        from_role: selectedUser.currentRole,
+        to_role: appointmentForm.newRole,
         reason: appointmentForm.reason,
         status: 'pending',
-        createdAt: new Date().toISOString()
+        created_at: new Date().toISOString()
       }
 
       setAppointmentRecords(prev => [newRecord, ...prev])
@@ -367,14 +367,14 @@ export default function AppointmentPage() {
                                   {u.schoolName && <span>{u.schoolName}</span>}
                                 </div>
                                 <div className="flex items-center gap-4">
-                                  <span>发信 {u.lettersSent} 封</span>
-                                  <span>收信 {u.lettersReceived} 封</span>
-                                  {u.courierTasks && <span>投递 {u.courierTasks} 次</span>}
-                                  {u.averageRating && <span>评分 {u.averageRating}/5.0</span>}
+                                  <span>发信 {u.letters_sent} 封</span>
+                                  <span>收信 {u.letters_received} 封</span>
+                                  {u.courier_tasks && <span>投递 {u.courier_tasks} 次</span>}
+                                  {u.average_rating && <span>评分 {u.average_rating}/5.0</span>}
                                 </div>
                                 <div className="text-xs text-amber-600">
-                                  注册: {new Date(u.joinDate).toLocaleDateString()} | 
-                                  最后活跃: {new Date(u.lastActive).toLocaleString()}
+                                  注册: {new Date(u.join_date).toLocaleDateString()} | 
+                                  最后活跃: {new Date(u.last_active).toLocaleString()}
                                 </div>
                               </div>
                             </div>
@@ -438,21 +438,21 @@ export default function AppointmentPage() {
                             </Badge>
                           </div>
                           <div className="text-sm text-amber-600">
-                            {new Date(record.createdAt).toLocaleString()}
+                            {new Date(record.created_at).toLocaleString()}
                           </div>
                         </div>
 
                         <div className="space-y-3">
                           <div className="flex items-center gap-4">
                             <span className="font-semibold text-amber-900">目标用户:</span>
-                            <span>{record.targetUserName}</span>
+                            <span>{record.target_user_name}</span>
                             <div className="flex items-center gap-2">
-                              <Badge className={getRoleColor(record.fromRole)}>
-                                {ROLE_HIERARCHY[record.fromRole as keyof typeof ROLE_HIERARCHY]?.name}
+                              <Badge className={getRoleColor(record.from_role)}>
+                                {ROLE_HIERARCHY[record.from_role as keyof typeof ROLE_HIERARCHY]?.name}
                               </Badge>
                               <span>→</span>
-                              <Badge className={getRoleColor(record.toRole)}>
-                                {ROLE_HIERARCHY[record.toRole as keyof typeof ROLE_HIERARCHY]?.name}
+                              <Badge className={getRoleColor(record.to_role)}>
+                                {ROLE_HIERARCHY[record.to_role as keyof typeof ROLE_HIERARCHY]?.name}
                               </Badge>
                             </div>
                           </div>
@@ -463,9 +463,9 @@ export default function AppointmentPage() {
                           </div>
 
                           <div className="flex items-center gap-4 text-sm text-amber-600">
-                            <span>申请人: {record.appointerName}</span>
-                            {record.approvedAt && record.approvedBy && (
-                              <span>审批人: {record.approvedBy} ({new Date(record.approvedAt).toLocaleString()})</span>
+                            <span>申请人: {record.appointer_name}</span>
+                            {record.approved_at && record.approved_by && (
+                              <span>审批人: {record.approved_by} ({new Date(record.approved_at).toLocaleString()})</span>
                             )}
                           </div>
                         </div>

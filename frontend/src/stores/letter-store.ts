@@ -142,9 +142,9 @@ export const useLetterStore = create<LetterStore>()(
             
             const code: LetterCode = {
               id: generateId(),
-              letterId: draftId,
+              letter_id: draftId,
               code: generateLetterCode(),
-              generatedAt: new Date(),
+              generated_at: new Date(),
             }
 
             // 这里应该调用实际的API

@@ -154,8 +154,8 @@ export default function UsersManagePage() {
           is_active: true,
           is_verified: true,
           last_login_at: '2024-01-20T10:30:00Z',
-          createdAt: '2024-01-15T08:00:00Z',
-          updatedAt: '2024-01-20T10:30:00Z',
+          created_at: '2024-01-15T08:00:00Z',
+          updated_at: '2024-01-20T10:30:00Z',
           status: 'active',
           stats: {
             letters_sent: 25,
@@ -173,8 +173,8 @@ export default function UsersManagePage() {
           is_active: true,
           is_verified: true,
           last_login_at: '2024-01-21T14:20:00Z',
-          createdAt: '2024-01-10T08:00:00Z',
-          updatedAt: '2024-01-21T14:20:00Z',
+          created_at: '2024-01-10T08:00:00Z',
+          updated_at: '2024-01-21T14:20:00Z',
           status: 'active',
           stats: {
             letters_sent: 45,
@@ -194,8 +194,8 @@ export default function UsersManagePage() {
           is_active: true,
           is_verified: true,
           last_login_at: '2024-01-21T16:45:00Z',
-          createdAt: '2024-01-01T08:00:00Z',
-          updatedAt: '2024-01-21T16:45:00Z',
+          created_at: '2024-01-01T08:00:00Z',
+          updated_at: '2024-01-21T16:45:00Z',
           status: 'active',
           stats: {
             letters_sent: 12,

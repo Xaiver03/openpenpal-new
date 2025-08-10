@@ -138,7 +138,7 @@ export function PromotionManagement() {
                             
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span>
-                                申请时间: {formatDistanceToNow(new Date(request.createdAt), {
+                                申请时间: {formatDistanceToNow(new Date(request.created_at), {
                                   addSuffix: true,
                                   locale: zhCN,
                                 })}

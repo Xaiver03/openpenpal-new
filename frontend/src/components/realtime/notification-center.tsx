@@ -178,7 +178,7 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
                       
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(notification.createdAt, { 
+                          {formatDistanceToNow(notification.created_at, { 
                             addSuffix: true, 
                             locale: zhCN 
                           })}

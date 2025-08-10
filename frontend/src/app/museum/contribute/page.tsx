@@ -39,7 +39,7 @@ interface LetterItem {
   id: string
   title: string
   content: string
-  createdAt: string
+  created_at: string
   status: 'draft' | 'sent' | 'received'
   code?: string
   sender?: string
@@ -57,7 +57,7 @@ export default function MuseumContributePage() {
       id: draft.id,
       title: draft.title || '无标题草稿',
       content: draft.content.substring(0, 100) + '...',
-      createdAt: draft.createdAt.toISOString(),
+      created_at: draft.created_at.toISOString(),
       status: 'draft' as const,
       code: undefined,
       sender: undefined,
@@ -67,7 +67,7 @@ export default function MuseumContributePage() {
       id: letter.id,
       title: letter.title || '我的信件',
       content: letter.content.substring(0, 100) + '...',
-      createdAt: letter.createdAt.toISOString(),
+      created_at: letter.created_at.toISOString(),
       status: 'sent' as const,
       code: letter.code?.code,
       sender: user?.nickname || '匿名用户'
@@ -77,15 +77,15 @@ export default function MuseumContributePage() {
       id: letter.id,
       title: letter.title || '收到的信件',
       content: letter.content.substring(0, 100) + '...',
-      createdAt: letter.createdAt.toISOString(),
+      created_at: letter.created_at.toISOString(),
       status: 'received' as const,
       code: letter.code?.code,
-      sender: letter.senderNickname || '匿名用户'
+      sender: letter.sender_nickname || '匿名用户'
     }))
   ].filter(letter => 
     letter.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     letter.content.toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   const handleContributeLetter = async (letter: LetterItem) => {
     try {
@@ -251,7 +251,7 @@ export default function MuseumContributePage() {
                       <div className="flex items-center justify-between text-xs text-amber-600 pt-3 border-t border-amber-200">
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          <span>{new Date(letter.createdAt).toLocaleDateString('zh-CN')}</span>
+                          <span>{new Date(letter.created_at).toLocaleDateString('zh-CN')}</span>
                         </div>
                         {letter.sender && (
                           <div className="flex items-center gap-1">

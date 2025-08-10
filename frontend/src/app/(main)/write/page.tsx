@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { WelcomeBanner } from '@/components/ui/welcome-banner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Mail, 
   Save, 
@@ -18,7 +19,9 @@ import {
   QrCode,
   CheckCircle,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  Upload,
+  Edit3
 } from 'lucide-react'
 import { useLetterStore } from '@/stores/letter-store'
 import { createLetterDraft, generateLetterCode } from '@/lib/api'
@@ -32,6 +35,7 @@ import { AIPenpalMatch } from '@/components/ai/ai-penpal-match'
 import { AIReplyGenerator } from '@/components/ai/ai-reply-generator'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { stripHtml, getPlainTextLength } from '@/lib/utils/html'
+import { HandwrittenUpload } from '@/components/write/handwritten-upload'
 
 export default function WritePage() {
   const searchParams = useSearchParams()
@@ -56,6 +60,9 @@ export default function WritePage() {
   const [currentLetterId, setCurrentLetterId] = useState<string | null>(null)
   const [showAIPenpalMatch, setShowAIPenpalMatch] = useState(false)
   const [showAIReplyGenerator, setShowAIReplyGenerator] = useState(false)
+  const [activeTab, setActiveTab] = useState<'compose' | 'upload'>('compose')
+  const [uploadedImages, setUploadedImages] = useState<any[]>([])
+  const [extractedText, setExtractedText] = useState<string>('')
   
   const { createDraft, saveDraft, currentDraft } = useLetterStore()
 
@@ -176,7 +183,7 @@ export default function WritePage() {
         title,
         content: plainContent,
         style: selectedStyle,
-        updatedAt: new Date()
+        updated_at: new Date()
       })
     } else {
       createDraft(plainContent, selectedStyle)
@@ -279,17 +286,31 @@ export default function WritePage() {
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
         {/* 写信区域 */}
         <div className="xl:col-span-3 space-y-6">
-          {/* 信件标题 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                信件标题（可选）
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input
-                placeholder="给这封信起个标题吧..."
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'compose' | 'upload')} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="compose" className="flex items-center gap-2">
+                <Edit3 className="h-4 w-4" />
+                在线编写
+              </TabsTrigger>
+              <TabsTrigger value="upload" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                上传手写信
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* 在线编写标签页 */}
+            <TabsContent value="compose" className="space-y-6">
+              {/* 信件标题 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    信件标题（可选）
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Input
+                    placeholder="给这封信起个标题吧..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="text-lg"
@@ -371,6 +392,83 @@ export default function WritePage() {
               )}
             </Button>
           </div>
+            </TabsContent>
+            
+            {/* 上传手写信标签页 */}
+            <TabsContent value="upload" className="space-y-6">
+              <HandwrittenUpload
+                onImagesUploaded={(images) => {
+                  setUploadedImages(images)
+                  // TODO: 后续调用OCR服务
+                }}
+                onTextExtracted={(text) => {
+                  setExtractedText(text)
+                  // 可以将提取的文字填充到content中
+                  setContent(text)
+                }}
+                maxImages={5}
+                maxFileSize={10}
+              />
+              
+              {/* 如果有提取的文字，显示编辑器 */}
+              {extractedText && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Edit3 className="h-5 w-5" />
+                      识别结果编辑
+                    </CardTitle>
+                    <CardDescription>
+                      请检查并编辑OCR识别的文字内容
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RichTextEditor
+                      content={extractedText}
+                      onChange={setExtractedText}
+                      placeholder="识别的文字将显示在这里..."
+                      className="font-serif text-base leading-loose"
+                      maxLength={2000}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* 操作按钮 */}
+              <div className="flex flex-wrap gap-4">
+                <Button 
+                  onClick={handleSaveDraft}
+                  variant="outline"
+                  disabled={!uploadedImages.length && !extractedText}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  保存手写信
+                </Button>
+                <Button 
+                  onClick={handleGenerateCode}
+                  disabled={(!uploadedImages.length && !extractedText) || isGeneratingCode || !!generatedCode}
+                  className="font-serif"
+                >
+                  {isGeneratingCode ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      生成中...
+                    </>
+                  ) : generatedCode ? (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      已生成编号
+                    </>
+                  ) : (
+                    <>
+                      <QrCode className="mr-2 h-4 w-4" />
+                      生成编号贴纸
+                    </>
+                  )}
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* 侧边栏 */}

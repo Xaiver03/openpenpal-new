@@ -17,7 +17,7 @@ export function useRealtimeNotifications() {
         type: message.data.type,
         priority: message.data.priority,
         actionUrl: message.data.action_url,
-        createdAt: new Date(message.data.createdAt),
+        createdAt: new Date(message.data.created_at),
         read: false,
       }
 
@@ -319,7 +319,7 @@ export function useSystemMessages() {
         level: message.data.level,
         title: message.data.title,
         content: message.data.content,
-        createdAt: new Date(message.data.createdAt),
+        createdAt: new Date(message.data.created_at),
       }
 
       setSystemMessages(prev => [systemMessage, ...prev.slice(0, 9)]) // 保留最近10条

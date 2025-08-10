@@ -27,14 +27,14 @@ import { formatDate, formatRelativeTime } from '@/lib/utils'
 
 interface PopularEntry {
   id: string
-  letterId: string
+  letter_id: string
   title: string
   excerpt: string
   author: string
   exhibition_id: string
   exhibition_name: string
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
   views: number
   likes: number
   shares: number
@@ -241,7 +241,7 @@ export default function MuseumPopularPage() {
                           <span>{entry.author}</span>
                           <span className="text-muted-foreground">·</span>
                           <Clock className="w-3 h-3" />
-                          <span>{formatRelativeTime(entry.createdAt)}</span>
+                          <span>{formatRelativeTime(entry.created_at)}</span>
                         </CardDescription>
                       </div>
                     </div>

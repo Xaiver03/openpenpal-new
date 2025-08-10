@@ -17,54 +17,54 @@ export type MuseumItemStatus = 'pending' | 'approved' | 'rejected' | 'archived'
 // Additional interfaces for referenced types
 export interface LetterCode {
   id: string
-  letterId: string
+  letter_id: string
   code: string
-  qrCodeUrl?: string
-  isActive: boolean
-  expiresAt?: string
-  createdAt: string
-  updatedAt: string
+  qr_code_url?: string
+  is_active: boolean
+  expires_at?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface StatusLog {
   id: string
-  letterId: string
+  letter_id: string
   status: LetterStatus
   message?: string
-  createdAt: string
+  created_at: string
 }
 
 export interface LetterPhoto {
   id: string
-  letterId: string
+  letter_id: string
   url: string
   caption?: string
   order: number
-  createdAt: string
+  created_at: string
 }
 
 export interface Envelope {
   id: string
-  letterId: string
-  designId: string
+  letter_id: string
+  design_id: string
   customizations?: string
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
 }
 
 export interface LetterLike {
   id: string
-  letterId: string
-  userId: string
-  createdAt: string
+  letter_id: string
+  user_id: string
+  created_at: string
 }
 
 export interface LetterShare {
   id: string
-  letterId: string
-  userId: string
+  letter_id: string
+  user_id: string
   platform: string
-  sharedAt: string
+  shared_at: string
 }
 
 // GORM DeletedAt type
@@ -80,37 +80,37 @@ export interface User {
   nickname: string;
   avatar: string;
   role: UserRole;
-  schoolCode: string;
-  isActive: boolean;
-  lastLoginAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  sentLetters?: Letter[];
-  authoredLetters?: Letter[];
+  school_code: string;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+  sent_letters?: Letter[];
+  authored_letters?: Letter[];
 }
 
 export interface Letter {
   id: string;
-  userId: string;
-  authorId: string;
+  user_id: string;
+  author_id: string;
   title: string;
   content: string;
   style: LetterStyle;
   status: LetterStatus;
   visibility: LetterVisibility;
-  likeCount: number;
-  recipientOpCode: string;
-  senderOpCode: string;
-  shareCount: number;
-  viewCount: number;
-  replyTo?: string;
-  envelopeId?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  like_count: number;
+  recipient_op_code: string;
+  sender_op_code: string;
+  share_count: number;
+  view_count: number;
+  reply_to?: string;
+  envelope_id?: string | null;
+  created_at: string;
+  updated_at: string;
   user?: User | null;
   author?: User | null;
   code?: LetterCode | null;
-  statusLogs?: StatusLog[];
+  status_logs?: StatusLog[];
   photos?: LetterPhoto[];
   envelope?: Envelope | null;
   likes?: LetterLike[];
@@ -119,83 +119,83 @@ export interface Letter {
 
 export interface Courier {
   id: string;
-  userId: string;
+  user_id: string;
   user: User;
   name: string;
   contact: string;
   school: string;
   zone: string;
-  managedOpCodePrefix: string;
-  hasPrinter: boolean;
-  selfIntro: string;
-  canMentor: string;
-  weeklyHours: number;
-  maxDailyTasks: number;
-  transportMethod: string;
-  timeSlots: string;
+  managed_op_code_prefix: string;
+  has_printer: boolean;
+  self_intro: string;
+  can_mentor: string;
+  weekly_hours: number;
+  max_daily_tasks: number;
+  transport_method: string;
+  time_slots: string;
   status: string;
   level: number;
-  taskCount: number;
+  task_count: number;
   points: number;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: DeletedAt;
+  created_at: string;
+  updated_at: string;
+  deleted_at: DeletedAt;
 }
 
 export interface AIConfig {
   id: string;
   provider: AIProvider;
-  apiEndpoint: string;
+  api_endpoint: string;
   model: string;
   temperature: number;
-  maxTokens: number;
-  isActive: boolean;
+  max_tokens: number;
+  is_active: boolean;
   priority: number;
-  dailyQuota: number;
-  usedQuota: number;
-  quotaResetAt: string;
-  createdAt: string;
-  updatedAt: string;
+  daily_quota: number;
+  used_quota: number;
+  quota_reset_at: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface MuseumItem {
   id: string;
-  sourceType: MuseumSourceType;
-  sourceId: string;
+  source_type: MuseumSourceType;
+  source_id: string;
   title: string;
   description: string;
   tags: string;
   status: MuseumItemStatus;
-  submittedBy: string;
-  approvedBy: string | null;
-  approvedAt: string | null;
-  viewCount: number;
-  likeCount: number;
-  shareCount: number;
-  originOpCode?: string;
-  createdAt: string;
-  updatedAt: string;
+  submitted_by: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  view_count: number;
+  like_count: number;
+  share_count: number;
+  origin_op_code?: string;
+  created_at: string;
+  updated_at: string;
   letter?: Letter | null;
-  submittedByUser?: User | null;
-  approvedByUser?: User | null;
+  submitted_by_user?: User | null;
+  approved_by_user?: User | null;
 }
 
 export interface MuseumEntry {
   id: string;
-  letterId: string;
-  submissionId: string | null;
-  displayTitle: string;
-  authorDisplayType: string;
-  authorDisplayName: string | null;
-  curatorType: string;
-  curatorId: string;
+  letter_id: string;
+  submission_id: string | null;
+  display_title: string;
+  author_display_type: string;
+  author_display_name: string | null;
+  curator_type: string;
+  curator_id: string;
   categories: string[];
   tags: string[];
   status: MuseumItemStatus;
-  moderationStatus: MuseumItemStatus;
-  viewCount: number;
-  likeCount: number;
-  bookmarkCount: number;
-  shareCount: number;
+  moderation_status: MuseumItemStatus;
+  view_count: number;
+  like_count: number;
+  bookmark_count: number;
+  share_count: number;
 }
 

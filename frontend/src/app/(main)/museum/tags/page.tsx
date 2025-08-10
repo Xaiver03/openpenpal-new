@@ -33,7 +33,7 @@ interface MuseumTag {
   description: string
   related_tags: string[]
   popularity_score: number
-  createdAt: string
+  created_at: string
 }
 
 interface TagCategory {
@@ -82,7 +82,7 @@ export default function MuseumTagsPage() {
         description: tag.description || `探索关于"${tag.name}"的信件故事`,
         related_tags: generateRelatedTags(tag.name),
         popularity_score: Math.floor(Math.random() * 100),
-        createdAt: tag.createdAt || new Date().toISOString()
+        created_at: tag.created_at || new Date().toISOString()
       })) || []
 
       setTags(formattedTags)

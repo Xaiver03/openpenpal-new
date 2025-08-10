@@ -215,9 +215,9 @@ export default function PlazaPage() {
           author: letter.user?.nickname || letter.author_name || '匿名作者',
           category: letter.style || 'story',
           categoryLabel: getCategoryLabel(letter.style || 'story'),
-          likes: letter.likeCount || Math.floor(Math.random() * 500) + 100,
-          views: letter.viewCount || Math.floor(Math.random() * 2000) + 500,
-          publishDate: new Date(letter.createdAt).toISOString().split('T')[0],
+          likes: letter.like_count || Math.floor(Math.random() * 500) + 100,
+          views: letter.view_count || Math.floor(Math.random() * 2000) + 500,
+          publishDate: new Date(letter.created_at).toISOString().split('T')[0],
           tags: getTagsForLetter(letter.content || ''),
           trending: true
         }))
@@ -291,9 +291,9 @@ export default function PlazaPage() {
           author: letter.user?.nickname || letter.author_name || '匿名作者',
           category: letter.style || 'story',
           categoryLabel: getCategoryLabel(letter.style || 'story'),
-          publishDate: new Date(letter.createdAt).toISOString().split('T')[0],
-          likes: letter.likeCount || Math.floor(Math.random() * 300) + 50,
-          views: letter.viewCount || Math.floor(Math.random() * 1500) + 200,
+          publishDate: new Date(letter.created_at).toISOString().split('T')[0],
+          likes: letter.like_count || Math.floor(Math.random() * 300) + 50,
+          views: letter.view_count || Math.floor(Math.random() * 1500) + 200,
           comments: Math.floor(Math.random() * 50) + 5, // 临时数据
           tags: getTagsForLetter(letter.content || ''),
           featured: Math.random() > 0.7

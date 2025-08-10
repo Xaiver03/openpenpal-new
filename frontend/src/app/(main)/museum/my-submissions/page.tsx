@@ -29,7 +29,7 @@ import { toast } from '@/components/ui/use-toast'
 
 interface Submission {
   id: string
-  letterId: string
+  letter_id: string
   title: string
   excerpt: string
   status: 'pending' | 'approved' | 'rejected' | 'withdrawn'
@@ -98,7 +98,7 @@ export default function MySubmissionsPage() {
       // 模拟数据转换
       const formattedSubmissions: Submission[] = response.data.map((sub: any) => ({
         id: sub.id,
-        letterId: sub.letterId,
+        letter_id: sub.letter_id,
         title: sub.title,
         excerpt: sub.content?.substring(0, 150) + '...' || '',
         status: sub.status || 'pending',
@@ -386,7 +386,7 @@ export default function MySubmissionsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/write?edit=${submission.letterId}`)}
+                        onClick={() => router.push(`/write?edit=${submission.letter_id}`)}
                       >
                         <Edit className="w-4 h-4 mr-2" />
                         修改后重新提交

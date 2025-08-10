@@ -112,21 +112,21 @@ export async function POST(request: NextRequest) {
       code: 0,
       message: '登录成功',
       data: {
-        accessToken: backendData.data.token,
-        refreshToken: backendData.data.refreshToken || backendData.data.token,
-        expiresAt: backendData.data.expiresAt,
-        tokenType: 'Bearer',
+        access_token: backendData.data.token,
+        refresh_token: backendData.data.refresh_token || backendData.data.token,
+        expires_at: backendData.data.expires_at,
+        token_type: 'Bearer',
         user: {
           id: backendData.data.user.id,
           username: backendData.data.user.username,
           email: backendData.data.user.email,
           nickname: backendData.data.user.nickname,
           role: backendData.data.user.role,
-          schoolCode: backendData.data.user.schoolCode,
-          createdAt: backendData.data.user.createdAt,
-          updatedAt: backendData.data.user.updatedAt,
-          lastLoginAt: backendData.data.user.lastLoginAt,
-          isActive: backendData.data.user.isActive
+          school_code: backendData.data.user.school_code,
+          created_at: backendData.data.user.created_at,
+          updated_at: backendData.data.user.updated_at,
+          last_login_at: backendData.data.user.last_login_at,
+          is_active: backendData.data.user.is_active
         }
       },
       timestamp: new Date().toISOString()

@@ -75,7 +75,7 @@ export function UnreachableCompanion({ className = '' }: { className?: string })
       const parsed = JSON.parse(saved)
       setPersonas(parsed.map((p: any) => ({
         ...p,
-        createdAt: new Date(p.createdAt)
+        createdAt: new Date(p.created_at)
       })))
     }
   }

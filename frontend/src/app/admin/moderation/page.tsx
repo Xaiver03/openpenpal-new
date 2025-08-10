@@ -524,7 +524,7 @@ export default function ModerationPage() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            {new Date(record.createdAt).toLocaleString()}
+                            {new Date(record.created_at).toLocaleString()}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -596,12 +596,12 @@ export default function ModerationPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={word.isActive ? "default" : "secondary"}>
-                            {word.isActive ? '启用' : '禁用'}
+                          <Badge variant={word.is_active ? "default" : "secondary"}>
+                            {word.is_active ? '启用' : '禁用'}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {new Date(word.createdAt).toLocaleString()}
+                          {new Date(word.created_at).toLocaleString()}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
