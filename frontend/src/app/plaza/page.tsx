@@ -9,6 +9,18 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { LetterService } from '@/lib/services/letter-service'
 import { toast } from 'sonner'
+
+// SOTA Imports
+import { enhancedApiClient } from '@/lib/utils/enhanced-api-client'
+import { EnhancedErrorBoundary } from '@/components/error-boundary/enhanced-error-boundary'
+import { 
+  useDebouncedValue, 
+  useThrottledCallback,
+  useOptimizedState,
+  useRenderTracker,
+  useResourcePreloader,
+  smartMemo 
+} from '@/lib/utils/react-optimizer'
 import { 
   PenTool, 
   Heart, 
@@ -35,17 +47,22 @@ const CommunityStats = dynamic(
   }
 )
 
-// Advanced search component
-const AdvancedSearch = ({ onSearch }: { onSearch: (query: string) => void }) => {
+// Advanced search component - Optimized with SOTA patterns
+const AdvancedSearch = smartMemo(({ onSearch }: { onSearch: (query: string) => void }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  
+  // Performance optimizations
+  const debouncedQuery = useDebouncedValue(searchQuery, 300)
+  const throttledSearch = useThrottledCallback(onSearch, 1000)
+  const renderTracker = useRenderTracker('AdvancedSearch')
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
     
     setIsSearching(true)
     try {
-      await onSearch(searchQuery.trim())
+      await throttledSearch(searchQuery.trim())
     } finally {
       setIsSearching(false)
     }
@@ -81,9 +98,24 @@ const AdvancedSearch = ({ onSearch }: { onSearch: (query: string) => void }) => 
   )
 }
 
-export default function PlazaPage() {
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [sortBy, setSortBy] = useState('latest')
+// Main Plaza Page Component with SOTA optimizations
+const PlazaPageComponent = () => {
+  // Performance tracking
+  const renderTracker = useRenderTracker('PlazaPage')
+  const { preloadImage, preloadScript } = useResourcePreloader()
+  
+  // Optimized state management
+  const [state, updateState] = useOptimizedState({
+    selectedCategory: 'all',
+    sortBy: 'latest',
+    posts: [] as any[],
+    loading: true,
+    error: null as string | null,
+    searchQuery: '',
+    isSearchMode: false,
+    hotRecommendations: [],
+    hotRecommendationsLoading: true
+  })
 
   const categories = [
     { id: 'all', label: '全部', icon: BookOpen },
@@ -186,26 +218,19 @@ export default function PlazaPage() {
     }
   ]
 
-  const [posts, setPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isSearchMode, setIsSearchMode] = useState(false)
-  const [hotRecommendations, setHotRecommendations] = useState([])
-  const [hotRecommendationsLoading, setHotRecommendationsLoading] = useState(true)
-
   useEffect(() => {
     fetchPosts()
     fetchHotRecommendations()
-  }, [selectedCategory, sortBy])
+  }, [state.selectedCategory, state.sortBy])
 
   const fetchHotRecommendations = async () => {
-    setHotRecommendationsLoading(true)
+    updateState({ hotRecommendationsLoading: true })
     try {
-      // 尝试获取热门推荐信件
-      const response = await LetterService.getPopularLetters({
-        period: 'weekly',
-        limit: 6
+      // 使用增强的API客户端获取热门推荐
+      const response = await enhancedApiClient.get('/letters/popular', {
+        cache: true,
+        cacheTTL: 5 * 60 * 1000, // 5分钟缓存
+        dedupe: true
       })
       
       if (response.data) {
@@ -222,69 +247,65 @@ export default function PlazaPage() {
           tags: getTagsForLetter(letter.content || ''),
           trending: true
         }))
-        setHotRecommendations(formattedRecommendations as any)
+        updateState({ hotRecommendations: formattedRecommendations })
       }
     } catch (err) {
       console.error('Failed to fetch hot recommendations:', err)
       // 使用fallback数据
-      setHotRecommendations(featuredPosts.slice(0, 6).map(post => ({ ...post, trending: true })) as any)
+      updateState({ hotRecommendations: featuredPosts.slice(0, 6).map(post => ({ ...post, trending: true })) })
     } finally {
-      setHotRecommendationsLoading(false)
+      updateState({ hotRecommendationsLoading: false })
     }
   }
 
   const fetchPosts = async (useSearch = false, query = '') => {
-    setLoading(true)
-    setError(null)
+    updateState({ loading: true, error: null })
     
     try {
       let response
-      let data
       
       if (useSearch && query) {
-        // 使用搜索API
+        // 使用增强的API客户端进行搜索
         const searchPayload = {
           query: query,
           tags: [],
           date_from: '',
           date_to: '',
           visibility: 'public',
-          sort_by: sortBy === 'latest' ? 'created_at' : 
-                  sortBy === 'popular' ? 'like_count' : 'view_count',
+          sort_by: state.sortBy === 'latest' ? 'created_at' : 
+                  state.sortBy === 'popular' ? 'like_count' : 'view_count',
           sort_order: 'desc',
           page: 1,
           limit: 20
         }
         
-        response = await fetch('/api/v1/letters/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(searchPayload)
+        response = await enhancedApiClient.post('/letters/search', searchPayload, {
+          timeout: 15000
         })
-        data = await response.json()
       } else {
-        // 使用常规公开信件API
+        // 使用常规公开信件API with enhanced client
         const params = new URLSearchParams({
           limit: '20',
-          sort_by: sortBy === 'latest' ? 'created_at' : 
-                   sortBy === 'popular' ? 'like_count' : 'view_count',
+          sort_by: state.sortBy === 'latest' ? 'created_at' : 
+                   state.sortBy === 'popular' ? 'like_count' : 'view_count',
           sort_order: 'desc'
         })
         
-        if (selectedCategory !== 'all') {
-          params.append('style', selectedCategory)
+        if (state.selectedCategory !== 'all') {
+          params.append('style', state.selectedCategory)
         }
 
-        response = await fetch(`http://localhost:8080/api/v1/letters/public?${params}`)
-        data = await response.json()
+        response = await enhancedApiClient.get(`/letters/public?${params}`, {
+          cache: true,
+          cacheTTL: 2 * 60 * 1000, // 2分钟缓存
+          dedupe: true
+        })
       }
       
-      if (response.ok) {
+      if (response.success || response.data) {
         // 将后端数据转换为前端需要的格式
-        const letterData = Array.isArray(data.data) ? data.data : 
-                          (data.data?.data && Array.isArray(data.data.data)) ? data.data.data : []
+        const letterData = Array.isArray(response.data) ? response.data : 
+                          (response.data?.data && Array.isArray(response.data.data)) ? response.data.data : []
         const formattedPosts = letterData.map((letter: any) => ({
           id: letter.id,
           code: letter.code,
@@ -299,15 +320,15 @@ export default function PlazaPage() {
           tags: getTagsForLetter(letter.content || ''),
           featured: Math.random() > 0.7
         }))
-        setPosts(formattedPosts)
+        updateState({ posts: formattedPosts })
       } else {
-        setError(data.message || data.error || '获取数据失败')
+        updateState({ error: response.message || '获取数据失败' })
       }
     } catch (err) {
       console.error('Failed to fetch posts:', err)
-      setError('网络错误')
+      updateState({ error: '网络错误' })
     } finally {
-      setLoading(false)
+      updateState({ loading: false })
     }
   }
 
@@ -332,23 +353,21 @@ export default function PlazaPage() {
   }
 
   const handleSearch = async (query: string) => {
-    setSearchQuery(query)
-    setIsSearchMode(true)
+    updateState({ searchQuery: query, isSearchMode: true })
     await fetchPosts(true, query)
   }
 
   const clearSearch = () => {
-    setSearchQuery('')
-    setIsSearchMode(false)
+    updateState({ searchQuery: '', isSearchMode: false })
     fetchPosts()
   }
 
-  const filteredPosts = posts.filter((post: any) => 
-    selectedCategory === 'all' || post.category === selectedCategory
+  const filteredPosts = state.posts.filter((post: any) => 
+    state.selectedCategory === 'all' || post.category === state.selectedCategory
   )
 
   const sortedPosts = [...filteredPosts].sort((a: any, b: any) => {
-    switch (sortBy) {
+    switch (state.sortBy) {
       case 'popular':
         return b.likes - a.likes
       case 'trending':
@@ -726,5 +745,19 @@ export default function PlazaPage() {
 
       <Footer />
     </div>
+  )
+}
+
+// Export with Error Boundary wrapper
+export default function PlazaPage() {
+  return (
+    <EnhancedErrorBoundary 
+      level="page"
+      name="PlazaPage"
+      enableRecovery={true}
+      enableFeedback={true}
+    >
+      <PlazaPageComponent />
+    </EnhancedErrorBoundary>
   )
 }

@@ -1,7 +1,18 @@
 'use client'
 
-import { Suspense, lazy, memo, useCallback, useMemo } from 'react'
+import React, { Suspense, lazy, memo, useCallback, useMemo } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
+
+// SOTA Imports
+import { EnhancedErrorBoundary } from '@/components/error-boundary/enhanced-error-boundary'
+import { 
+  useMemoryMonitor,
+  useRenderTracker,
+  useResourcePreloader,
+  smartMemo,
+  createLazyComponent,
+  useVirtualizer
+} from '@/lib/utils/react-optimizer'
 
 /**
  * Performance optimization wrapper components
@@ -13,25 +24,96 @@ interface PerformanceWrapperProps {
   fallback?: React.ReactNode
   errorFallback?: React.ComponentType<any>
   enableLazyLoading?: boolean
+  name?: string
+  enableMemoryMonitor?: boolean
+  enableRenderTracking?: boolean
+  enableEnhancedErrorBoundary?: boolean
+  errorBoundaryLevel?: 'page' | 'component' | 'feature'
+  preloadResources?: string[]
 }
 
-// Lazy loading wrapper with suspense
+// Enhanced Lazy loading wrapper with SOTA features
 export const LazyWrapper = memo(function LazyWrapper({ 
   children, 
   fallback = <LoadingSpinner />,
   errorFallback = DefaultErrorFallback,
-  enableLazyLoading = true 
+  enableLazyLoading = true,
+  name = 'LazyWrapper',
+  enableMemoryMonitor = false,
+  enableRenderTracking = process.env.NODE_ENV === 'development',
+  enableEnhancedErrorBoundary = true,
+  errorBoundaryLevel = 'component',
+  preloadResources = []
 }: PerformanceWrapperProps) {
+  // Performance tracking
+  const renderTracker = enableRenderTracking ? useRenderTracker(name) : null
+  const memoryUsage = enableMemoryMonitor ? useMemoryMonitor() : null
+  
+  // Resource preloader
+  const { preloadImage, preloadScript } = useResourcePreloader()
+  
+  // Preload resources on mount
+  React.useEffect(() => {
+    if (preloadResources.length > 0) {
+      preloadResources.forEach(resource => {
+        if (resource.endsWith('.js')) {
+          preloadScript(resource).catch(console.error)
+        } else if (resource.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+          preloadImage(resource).catch(console.error)
+        }
+      })
+    }
+  }, [preloadResources, preloadImage, preloadScript])
+
   if (!enableLazyLoading) {
     return <>{children}</>
   }
 
+  const ErrorWrapper = enableEnhancedErrorBoundary 
+    ? ({ children: ch }: { children: React.ReactNode }) => (
+        <EnhancedErrorBoundary 
+          level={errorBoundaryLevel}
+          name={name}
+          enableRecovery={true}
+          enableFeedback={errorBoundaryLevel === 'page'}
+        >
+          {ch}
+        </EnhancedErrorBoundary>
+      )
+    : ({ children: ch }: { children: React.ReactNode }) => (
+        <ErrorBoundary FallbackComponent={errorFallback}>
+          {ch}
+        </ErrorBoundary>
+      )
+
   return (
-    <ErrorBoundary FallbackComponent={errorFallback}>
-      <Suspense fallback={fallback}>
-        {children}
-      </Suspense>
-    </ErrorBoundary>
+    <>
+      <ErrorWrapper>
+        <Suspense fallback={fallback}>
+          {children}
+        </Suspense>
+      </ErrorWrapper>
+      
+      {/* Development tools */}
+      {enableMemoryMonitor && memoryUsage && process.env.NODE_ENV === 'development' && (
+        <div className={`fixed bottom-4 right-4 z-50 p-2 rounded text-xs font-mono ${
+          memoryUsage.percentage > 80 
+            ? 'bg-red-100 text-red-800 border border-red-300' 
+            : 'bg-green-100 text-green-800 border border-green-300'
+        }`}>
+          <div>Memory: {(memoryUsage.used / 1024 / 1024).toFixed(1)}MB</div>
+          <div>Usage: {memoryUsage.percentage.toFixed(1)}%</div>
+          {memoryUsage.percentage > 80 && <div className="text-red-600">⚠️ High Usage</div>}
+        </div>
+      )}
+      
+      {/* Render tracking in development */}
+      {enableRenderTracking && renderTracker && process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-4 left-4 z-50 p-2 bg-blue-100 text-blue-800 border border-blue-300 rounded text-xs font-mono">
+          <div>{name}: {renderTracker.renderCount} renders</div>
+        </div>
+      )}
+    </>
   )
 })
 
@@ -128,31 +210,24 @@ export const VirtualScroll = memo(function VirtualScroll({
   renderItem,
   className = ''
 }: VirtualScrollProps) {
-  const [startIndex, setStartIndex] = useState(0)
-  
-  const visibleCount = Math.ceil(containerHeight / itemHeight)
-  const endIndex = Math.min(startIndex + visibleCount + 1, items.length)
-  const visibleItems = items.slice(startIndex, endIndex)
-  
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const scrollTop = e.currentTarget.scrollTop
-    const newStartIndex = Math.floor(scrollTop / itemHeight)
-    setStartIndex(newStartIndex)
-  }, [itemHeight])
-  
-  const totalHeight = items.length * itemHeight
-  const offsetY = startIndex * itemHeight
+  // Use SOTA virtualizer from react-optimizer
+  const virtualizer = useVirtualizer({
+    items,
+    itemHeight,
+    containerHeight,
+    overscan: 5
+  })
   
   return (
     <div
       className={`overflow-auto ${className}`}
       style={{ height: containerHeight }}
-      onScroll={handleScroll}
+      onScroll={virtualizer.onScroll}
     >
-      <div style={{ height: totalHeight, position: 'relative' }}>
-        <div style={{ transform: `translateY(${offsetY}px)` }}>
-          {visibleItems.map((item, index) => 
-            renderItem(item, startIndex + index)
+      <div style={{ height: virtualizer.totalHeight, position: 'relative' }}>
+        <div style={{ transform: `translateY(${virtualizer.offsetY}px)` }}>
+          {virtualizer.visibleItems.map((item, index) => 
+            renderItem(item, index)
           )}
         </div>
       </div>
@@ -344,3 +419,197 @@ export const LazyPage = (importFunc: () => Promise<any>) => {
 // export const LazySettingsPage = LazyPage(() => import('../../../app/settings/page'))
 
 import { useState, useEffect, useRef } from 'react'
+
+/**
+ * SOTA Smart Caching and Preloading Component
+ * 智能缓存和预加载策略组件
+ */
+export const SmartCacheProvider = memo(function SmartCacheProvider({
+  children,
+  cacheSize = 50,
+  preloadStrategy = 'intersection'
+}: {
+  children: React.ReactNode
+  cacheSize?: number
+  preloadStrategy?: 'intersection' | 'hover' | 'idle'
+}) {
+  const [cache] = useState(new Map())
+  const [preloadQueue] = useState<string[]>([])
+  
+  // Intelligent cache management
+  const { preloadImage, preloadScript } = useResourcePreloader()
+  
+  const smartPreload = useCallback((resources: string[]) => {
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => {
+        resources.forEach(resource => {
+          if (cache.size < cacheSize) {
+            if (resource.endsWith('.js')) {
+              preloadScript(resource)
+            } else if (resource.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+              preloadImage(resource)
+            }
+          }
+        })
+      })
+    }
+  }, [cache, cacheSize, preloadImage, preloadScript])
+  
+  // Context provider for cache management
+  const contextValue = useMemo(() => ({
+    cache,
+    preloadQueue,
+    smartPreload
+  }), [cache, preloadQueue, smartPreload])
+  
+  return (
+    <SmartCacheContext.Provider value={contextValue}>
+      {children}
+    </SmartCacheContext.Provider>
+  )
+})
+
+// Smart Cache Context
+const SmartCacheContext = React.createContext<{
+  cache: Map<string, any>
+  preloadQueue: string[]
+  smartPreload: (resources: string[]) => void
+}>({
+  cache: new Map(),
+  preloadQueue: [],
+  smartPreload: () => {}
+})
+
+export const useSmartCache = () => {
+  const context = React.useContext(SmartCacheContext)
+  if (!context) {
+    throw new Error('useSmartCache must be used within SmartCacheProvider')
+  }
+  return context
+}
+
+/**
+ * Adaptive Performance Component
+ * 自适应性能组件 - 根据设备性能调整优化策略
+ */
+export const AdaptivePerformance = memo(function AdaptivePerformance({
+  children,
+  lowEndThreshold = 2
+}: {
+  children: React.ReactNode
+  lowEndThreshold?: number
+}) {
+  const [deviceTier, setDeviceTier] = useState<'high' | 'medium' | 'low'>('medium')
+  
+  useEffect(() => {
+    // Detect device performance tier
+    const detectDeviceTier = () => {
+      const cores = navigator.hardwareConcurrency || 4
+      const memory = (navigator as any).deviceMemory || 4
+      
+      if (cores >= 4 && memory >= 8) {
+        setDeviceTier('high')
+      } else if (cores >= 2 && memory >= 4) {
+        setDeviceTier('medium')
+      } else {
+        setDeviceTier('low')
+      }
+    }
+    
+    detectDeviceTier()
+  }, [])
+  
+  // Performance settings based on device tier
+  const performanceSettings = useMemo(() => {
+    switch (deviceTier) {
+      case 'high':
+        return {
+          enableLazyLoading: true,
+          enableVirtualization: true,
+          enableMemoryMonitor: true,
+          enableRenderTracking: true,
+          cacheSize: 100,
+          preloadStrategy: 'intersection' as const
+        }
+      case 'medium':
+        return {
+          enableLazyLoading: true,
+          enableVirtualization: true,
+          enableMemoryMonitor: false,
+          enableRenderTracking: false,
+          cacheSize: 50,
+          preloadStrategy: 'hover' as const
+        }
+      case 'low':
+        return {
+          enableLazyLoading: true,
+          enableVirtualization: false,
+          enableMemoryMonitor: false,
+          enableRenderTracking: false,
+          cacheSize: 20,
+          preloadStrategy: 'idle' as const
+        }
+    }
+  }, [deviceTier])
+  
+  return (
+    <SmartCacheProvider 
+      cacheSize={performanceSettings.cacheSize}
+      preloadStrategy={performanceSettings.preloadStrategy}
+    >
+      <LazyWrapper
+        enableLazyLoading={performanceSettings.enableLazyLoading}
+        enableMemoryMonitor={performanceSettings.enableMemoryMonitor}
+        enableRenderTracking={performanceSettings.enableRenderTracking}
+        name="AdaptivePerformance"
+      >
+        {children}
+      </LazyWrapper>
+    </SmartCacheProvider>
+  )
+})
+
+/**
+ * HOC for Smart Performance Optimization
+ * 智能性能优化高阶组件
+ */
+export function withSmartPerformance<P extends object>(
+  WrappedComponent: React.ComponentType<P>,
+  options: {
+    enableAdaptivePerformance?: boolean
+    enableSmartCache?: boolean
+    cacheStrategy?: 'aggressive' | 'conservative' | 'balanced'
+    preloadResources?: string[]
+  } = {}
+) {
+  const {
+    enableAdaptivePerformance = true,
+    enableSmartCache = true,
+    cacheStrategy = 'balanced',
+    preloadResources = []
+  } = options
+  
+  const SmartPerformanceComponent = (props: P) => {
+    const Wrapper = enableAdaptivePerformance ? AdaptivePerformance : React.Fragment
+    const CacheWrapper = enableSmartCache ? SmartCacheProvider : React.Fragment
+    
+    return (
+      <Wrapper>
+        <CacheWrapper>
+          <LazyWrapper 
+            preloadResources={preloadResources}
+            name={WrappedComponent.displayName || WrappedComponent.name}
+          >
+            <WrappedComponent {...props} />
+          </LazyWrapper>
+        </CacheWrapper>
+      </Wrapper>
+    )
+  }
+  
+  SmartPerformanceComponent.displayName = `withSmartPerformance(${
+    WrappedComponent.displayName || WrappedComponent.name
+  })`
+  
+  return SmartPerformanceComponent
+}

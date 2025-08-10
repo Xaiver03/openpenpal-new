@@ -21,8 +21,16 @@ import type { LetterStatus } from '@/types/letter'
 import { LetterService, type Letter } from '@/lib/services/letter-service'
 import { useAuth } from '@/contexts/auth-context'
 
-export default function MailboxPage() {
+// SOTA Imports
+import { EnhancedErrorBoundary } from '@/components/error-boundary/enhanced-error-boundary'
+import { useDebouncedValue, useRenderTracker } from '@/lib/utils/react-optimizer'
+
+function MailboxPageComponent() {
   const { user } = useAuth()
+  
+  // Performance tracking
+  const renderTracker = useRenderTracker('MailboxPage')
+  
   const [activeTab, setActiveTab] = useState<'sent' | 'received' | 'drafts'>('sent')
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<LetterStatus | 'all'>('all')
@@ -30,6 +38,9 @@ export default function MailboxPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
+  
+  // Debounced search for better performance
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 500)
 
   // 加载信件数据
   const loadLetters = async () => {
@@ -57,7 +68,7 @@ export default function MailboxPage() {
           type: activeTab,
           page: 1,
           limit: 50,
-          search: searchQuery || undefined,
+          search: debouncedSearchQuery || undefined,
           status: filterStatus !== 'all' ? filterStatus : undefined,
           sort_by: 'created_at',
           sort_order: 'desc'
@@ -77,10 +88,10 @@ export default function MailboxPage() {
     }
   }
 
-  // 当用户登录状态或筛选条件改变时重新加载
+  // 当用户登录状态或筛选条件改变时重新加载 (使用防抖搜索)
   useEffect(() => {
     loadLetters()
-  }, [user, activeTab, searchQuery, filterStatus])
+  }, [user, activeTab, debouncedSearchQuery, filterStatus])
 
   const tabs = [
     { id: 'sent', label: '已发送', icon: Send, count: activeTab === 'sent' ? total : 0 },
@@ -311,5 +322,19 @@ export default function MailboxPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// Export with Enhanced Error Boundary wrapper
+export default function MailboxPage() {
+  return (
+    <EnhancedErrorBoundary 
+      level="page"
+      name="MailboxPage"
+      enableRecovery={true}
+      enableFeedback={true}
+    >
+      <MailboxPageComponent />
+    </EnhancedErrorBoundary>
   )
 }
