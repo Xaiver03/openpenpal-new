@@ -95,14 +95,16 @@ cd backend && go run main.go migrate
 
 ### Test Accounts
 - admin/admin123 (super_admin)
-- alice/secret (student)
-- courier_level[1-4]/secret (L1-L4 courier)
+- alice/secret123 (student) - Updated password due to 8+ char requirement
+- courier_level[1-4]/secret123 (L1-L4 courier) - Updated passwords
 
 ### Common Issues
 - Ports: `./startup/force-cleanup.sh`
 - Permissions: Check middleware
 - DB: Ensure PostgreSQL running
 - Auth: Frontend must query DB, no hardcoding
+- Password Reset: Use `cd backend && go run cmd/admin/reset_passwords.go -user=username -password=newpass`
+- React Hooks Error: Fixed conditional hook calls, ensure consistent component rendering
 
 ## Development Principles
 
@@ -126,9 +128,10 @@ cd backend && go run main.go migrate
 ### Standards
 - Go: gofmt
 - TS: ESLint + strict
-- DB: Consistent GORM
+- DB: Consistent GORM, snake_case JSON fields
 - API: Shared response format
 - Files: snake_case.go, PascalCase.tsx, kebab-case.ts
+- Field Naming: Backend uses snake_case, Frontend matches exactly (no camelCase conversion)
 
 ### Courier System Verification
 
@@ -293,4 +296,44 @@ curl -X POST "http://localhost:8080/api/v1/courier/scan" \
 **Status**: ✅ Complete - Models, Service, Handler, Routes, Validation, Migration
 
 **Test**: Use provided curl commands with proper auth tokens
+
+## SOTA Enhancements (State-of-the-Art)
+
+### React Optimization Utilities
+- **Location**: `frontend/src/lib/utils/react-optimizer.ts`
+- **Features**: Smart memoization, virtual scrolling, performance monitoring, lazy loading
+- **Usage**: `useDebouncedValue`, `useThrottledCallback`, `useOptimizedState`, `smartMemo`
+
+### Enhanced API Client
+- **Location**: `frontend/src/lib/utils/enhanced-api-client.ts`  
+- **Features**: Circuit breaker pattern, request deduplication, intelligent caching
+- **Benefits**: Improved reliability, reduced redundant requests, better UX
+
+### Error Handling
+- **Enhanced Error Boundary**: `frontend/src/components/error-boundary/enhanced-error-boundary.tsx`
+- **Performance Monitor**: `frontend/src/lib/utils/performance-monitor.ts`
+- **Cache Manager**: `frontend/src/lib/utils/cache-manager.ts`
+
+### Authentication System
+- **Enhanced Provider**: `frontend/src/app/providers/auth-provider-enhanced.tsx`
+- **Debug Tools**: Development-only auth debugging widget
+- **Security**: CSRF protection, token rotation, secure storage
+
+## Recent Fixes
+
+### React Hooks Error Resolution
+- **Issue**: "Rendered more hooks than during the previous render" 
+- **Fix**: Consistent hook execution, proper useCallback usage, cleanup handling
+- **Location**: `auth-provider-enhanced.tsx:138-152`
+
+### TypeScript Consistency
+- **Issue**: Field naming mismatch (camelCase ↔ snake_case)
+- **Fix**: Updated all frontend types to match backend JSON exactly
+- **Affected**: User types, Letter types, API responses, state management
+
+### Database Connection
+- **Issue**: Connection string parsing error
+- **Fix**: Use `config.DatabaseName` instead of `config.DatabaseURL`
+- **Location**: `backend/internal/config/database.go:45`
+
 ```

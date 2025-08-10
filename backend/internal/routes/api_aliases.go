@@ -389,6 +389,130 @@ func SetupAPIAliases(router *gin.Engine) {
 		})
 	}
 	
+	// User profile endpoints
+	usersAlias := v1.Group("/users")
+	{
+		// Get user profile by username
+		usersAlias.GET("/:username/profile", func(c *gin.Context) {
+			username := c.Param("username")
+			if username == "" {
+				utils.BadRequestResponse(c, "用户名不能为空", nil)
+				return
+			}
+			
+			// Mock user profile - TODO: Implement real user profile service
+			profiles := map[string]gin.H{
+				"alice": {
+					"id":       1,
+					"username": "alice",
+					"nickname": "Alice Smith",
+					"email":    "alice@example.com",
+					"role":     "student",
+					"bio":      "爱好写信的学生，希望通过文字传递温暖",
+					"school":   "北京大学",
+					"created_at": "2024-01-15T08:00:00Z",
+					"stats": gin.H{
+						"letters_sent":        15,
+						"letters_received":    12,
+						"museum_contributions": 3,
+						"total_points":        450,
+					},
+				},
+				"admin": {
+					"id":       2,
+					"username": "admin",
+					"nickname": "系统管理员",
+					"role":     "super_admin",
+					"bio":      "OpenPenPal系统管理员，维护平台运行",
+					"school":   "北京大学",
+					"created_at": "2024-01-01T00:00:00Z",
+					"stats": gin.H{
+						"letters_sent":        5,
+						"letters_received":    8,
+						"museum_contributions": 10,
+						"total_points":        1000,
+					},
+				},
+			}
+			
+			if profile, exists := profiles[username]; exists {
+				utils.SuccessResponse(c, 200, "获取用户资料成功", profile)
+			} else {
+				utils.NotFoundResponse(c, "用户不存在")
+			}
+		})
+		
+		// Get user letters by username
+		usersAlias.GET("/:username/letters", func(c *gin.Context) {
+			username := c.Param("username")
+			publicOnly := c.Query("public") == "true"
+			
+			if username == "" {
+				utils.BadRequestResponse(c, "用户名不能为空", nil)
+				return
+			}
+			
+			// Mock user letters - TODO: Implement real letter service integration
+			userLetters := map[string][]gin.H{
+				"alice": {
+					{
+						"id":              1,
+						"title":           "给远方朋友的问候",
+						"content_preview": "亲爱的朋友，最近过得怎么样？我想和你分享一些生活中的小确幸...",
+						"created_at":      "2024-01-20T10:30:00Z",
+						"status":          "delivered",
+						"recipient_username": "bob",
+						"sender_username":   "alice",
+						"is_public":        true,
+					},
+					{
+						"id":              2,
+						"title":           "冬日暖阳",
+						"content_preview": "今天的阳光特别温暖，让我想起了童年的冬天...",
+						"created_at":      "2024-01-18T15:20:00Z",
+						"status":          "delivered",
+						"recipient_username": "carol",
+						"sender_username":   "alice",
+						"is_public":        true,
+					},
+				},
+				"admin": {
+					{
+						"id":              3,
+						"title":           "系统维护通知",
+						"content_preview": "亲爱的用户们，系统将于本周末进行例行维护...",
+						"created_at":      "2024-01-15T09:00:00Z",
+						"status":          "delivered",
+						"recipient_username": "all_users",
+						"sender_username":   "admin",
+						"is_public":        true,
+					},
+				},
+			}
+			
+			letters, exists := userLetters[username]
+			if !exists {
+				letters = []gin.H{}
+			}
+			
+			// Filter public letters if requested
+			if publicOnly {
+				publicLetters := []gin.H{}
+				for _, letter := range letters {
+					if isPublic, ok := letter["is_public"].(bool); ok && isPublic {
+						publicLetters = append(publicLetters, letter)
+					}
+				}
+				letters = publicLetters
+			}
+			
+			utils.SuccessResponse(c, 200, "获取用户信件成功", gin.H{
+				"letters": letters,
+				"count":   len(letters),
+			})
+		})
+	}
+
 	// Error reporting endpoint
 	v1.POST("/errors/report", func(c *gin.Context) {
 		var req struct {
