@@ -24,6 +24,7 @@ import { formatRelativeTime } from '@/lib/utils'
 import { LetterService, type Letter } from '@/lib/services/letter-service'
 import { CommentList, CommentStats } from '@/components/comments'
 import { Separator } from '@/components/ui/separator'
+import { FollowButton } from '@/components/follow'
 
 interface LetterData extends Letter {
   deliveryNote?: string
@@ -216,9 +217,18 @@ export default function ReadLetterPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <User className="h-4 w-4" />
-            <span>来自：{letter.sender_name}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <User className="h-4 w-4" />
+              <span>来自：{letter.sender_name}</span>
+            </div>
+            {letter.user_id && (
+              <FollowButton
+                user_id={letter.user_id}
+                size="sm"
+                variant="outline"
+              />
+            )}
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />

@@ -37,6 +37,7 @@ import {
   BookOpen
 } from 'lucide-react'
 import { CommentCountBadge } from '@/components/comments'
+import { CompactFollowButton, UserSuggestions } from '@/components/follow'
 
 // 动态加载大型组件
 const CommunityStats = dynamic(
@@ -312,6 +313,7 @@ const PlazaPageComponent = () => {
           title: letter.title || '无标题',
           excerpt: (letter.content || '').substring(0, 100) + '...',
           author: letter.user?.nickname || letter.author_name || '匿名作者',
+          user_id: letter.user_id || letter.user?.id,
           category: letter.style || 'story',
           categoryLabel: getCategoryLabel(letter.style || 'story'),
           publishDate: new Date(letter.created_at).toISOString().split('T')[0],
@@ -708,11 +710,21 @@ const PlazaPageComponent = () => {
 
                       {/* Author & Date - 紧凑布局 */}
                       <div className="flex items-center justify-between text-xs text-amber-600">
-                        <span className="flex items-center gap-1 truncate">
+                        <div className="flex items-center gap-2 truncate flex-1">
                           <User className="w-3 h-3 flex-shrink-0" />
                           <span className="truncate">{post.author}</span>
-                        </span>
-                        <span className="text-xs">{post.publishDate}</span>
+                          {post.user_id && (
+                            <CompactFollowButton
+                              user_id={post.user_id}
+                              className="ml-1 h-5 px-1 text-xs"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                            />
+                          )}
+                        </div>
+                        <span className="text-xs flex-shrink-0">{post.publishDate}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -728,6 +740,29 @@ const PlazaPageComponent = () => {
                 </Button>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* User Suggestions Section */}
+        <section className="py-12 bg-gradient-to-br from-purple-50 to-pink-50 border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <EnhancedErrorBoundary 
+              name="UserSuggestions"
+              level="feature"
+              enableRecovery={true}
+            >
+              <UserSuggestions
+                limit={6}
+                show_reason={true}
+                show_mutual={true}
+                show_refresh={true}
+                algorithm="school"
+                className="w-full"
+                onUserFollow={(user) => {
+                  toast.success(`已关注 ${user.nickname}`);
+                }}
+              />
+            </EnhancedErrorBoundary>
           </div>
         </section>
 
