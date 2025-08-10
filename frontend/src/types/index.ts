@@ -9,6 +9,7 @@
 // Re-export existing type modules for backward compatibility
 export * from './user'
 export * from './auth'
+export * from './comment'
 export * from './courier'
 export * from './api'
 

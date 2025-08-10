@@ -57,6 +57,7 @@ func main() {
 	storageService := services.NewStorageService(db, cfg)
 	moderationService := services.NewModerationService(db, cfg, aiService)
 	shopService := services.NewShopService(db)
+	commentService := services.NewCommentService(db, cfg)
 	// opcodeService := services.NewOPCodeService(db) // OP Code服务 - Temporarily disabled
 
 	// 初始化延迟队列服务
@@ -89,6 +90,9 @@ func main() {
 	courierTaskService.SetNotificationService(notificationService)
 	courierService.SetWebSocketService(wsAdapter) // SOTA: Dependency Injection for real-time notifications
 	notificationService.SetWebSocketService(wsService)
+	commentService.SetLetterService(letterService)
+	commentService.SetCreditService(creditService)
+	commentService.SetModerationService(moderationService)
 
 	// 启动任务调度服务
 	if err := schedulerService.Start(); err != nil {
@@ -116,6 +120,7 @@ func main() {
 	storageHandler := handlers.NewStorageHandler(storageService)
 	moderationHandler := handlers.NewModerationHandler(moderationService)
 	shopHandler := handlers.NewShopHandler(shopService, userService)
+	commentHandler := handlers.NewCommentHandler(commentService)
 	// opcodeHandler := handlers.NewOPCodeHandler(opcodeService, courierService) // OP Code处理器 - Temporarily disabled
 	
 	// QR扫描服务和处理器 - SOTA集成：复用现有依赖 - Temporarily disabled
@@ -522,6 +527,9 @@ func main() {
 			storage.DELETE("/files/:file_id", storageHandler.DeleteFile)         // 删除文件
 			storage.GET("/stats", storageHandler.GetStorageStats)                // 获取存储统计
 		}
+
+		// 评论系统
+		handlers.RegisterCommentRoutes(protected, commentHandler)
 
 		// 商店系统（需要认证的部分）
 		shopAuth := protected.Group("/shop")

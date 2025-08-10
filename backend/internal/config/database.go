@@ -18,7 +18,7 @@ func SetupDatabase(config *Config) (*gorm.DB, error) {
 	// 创建统一数据库配置
 	dbConfig := &database.Config{
 		Type:     database.DatabaseType(config.DatabaseType),
-		Database: config.DatabaseURL,
+		Database: config.DatabaseName,
 		Host:     config.DBHost,
 		Username: config.DBUser,
 		Password: config.DBPassword,
@@ -82,6 +82,9 @@ func autoMigrate(db *gorm.DB) error {
 		&models.LetterPhoto{},
 		&models.LetterLike{},
 		&models.LetterShare{},
+		// 评论系统模型
+		&models.Comment{},
+		&models.CommentLike{},
 		// Note: LetterTemplate moved to extended migration to handle null values
 		&models.LetterThread{}, 
 		&models.LetterReply{},

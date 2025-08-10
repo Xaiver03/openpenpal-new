@@ -23,6 +23,7 @@ const (
 	ContentTypePhoto    ContentType = "photo"    // 照片
 	ContentTypeMuseum   ContentType = "museum"   // 博物馆内容
 	ContentTypeEnvelope ContentType = "envelope" // 信封设计
+	ContentTypeComment  ContentType = "comment"  // 评论内容
 )
 
 // ModerationLevel 审核等级
