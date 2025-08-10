@@ -674,7 +674,7 @@ export default function UsersManagePage() {
                     <Calendar className="w-3 h-3" />
                     <span className="font-medium">注册时间</span>
                   </div>
-                  <p>{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                  <p>{new Date(selectedUser.created_at).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-1 mb-1">

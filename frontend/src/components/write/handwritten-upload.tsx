@@ -136,21 +136,19 @@ export function HandwrittenUpload({
         formData.append('is_public', 'false')
 
         // 上传单个图片
-        const response = await apiClient.post('/storage/upload', formData, {
+        const response = await apiClient.post<{ url: string }>('/storage/upload', formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
-          },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const progress = ((i + progressEvent.loaded / progressEvent.total) / images.length) * 100
-              setUploadProgress(Math.round(progress))
-            }
           }
         })
+        
+        // 模拟进度更新
+        const progress = ((i + 1) / images.length) * 100
+        setUploadProgress(Math.round(progress))
 
         uploadedImages.push({
           ...image,
-          url: response.data.url
+          url: (response.data as any).url
         })
       }
 

@@ -180,7 +180,7 @@ export default function ModerationPage() {
           score: 0.6,
           reasons: ['包含敏感词: 测试', '内容长度异常'],
           categories: ['spam', 'inappropriate'],
-          createdAt: '2024-01-21T10:30:00Z'
+          created_at: '2024-01-21T10:30:00Z'
         },
         {
           id: '2',
@@ -193,7 +193,7 @@ export default function ModerationPage() {
           score: 0.8,
           reasons: ['触发规则: 违规关键词检测'],
           categories: ['inappropriate'],
-          createdAt: '2024-01-21T09:15:00Z'
+          created_at: '2024-01-21T09:15:00Z'
         }
       ]
 
@@ -203,16 +203,16 @@ export default function ModerationPage() {
           word: '测试敏感词',
           category: '不当内容',
           level: 'medium',
-          isActive: true,
-          createdAt: '2024-01-20T14:20:00Z'
+          is_active: true,
+          created_at: '2024-01-20T14:20:00Z'
         },
         {
           id: '2',
           word: '违规词汇',
           category: '违法违规',
           level: 'high',
-          isActive: true,
-          createdAt: '2024-01-19T16:45:00Z'
+          is_active: true,
+          created_at: '2024-01-19T16:45:00Z'
         }
       ]
 
@@ -226,8 +226,8 @@ export default function ModerationPage() {
           pattern: '违规|非法|不当',
           action: 'review',
           priority: 80,
-          isActive: true,
-          createdAt: '2024-01-18T10:00:00Z'
+          is_active: true,
+          created_at: '2024-01-18T10:00:00Z'
         },
         {
           id: '2',
@@ -238,8 +238,8 @@ export default function ModerationPage() {
           pattern: '5000',
           action: 'flag',
           priority: 50,
-          isActive: true,
-          createdAt: '2024-01-17T15:30:00Z'
+          is_active: true,
+          created_at: '2024-01-17T15:30:00Z'
         }
       ]
 
@@ -285,8 +285,8 @@ export default function ModerationPage() {
       const newWord: SensitiveWord = {
         id: Date.now().toString(),
         ...wordForm,
-        isActive: true,
-        createdAt: new Date().toISOString()
+        is_active: true,
+        created_at: new Date().toISOString()
       }
 
       setSensitiveWords(prev => [newWord, ...prev])
@@ -307,8 +307,8 @@ export default function ModerationPage() {
       const newRule: ModerationRule = {
         id: Date.now().toString(),
         ...ruleForm,
-        isActive: true,
-        createdAt: new Date().toISOString()
+        is_active: true,
+        created_at: new Date().toISOString()
       }
 
       setRules(prev => [newRule, ...prev])
@@ -675,8 +675,8 @@ export default function ModerationPage() {
                         </TableCell>
                         <TableCell>{rule.priority}</TableCell>
                         <TableCell>
-                          <Badge variant={rule.isActive ? "default" : "secondary"}>
-                            {rule.isActive ? '启用' : '禁用'}
+                          <Badge variant={rule.is_active ? "default" : "secondary"}>
+                            {rule.is_active ? '启用' : '禁用'}
                           </Badge>
                         </TableCell>
                         <TableCell>

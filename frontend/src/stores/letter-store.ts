@@ -69,8 +69,8 @@ export const useLetterStore = create<LetterStore>()(
             id: generateId(),
             content,
             style,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            created_at: new Date(),
+            updated_at: new Date(),
           }
           
           set((state) => {
@@ -89,7 +89,7 @@ export const useLetterStore = create<LetterStore>()(
 
         saveDraft: (draft: LetterDraft) => {
           set((state) => {
-            draft.updatedAt = new Date()
+            draft.updated_at = new Date()
             
             const existingIndex = state.savedDrafts.findIndex(d => d.id === draft.id)
             if (existingIndex >= 0) {
@@ -179,7 +179,7 @@ export const useLetterStore = create<LetterStore>()(
             
             const sentLetter: SentLetter = {
               ...letter,
-              statusLogs: [],
+              status_logs: [],
               photos: [],
             }
 
@@ -210,12 +210,12 @@ export const useLetterStore = create<LetterStore>()(
               const letter = state.sentLetters.find(l => l.code?.id === codeId)
               if (letter) {
                 letter.status = status
-                letter.statusLogs.push({
+                letter.status_logs.push({
                   id: generateId(),
-                  codeId,
+                  code_id: codeId,
                   status,
-                  updatedBy: 'system',
-                  createdAt: new Date(),
+                  updated_by: 'system',
+                  created_at: new Date(),
                 })
               }
             })
@@ -292,9 +292,9 @@ export const useLetterStore = create<LetterStore>()(
             const { sentLetters, receivedLetters, savedDrafts } = get()
             
             const stats: LetterStats = {
-              totalSent: sentLetters.length,
-              totalReceived: receivedLetters.length,
-              inTransit: sentLetters.filter(l => l.status === 'in_transit').length,
+              total_sent: sentLetters.length,
+              total_received: receivedLetters.length,
+              in_transit: sentLetters.filter(l => l.status === 'in_transit').length,
               delivered: sentLetters.filter(l => l.status === 'delivered').length,
               drafts: savedDrafts.length,
             }

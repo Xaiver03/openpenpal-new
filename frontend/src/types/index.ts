@@ -27,8 +27,8 @@ export interface BaseUser {
   email: string
   avatar?: string
   bio?: string
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
   last_login_at?: string
   status: 'active' | 'inactive' | 'banned'
   is_active?: boolean
@@ -48,8 +48,8 @@ export interface School {
   contact_email?: string
   contact_phone?: string
   status: 'active' | 'inactive'
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
 }
 
 /**
@@ -71,8 +71,8 @@ export interface Letter {
   status: 'draft' | 'sent' | 'in_transit' | 'delivered' | 'read'
   qr_code?: string
   read_url?: string
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
   delivered_at?: string
   read_at?: string
 }
