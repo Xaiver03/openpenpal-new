@@ -61,10 +61,23 @@ go run main.go / go mod tidy
 - Real-time WebSocket tracking
 - Gamification + leaderboards
 
+**Batch Generation Powers (L3/L4 CRITICAL)**:
+- **L3 校级信使**: School-level batch generation, manages campus codes (AABBCC format)
+- **L4 城市总代**: City-wide batch generation, cross-school operations
+- **Signal Code System**: Complete batch generation via `GenerateCodeBatch` API
+- **Permission Matrix**: Hierarchical inheritance (L4 inherits all L3 powers)
+- **Hidden UI**: Batch functions exist but UI entry points are not obvious
+- **Core APIs**: POST `/api/signal-codes/batch`, POST `/api/signal-codes/assign`
+
 **Key Files**:
 - `services/courier-service/internal/services/hierarchy.go`
 - `frontend/src/components/courier/CourierPermissionGuard.tsx`
 - `services/courier-service/internal/models/courier.go`
+- **Batch Generation System (L3/L4)**:
+  - `services/courier-service/internal/services/signal_code_service.go` (BatchGenerate API)
+  - `services/courier-service/internal/handlers/signal_code_handler.go` (Batch endpoints)
+  - `services/courier-service/internal/services/postal_management.go` (L3/L4 permissions)
+  - `services/courier-service/internal/models/signal_code.go` (Batch models)
 
 ### Database
 Entities: User, Letter, Courier, Museum. GORM + PostgreSQL (required, no SQLite).
@@ -142,6 +155,15 @@ cd backend && go run main.go migrate
 ./startup/tests/test-permissions.sh
 cd services/courier-service && ./test_apis.sh
 curl -X GET "http://localhost:8002/api/v1/courier/hierarchy/level/2"
+
+# Test L3/L4 Batch Generation Powers
+curl -X POST "http://localhost:8002/api/signal-codes/batch" \
+  -H "Authorization: Bearer $L3_TOKEN" \
+  -d '{"batch_no":"B001","school_id":"BJDX","quantity":100}'
+  
+curl -X POST "http://localhost:8002/api/signal-codes/assign" \
+  -H "Authorization: Bearer $L4_TOKEN" \
+  -d '{"codes":["PK5F3D","PK5F3E"],"assignee_id":"courier123"}'
 ```
 
 **Hierarchy Rules**:
