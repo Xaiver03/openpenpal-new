@@ -48,7 +48,6 @@ func CSRFMiddleware() gin.HandlerFunc {
 		// Skip for certain endpoints that don't need CSRF protection
 		path := c.Request.URL.Path
 		if strings.HasPrefix(path, "/api/v1/auth/csrf") ||
-			strings.HasPrefix(path, "/api/v1/auth/login") || // 临时跳过登录接口用于测试
 			strings.HasPrefix(path, "/health") ||
 			strings.HasPrefix(path, "/ping") {
 			c.Next()
