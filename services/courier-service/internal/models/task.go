@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Task 任务模型
+// Task 任务模型 - FSD增强：添加OP Code支持
 type Task struct {
 	ID                string     `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	TaskID            string     `gorm:"unique;not null" json:"task_id"`
@@ -26,6 +26,12 @@ type Task struct {
 	AcceptedAt        *time.Time `json:"accepted_at,omitempty"`
 	CompletedAt       *time.Time `json:"completed_at,omitempty"`
 	Deadline          *time.Time `json:"deadline,omitempty"`
+	
+	// FSD增强字段 - OP Code支持
+	PickupOPCode     string `json:"pickup_op_code,omitempty" gorm:"type:varchar(6);index"`     // 取件OP Code
+	DeliveryOPCode   string `json:"delivery_op_code,omitempty" gorm:"type:varchar(6);index"`   // 送达OP Code
+	CurrentOPCode    string `json:"current_op_code,omitempty" gorm:"type:varchar(6)"`          // 当前位置OP Code
+	
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
 }

@@ -14,6 +14,7 @@ import (
 type EnvelopeService struct {
 	db        *gorm.DB
 	creditSvc *CreditService
+	userSvc   *UserService // 添加用户服务依赖
 }
 
 // NewEnvelopeService 创建信封服务实例
@@ -26,6 +27,11 @@ func NewEnvelopeService(db *gorm.DB) *EnvelopeService {
 // SetCreditService 设置积分服务
 func (s *EnvelopeService) SetCreditService(creditSvc *CreditService) {
 	s.creditSvc = creditSvc
+}
+
+// SetUserService 设置用户服务
+func (s *EnvelopeService) SetUserService(userSvc *UserService) {
+	s.userSvc = userSvc
 }
 
 // CreateDesign 创建信封设计
@@ -54,12 +60,32 @@ func (s *EnvelopeService) CreateDesign(userID string, req *models.CreateEnvelope
 	return design, nil
 }
 
-// GetDesigns 获取信封设计列表
+// GetDesigns 获取信封设计列表 - 增强OP Code区域过滤
 func (s *EnvelopeService) GetDesigns(filters map[string]interface{}) ([]models.EnvelopeDesign, error) {
 	var designs []models.EnvelopeDesign
 	query := s.db.Model(&models.EnvelopeDesign{})
 
-	// 应用过滤条件
+	// FSD增强: 基于用户OP Code过滤可用信封
+	if userID, ok := filters["user_id"].(string); ok && userID != "" && s.userSvc != nil {
+		user, err := s.userSvc.GetUserByID(userID)
+		if err == nil && user.OPCode != "" {
+			// 构建查询条件：用户可以看到的信封
+			// 1. 没有区域限制的信封
+			// 2. 匹配用户OP Code前缀的信封
+			// 3. 同城市的城市级信封
+			userSchoolCode := ""
+			if len(user.OPCode) >= 2 {
+				userSchoolCode = user.OPCode[:2]
+			}
+
+			query = query.Where("supported_op_code_prefix = '' OR supported_op_code_prefix IS NULL OR "+
+				"? LIKE CONCAT(supported_op_code_prefix, '%') OR "+
+				"(type = 'city' AND school_code = ?)",
+				user.OPCode, userSchoolCode)
+		}
+	}
+
+	// 应用其他过滤条件
 	if schoolCode, ok := filters["school_code"].(string); ok && schoolCode != "" {
 		query = query.Where("school_code = ?", schoolCode)
 	}
@@ -70,8 +96,8 @@ func (s *EnvelopeService) GetDesigns(filters map[string]interface{}) ([]models.E
 		query = query.Where("status = ?", status)
 	}
 
-	// 默认只显示活跃的设计
-	query = query.Where("is_active = ?", true)
+	// 默认只显示活跃和已批准的设计
+	query = query.Where("is_active = ? AND status = ?", true, models.DesignStatusApproved)
 
 	// 按投票数排序
 	if err := query.Order("vote_count DESC").Find(&designs).Error; err != nil {
@@ -204,7 +230,7 @@ func (s *EnvelopeService) BindEnvelopeToLetter(envelopeID, letterID, userID stri
 	return s.BindToLetter(envelopeID, letterID, userID)
 }
 
-// CreateEnvelopeOrder 创建信封订单
+// CreateEnvelopeOrder 创建信封订单 - 增强OP Code验证
 func (s *EnvelopeService) CreateEnvelopeOrder(userID, designID string, quantity int) (*models.EnvelopeOrder, error) {
 	// 验证设计是否存在且可用
 	var design models.EnvelopeDesign
@@ -216,8 +242,41 @@ func (s *EnvelopeService) CreateEnvelopeOrder(userID, designID string, quantity 
 		return nil, fmt.Errorf("查询设计失败: %v", err)
 	}
 
-	// 计算价格 (暂时使用固定价格)
-	unitPrice := 2.0 // 每个信封2元
+	// FSD增强: 验证用户OP Code与信封支持的区域
+	if s.userSvc != nil && design.SupportedOPCodePrefix != "" {
+		user, err := s.userSvc.GetUserByID(userID)
+		if err != nil {
+			return nil, fmt.Errorf("获取用户信息失败: %v", err)
+		}
+
+		// 检查用户是否有OP Code
+		if user.OPCode == "" {
+			return nil, errors.New("请先设置您的OP Code地址")
+		}
+
+		// 验证OP Code前缀匹配
+		if len(user.OPCode) < len(design.SupportedOPCodePrefix) {
+			return nil, errors.New("您的OP Code不完整")
+		}
+
+		userPrefix := user.OPCode[:len(design.SupportedOPCodePrefix)]
+		if userPrefix != design.SupportedOPCodePrefix {
+			// 城市级信封允许同城市的所有学校
+			if design.Type == "city" && len(design.SchoolCode) >= 2 && len(user.OPCode) >= 2 {
+				if user.OPCode[:2] != design.SchoolCode[:2] {
+					return nil, fmt.Errorf("该信封仅限%s区域使用", design.SchoolCode[:2])
+				}
+			} else {
+				return nil, fmt.Errorf("该信封仅限%s区域使用", design.SupportedOPCodePrefix)
+			}
+		}
+	}
+
+	// 计算价格 - 使用设计中的价格
+	unitPrice := design.Price
+	if unitPrice <= 0 {
+		unitPrice = 2.0 // 默认价格
+	}
 	totalPrice := float64(quantity) * unitPrice
 
 	// 创建订单

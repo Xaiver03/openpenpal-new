@@ -180,8 +180,9 @@ type AIUsageLog struct {
 
 // AIMatchRequest AI匹配请求
 type AIMatchRequest struct {
-	LetterID   string `json:"letter_id" binding:"required"`
-	MaxMatches int    `json:"max_matches"` // 最大匹配数，默认3
+	LetterID     string `json:"letter_id" binding:"required"`
+	MaxMatches   int    `json:"max_matches"` // 最大匹配数，默认3
+	DelayOption  string `json:"delay_option,omitempty"` // 延迟选项：quick(1-10min), normal(10-30min), slow(30-60min)
 }
 
 // AIReplyRequest AI回信请求

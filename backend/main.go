@@ -88,6 +88,7 @@ func main() {
 	letterService.SetAIService(aiService)
 	letterService.SetOPCodeService(opcodeService) // PRD要求：集成OP Code验证
 	envelopeService.SetCreditService(creditService)
+	envelopeService.SetUserService(userService) // FSD增强：OP Code区域验证
 	museumService.SetCreditService(creditService)
 	museumService.SetNotificationService(notificationService)
 	museumService.SetAIService(aiService)

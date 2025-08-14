@@ -21,6 +21,7 @@ import { toast } from 'sonner'
 interface CloudLetterCompanionProps {
   selectedPersonaId: string
   className?: string
+  mode?: 'preset' | 'custom' // 新增模式选择
 }
 
 interface LetterExchange {
@@ -43,19 +44,58 @@ const personaIcons: Record<string, string> = {
   friend: '👫',
 }
 
+// 自定义现实角色接口（从UnreachableCompanion复用）
+interface CustomPersona {
+  id: string
+  name: string
+  relationship: string 
+  lastContactDate?: string
+  memories: string[]
+  personality: string
+  writingStyle: string
+  createdAt: Date
+}
+
 export function CloudLetterCompanion({
   selectedPersonaId,
   className = '',
+  mode = 'preset',
 }: CloudLetterCompanionProps) {
   const [selectedPersona, setSelectedPersona] = useState<AIPersona | null>(null)
+  const [customPersonas, setCustomPersonas] = useState<CustomPersona[]>([]) // 自定义角色列表
+  const [selectedCustomPersona, setSelectedCustomPersona] = useState<CustomPersona | null>(null)
   const [letterContent, setLetterContent] = useState('')
   const [letters, setLetters] = useState<LetterExchange[]>([])
   const [loading, setLoading] = useState(false)
   const [fetchingPersona, setFetchingPersona] = useState(true)
 
   useEffect(() => {
-    fetchPersona()
+    if (mode === 'preset') {
+      fetchPersona()
+    } else {
+      loadCustomPersonas()
+    }
   }, [selectedPersonaId])
+
+  // 加载自定义角色（复用UnreachableCompanion的逻辑）
+  const loadCustomPersonas = () => {
+    const saved = localStorage.getItem('unreachable_personas')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const personas = parsed.map((p: any) => ({
+        ...p,
+        createdAt: new Date(p.created_at)
+      }))
+      setCustomPersonas(personas)
+      
+      // 如果有选中的ID，设置选中的自定义角色
+      if (selectedPersonaId) {
+        const selected = personas.find((p: CustomPersona) => p.id === selectedPersonaId)
+        setSelectedCustomPersona(selected || null)
+      }
+    }
+    setFetchingPersona(false)
+  }
 
   const fetchPersona = async () => {
     if (!selectedPersonaId) return

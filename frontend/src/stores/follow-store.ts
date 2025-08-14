@@ -547,9 +547,22 @@ export const useFollowStore = create<FollowStoreState>()(
         
         searchUsers: async (query: string, filters: Partial<FollowListQuery> = {}) => {
           try {
+            // Map sort_by from FollowListQuery to UserSearchQuery
+            const { sort_by, ...otherFilters } = filters
+            let mappedSortBy: UserSearchQuery['sort_by']
+            
+            if (sort_by === 'created_at') {
+              mappedSortBy = 'joined'
+            } else if (sort_by === 'letters_count') {
+              mappedSortBy = 'activity'
+            } else {
+              mappedSortBy = sort_by as UserSearchQuery['sort_by']
+            }
+            
             const searchQuery: UserSearchQuery = {
               query,
-              ...filters,
+              ...otherFilters,
+              ...(mappedSortBy && { sort_by: mappedSortBy })
             }
             
             const response = await followApi.searchUsers(searchQuery)

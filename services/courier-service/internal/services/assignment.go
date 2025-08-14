@@ -518,11 +518,48 @@ func (s *AssignmentService) isParentZone(courierZoneCode, courierZoneType, taskZ
 	}
 }
 
-// validateAssignmentPermission 验证分配权限
+// validateAssignmentPermission 验证分配权限 - FSD增强：使用OP Code权限验证
 func (s *AssignmentService) validateAssignmentPermission(courier *models.Courier, task *models.Task) bool {
-	taskZoneCode := s.extractZoneCodeFromLocation(task.PickupLocation)
+	// 优先使用OP Code权限验证
+	if courier.ManagedOPCodePrefix != "" && task.DeliveryOPCode != "" {
+		return s.validateOPCodePermission(courier, task)
+	}
 	
-	// 检查信使是否有权限处理该区域的任务
+	// 兼容旧系统：使用ZoneCode验证
+	taskZoneCode := s.extractZoneCodeFromLocation(task.PickupLocation)
 	return courier.ZoneCode == taskZoneCode || 
 		s.isParentZone(courier.ZoneCode, courier.ZoneType, taskZoneCode)
+}
+
+// validateOPCodePermission FSD OP Code权限验证 - 基于层级的区域权限控制
+func (s *AssignmentService) validateOPCodePermission(courier *models.Courier, task *models.Task) bool {
+	// 如果没有配置OP Code权限，拒绝
+	if courier.ManagedOPCodePrefix == "" || task.DeliveryOPCode == "" {
+		return false
+	}
+	
+	// 4级信使（城市级）：可以处理同城市的所有任务
+	if courier.Level == 4 && len(courier.ManagedOPCodePrefix) >= 2 && len(task.DeliveryOPCode) >= 2 {
+		return task.DeliveryOPCode[:2] == courier.ManagedOPCodePrefix[:2]
+	}
+	
+	// 3级信使（学校级）：可以处理同学校的所有任务
+	if courier.Level == 3 && len(courier.ManagedOPCodePrefix) >= 2 && len(task.DeliveryOPCode) >= 2 {
+		return task.DeliveryOPCode[:2] == courier.ManagedOPCodePrefix[:2]
+	}
+	
+	// 2级信使（片区级）：可以处理同区域的任务
+	if courier.Level == 2 && len(courier.ManagedOPCodePrefix) >= 4 && len(task.DeliveryOPCode) >= 4 {
+		return task.DeliveryOPCode[:4] == courier.ManagedOPCodePrefix[:4]
+	}
+	
+	// 1级信使（楼栋级）：只能处理完全匹配的任务
+	if courier.Level == 1 {
+		prefixLen := len(courier.ManagedOPCodePrefix)
+		if prefixLen > 0 && len(task.DeliveryOPCode) >= prefixLen {
+			return task.DeliveryOPCode[:prefixLen] == courier.ManagedOPCodePrefix
+		}
+	}
+	
+	return false
 }

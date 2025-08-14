@@ -1557,6 +1557,11 @@ func (s *LetterService) BindBarcodeToEnvelope(req *models.BindBarcodeRequest, op
 		}
 	}
 
+	// FSD增强：验证操作员权限 - 确保操作员有权限在目标区域绑定条码
+	if err := s.validateBindingPermission(operatorID, req.RecipientCode); err != nil {
+		return nil, fmt.Errorf("binding permission denied: %w", err)
+	}
+
 	// 查找信件
 	var letter models.Letter
 	if err := s.db.Where("id = ?", req.LetterID).First(&letter).Error; err != nil {
@@ -1884,5 +1889,71 @@ func (s *LetterService) getStatusUpdateMessage(status string) string {
 		return message
 	}
 	return "状态已更新"
+}
+
+// validateBindingPermission FSD增强：验证条码绑定权限
+func (s *LetterService) validateBindingPermission(operatorID, targetOPCode string) error {
+	// 如果没有配置用户服务，跳过权限验证
+	if s.userSvc == nil {
+		return nil
+	}
+
+	// 获取操作员信息
+	operator, err := s.userSvc.GetUserByID(operatorID)
+	if err != nil {
+		return fmt.Errorf("failed to get operator info: %w", err)
+	}
+
+	// 超级管理员可以绑定任何区域
+	if operator.Role == "super_admin" || operator.Role == "admin" {
+		return nil
+	}
+
+	// 查找操作员的信使权限
+	var courier models.Courier
+	if err := s.db.Where("user_id = ? AND status = ?", operatorID, "approved").First(&courier).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("operator is not an approved courier")
+		}
+		return fmt.Errorf("failed to check courier status: %w", err)
+	}
+
+	// 验证OP Code权限
+	if !s.validateOPCodeAccess(&courier, targetOPCode) {
+		return fmt.Errorf("insufficient OP Code permissions for area: %s", targetOPCode)
+	}
+
+	return nil
+}
+
+// validateOPCodeAccess 验证信使对指定OP Code的访问权限
+func (s *LetterService) validateOPCodeAccess(courier *models.Courier, targetOPCode string) bool {
+	// 如果没有设置管理前缀，使用旧的Zone验证
+	if courier.ManagedOPCodePrefix == "" {
+		return true // 兼容旧系统
+	}
+
+	// 根据信使等级验证权限
+	switch courier.Level {
+	case 4: // 城市级信使：管理整个城市
+		if len(targetOPCode) >= 2 && len(courier.ManagedOPCodePrefix) >= 2 {
+			return targetOPCode[:2] == courier.ManagedOPCodePrefix[:2]
+		}
+	case 3: // 学校级信使：管理整个学校
+		if len(targetOPCode) >= 2 && len(courier.ManagedOPCodePrefix) >= 2 {
+			return targetOPCode[:2] == courier.ManagedOPCodePrefix[:2]
+		}
+	case 2: // 片区级信使：管理指定片区
+		if len(targetOPCode) >= 4 && len(courier.ManagedOPCodePrefix) >= 4 {
+			return targetOPCode[:4] == courier.ManagedOPCodePrefix[:4]
+		}
+	case 1: // 楼栋级信使：只能管理指定楼栋
+		prefixLen := len(courier.ManagedOPCodePrefix)
+		if prefixLen > 0 && len(targetOPCode) >= prefixLen {
+			return targetOPCode[:prefixLen] == courier.ManagedOPCodePrefix
+		}
+	}
+
+	return false
 }
 

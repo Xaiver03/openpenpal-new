@@ -5,6 +5,11 @@ import { useParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { UserLevelDisplay } from '@/components/user/level-badge'
 import { OPCodeDisplay } from '@/components/user/opcode-display'
+import { FollowButton } from '@/components/follow/follow-button'
+import { useUser } from '@/stores/user-store'
+import { useFollowStatus } from '@/stores/follow-store'
+import { ProfileComments } from '@/components/profile/profile-comments'
+import { UserActivityFeed } from '@/components/profile/user-activity-feed'
 
 interface UserProfile {
   id: number
@@ -50,11 +55,14 @@ interface UserLetter {
 
 function UserPageContent() {
   const { username } = useParams()
+  const { user: currentUser } = useUser()
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [userLetters, setUserLetters] = useState<UserLetter[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'profile' | 'letters' | 'works' | 'courier' | 'collection'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'letters' | 'works' | 'courier' | 'collection' | 'comments'>('profile')
+  const [followStats, setFollowStats] = useState({ follower_count: 0, following_count: 0 })
+  const [isFollowing, setIsFollowing] = useState(false)
 
   useEffect(() => {
     if (username) {
@@ -85,6 +93,37 @@ function UserPageContent() {
 
       const profileData = await profileResponse.json()
       setUserProfile(profileData.data || profileData)
+      
+      // 获取关注统计信息
+      try {
+        const followStatsResponse = await fetch(`/api/users/${username}/follow-stats`, {
+          credentials: 'include'
+        })
+        if (followStatsResponse.ok) {
+          const statsData = await followStatsResponse.json()
+          setFollowStats({
+            follower_count: statsData.data?.follower_count || 0,
+            following_count: statsData.data?.following_count || 0
+          })
+        }
+      } catch (err) {
+        console.log('获取关注统计失败')
+      }
+      
+      // 检查当前用户是否已关注该用户
+      if (currentUser) {
+        try {
+          const followStatusResponse = await fetch(`/api/users/${profileData.data?.id || profileData.id}/follow-status`, {
+            credentials: 'include'
+          })
+          if (followStatusResponse.ok) {
+            const statusData = await followStatusResponse.json()
+            setIsFollowing(statusData.data?.is_following || false)
+          }
+        } catch (err) {
+          console.log('获取关注状态失败')
+        }
+      }
 
       // 获取用户公开的信件（如果有权限）
       try {
@@ -194,6 +233,18 @@ function UserPageContent() {
                   courierLevel={userProfile.courier_level}
                   compact
                 />
+                {/* 关注按钮 - 只在用户已登录且不是查看自己时显示 */}
+                {currentUser && currentUser.id !== userProfile.id.toString() && (
+                  <FollowButton
+                    user_id={userProfile.id.toString()}
+                    initial_is_following={isFollowing}
+                    initial_follower_count={followStats.follower_count}
+                    onFollowChange={(following, newCount) => {
+                      setIsFollowing(following)
+                      setFollowStats(prev => ({ ...prev, follower_count: newCount }))
+                    }}
+                  />
+                )}
               </div>
               
               {userProfile.nickname && (
@@ -255,6 +306,18 @@ function UserPageContent() {
                     {userProfile.stats.letters_received}
                   </div>
                   <div className="text-sm text-gray-600">已收到</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-rose-600">
+                    {followStats.follower_count}
+                  </div>
+                  <div className="text-sm text-gray-600">粉丝</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {followStats.following_count}
+                  </div>
+                  <div className="text-sm text-gray-600">关注</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-600">
@@ -352,12 +415,23 @@ function UserPageContent() {
               >
                 🏛 收藏 & 展览
               </button>
+              <button
+                onClick={() => setActiveTab('comments')}
+                className={`py-4 px-2 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'comments'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                💬 留言板
+              </button>
             </nav>
           </div>
 
           <div className="p-6">
             {activeTab === 'profile' && (
               <div className="space-y-6">
+                {/* 基本信息 */}
                 <div>
                   <h3 className="text-lg font-medium text-gray-800 mb-3">基本信息</h3>
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
@@ -390,6 +464,16 @@ function UserPageContent() {
                       </dd>
                     </div>
                   </dl>
+                </div>
+                
+                {/* 最近动态 */}
+                <div>
+                  <h3 className="text-lg font-medium text-gray-800 mb-3">最近动态</h3>
+                  <UserActivityFeed 
+                    user_id={userProfile.id.toString()}
+                    max_items={5}
+                    show_load_more={true}
+                  />
                 </div>
               </div>
             )}
@@ -582,6 +666,15 @@ function UserPageContent() {
                   )}
                 </div>
               </div>
+            )}
+
+            {activeTab === 'comments' && (
+              <ProfileComments
+                profile_id={userProfile.id.toString()}
+                profile_username={userProfile.username}
+                allow_comments={true}
+                max_display={20}
+              />
             )}
           </div>
         </div>

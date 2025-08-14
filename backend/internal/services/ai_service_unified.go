@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -143,16 +144,76 @@ func (s *UnifiedAIService) GenerateReply(ctx context.Context, req *models.AIRepl
 	return reply, nil
 }
 
-// MatchPenPal 笔友匹配（使用配置化匹配算法）
+// MatchPenPal 笔友匹配（使用配置化匹配算法，支持用户可控延迟）
 func (s *UnifiedAIService) MatchPenPal(ctx context.Context, req *models.AIMatchRequest) (*models.AIMatchResponse, error) {
-	log.Printf("💌 [UnifiedAIService] 执行笔友匹配，信件ID: %s", req.LetterID)
+	log.Printf("💌 [UnifiedAIService] 执行笔友匹配，信件ID: %s, 延迟选项: %s", req.LetterID, req.DelayOption)
 
+	// 计算用户选择的延迟时间
+	delayMinutes := s.calculateUserDelay(req.DelayOption)
+	
 	// 获取匹配算法配置
 	matchConfig, err := s.configService.GetConfig("matching", "algorithm")
 	if err != nil {
 		log.Printf("⚠️ [UnifiedAIService] 获取匹配算法配置失败，使用默认: %v", err)
 	}
 
+	// 如果有延迟要求，使用延迟队列
+	if delayMinutes > 0 {
+		log.Printf("🕐 [UnifiedAIService] 延迟 %d 分钟后执行匹配", delayMinutes)
+		
+		// 创建延迟任务
+		task := &models.DelayQueueRecord{
+			ID:           uuid.New().String(),
+			TaskType:     "ai_match",
+			Payload:      s.marshalMatchRequest(req),
+			DelayedUntil: time.Now().Add(time.Duration(delayMinutes) * time.Minute),
+			Status:       "pending",
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+		
+		// 调度延迟任务
+		if err := s.db.Create(task).Error; err != nil {
+			log.Printf("❌ [UnifiedAIService] 创建延迟匹配任务失败: %v", err)
+			// 降级：立即执行匹配
+			return s.performImmediateMatch(ctx, req, matchConfig)
+		}
+		
+		// 返回处理中状态
+		return &models.AIMatchResponse{
+			Status:  "processing",
+			Message: fmt.Sprintf("正在为您寻找最合适的笔友，预计 %d 分钟后完成匹配...", delayMinutes),
+			Metadata: map[string]interface{}{
+				"delay_minutes": delayMinutes,
+				"task_id":       task.ID,
+			},
+		}, nil
+	}
+
+	// 立即执行匹配
+	return s.performImmediateMatch(ctx, req, matchConfig)
+}
+
+// 计算用户选择的延迟时间
+func (s *UnifiedAIService) calculateUserDelay(delayOption string) int {
+	switch delayOption {
+	case "quick":
+		// 1-10分钟随机延迟
+		return rand.Intn(10) + 1
+	case "normal":
+		// 10-30分钟随机延迟
+		return rand.Intn(21) + 10
+	case "slow":
+		// 30-60分钟随机延迟
+		return rand.Intn(31) + 30
+	default:
+		// 默认无延迟（向后兼容）
+		return 0
+	}
+}
+
+// 执行立即匹配
+func (s *UnifiedAIService) performImmediateMatch(ctx context.Context, req *models.AIMatchRequest, matchConfig *AIConfigData) (*models.AIMatchResponse, error) {
 	// 调用原有的匹配逻辑（继承自EnhancedAIService）
 	response, err := s.EnhancedAIService.MatchPenPal(ctx, req)
 	if err != nil {
@@ -165,6 +226,12 @@ func (s *UnifiedAIService) MatchPenPal(ctx context.Context, req *models.AIMatchR
 	}
 
 	return response, nil
+}
+
+// 序列化匹配请求
+func (s *UnifiedAIService) marshalMatchRequest(req *models.AIMatchRequest) string {
+	data, _ := json.Marshal(req)
+	return string(data)
 }
 
 // GetPersonaList 获取可用人设列表（从配置）

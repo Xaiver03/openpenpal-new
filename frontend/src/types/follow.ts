@@ -92,16 +92,7 @@ export interface UserSuggestionsResponse {
   refresh_available_at: string
 }
 
-export interface UserSearchQuery {
-  query: string
-  page?: number
-  limit?: number
-  sort_by?: 'activity' | 'followers' | 'joined' | 'relevance'
-  order?: 'asc' | 'desc'
-  search?: string
-  school_filter?: string
-  status_filter?: FollowStatus[]
-}
+// UserSearchQuery interface moved to line 307 to avoid duplication
 
 export interface FollowSuggestion {
   user: FollowUser

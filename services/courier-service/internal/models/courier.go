@@ -23,10 +23,13 @@ type Courier struct {
 	
 	// 4级层级系统新增字段
 	ParentID    *string   `gorm:"index;type:varchar(36)" json:"parent_id,omitempty"`  // 上级信使ID
-	ZoneCode    string    `gorm:"index" json:"zone_code"`            // 负责区域编码
+	ZoneCode    string    `gorm:"index" json:"zone_code"`            // 负责区域编码 (兼容旧系统)
 	ZoneType    string    `json:"zone_type"`                         // city/school/zone/building
 	Points      int       `gorm:"default:0" json:"points"`           // 积分
 	CreatedByID *string   `gorm:"index;type:varchar(36)" json:"created_by_id,omitempty"` // 创建者ID(上级管理员)
+	
+	// FSD增强：OP Code权限管理
+	ManagedOPCodePrefix string `json:"managed_op_code_prefix" gorm:"type:varchar(6);index"` // 管理的OP Code前缀，如: PK5F表示管理PK5F开头的所有地址
 	
 	// 层级关系
 	Parent       *Courier   `gorm:"foreignKey:ParentID" json:"parent,omitempty"`
