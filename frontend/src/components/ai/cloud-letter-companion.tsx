@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Send, Bot, Heart, Calendar, Clock, Sparkles, MessageCircle, Plus } from 'lucide-react'
+import { Send, Bot, Heart, Calendar, Clock, Sparkles, MessageCircle, Plus, Users, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -113,8 +113,17 @@ export function CloudLetterCompanion({
   }
 
   const sendLetter = async () => {
-    if (!letterContent.trim() || !selectedPersona) {
+    // 验证输入
+    if (!letterContent.trim()) {
       toast.error('请输入信件内容')
+      return
+    }
+    if (mode === 'preset' && !selectedPersona) {
+      toast.error('请选择AI笔友')
+      return
+    }
+    if (mode === 'custom' && !selectedCustomPersona) {
+      toast.error('请选择要写信的人')
       return
     }
 
@@ -132,31 +141,54 @@ export function CloudLetterCompanion({
     setLetterContent('')
 
     try {
-      // 使用真实的AI回信API（带延迟队列）
-      const response = await aiService.scheduleDelayedReply({
-        letterId: `user_letter_${Date.now()}`,
-        persona: selectedPersona.id as any,
-        delay_hours: 24 // 24小时延迟，符合PRD要求
-      })
-      
-      // 显示调度成功消息
-      toast.success(`AI笔友收到了你的信件！预计在${response.delay_hours}小时后回信`, {
-        duration: 5000
-      })
-      
-      // 添加一个系统提示消息
-      const systemMessage: LetterExchange = {
-        id: `system_${Date.now()}`,
-        from: 'ai',
-        content: `📬 你的信件已送达！${selectedPersona.name}会在24小时内给你回信，请耐心等待...\n\n（这就是手写信的魅力所在 - 等待与惊喜 ✨）`,
-        timestamp: new Date(),
-        persona: selectedPersona,
+      if (mode === 'preset' && selectedPersona) {
+        // 预设AI笔友模式
+        const response = await aiService.scheduleDelayedReply({
+          letterId: `user_letter_${Date.now()}`,
+          persona: selectedPersona.id as any,
+          delay_hours: 24 // 24小时延迟，符合PRD要求
+        })
+        
+        // 显示调度成功消息
+        toast.success(`AI笔友收到了你的信件！预计在${response.delay_hours}小时后回信`, {
+          duration: 5000
+        })
+        
+        // 添加一个系统提示消息
+        const systemMessage: LetterExchange = {
+          id: `system_${Date.now()}`,
+          from: 'ai',
+          content: `📬 你的信件已送达！${selectedPersona.name}会在24小时内给你回信，请耐心等待...\n\n（这就是手写信的魅力所在 - 等待与惊喜 ✨）`,
+          timestamp: new Date(),
+          persona: selectedPersona,
+        }
+        
+        setLetters(prev => [...prev, systemMessage])
+      } else if (mode === 'custom' && selectedCustomPersona) {
+        // 自定义现实角色模式 - 需要信使审核（模拟API调用）
+        const simulatedResponse = {
+          id: `custom_reply_${Date.now()}`,
+          status: 'pending_review',
+          message: '信件已提交审核'
+        }
+        
+        toast.success(`你的信件已送达！${selectedCustomPersona.name}会在审核后给你回信`, {
+          duration: 5000
+        })
+        
+        // 添加系统提示消息
+        const systemMessage: LetterExchange = {
+          id: `system_${Date.now()}`,
+          from: 'ai',
+          content: `📮 你的信件已送达${selectedCustomPersona.name}！\n\n由于这是给特殊的人写信，我们的信使会帮助润色回信内容，确保每一个字都充满温度...\n\n请耐心等待，好的回信值得等待 💝`,
+          timestamp: new Date(),
+        }
+        
+        setLetters(prev => [...prev, systemMessage])
       }
-      
-      setLetters(prev => [...prev, systemMessage])
     } catch (error) {
       console.error('Failed to get AI reply:', error)
-      toast.error('AI笔友暂时无法回信，请稍后再试')
+      toast.error('信件发送失败，请稍后再试')
     } finally {
       setLoading(false)
     }
@@ -192,7 +224,7 @@ export function CloudLetterCompanion({
     )
   }
 
-  if (!selectedPersona) {
+  if (mode === 'preset' && !selectedPersona) {
     return (
       <Card className={className}>
         <CardContent className="flex flex-col items-center justify-center py-12">
@@ -205,30 +237,77 @@ export function CloudLetterCompanion({
     )
   }
 
+  if (mode === 'custom' && !selectedCustomPersona) {
+    return (
+      <Card className={className}>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <Users className="h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground text-center">
+            请先创建或选择一个现实角色开始对话
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* AI Persona Header */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className="text-lg bg-white">
-                {personaIcons[selectedPersona.id] || '🤖'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <CardTitle className="flex items-center gap-2">
-                {selectedPersona.name}
-                <Badge variant="secondary">AI笔友</Badge>
-              </CardTitle>
-              <CardDescription>
-                {selectedPersona.description}
-              </CardDescription>
+      {/* Header - 支持两种模式 */}
+      {mode === 'preset' && selectedPersona && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarFallback className="text-lg bg-white">
+                  {personaIcons[selectedPersona.id] || '🤖'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <CardTitle className="flex items-center gap-2">
+                  {selectedPersona.name}
+                  <Badge variant="secondary">AI笔友</Badge>
+                </CardTitle>
+                <CardDescription>
+                  {selectedPersona.description}
+                </CardDescription>
+              </div>
+              <Sparkles className="h-5 w-5 text-blue-600" />
             </div>
-            <Sparkles className="h-5 w-5 text-blue-600" />
-          </div>
-        </CardHeader>
-      </Card>
+          </CardHeader>
+        </Card>
+      )}
+
+      {mode === 'custom' && selectedCustomPersona && (
+        <Card className="bg-gradient-to-r from-rose-50 to-pink-50 border-rose-200">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarFallback className="text-lg bg-white">
+                  ❤️
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <CardTitle className="flex items-center gap-2">
+                  {selectedCustomPersona.name}
+                  <Badge variant="outline" className="border-rose-300 text-rose-700">
+                    {selectedCustomPersona.relationship}
+                  </Badge>
+                </CardTitle>
+                <CardDescription>
+                  {selectedCustomPersona.personality}
+                  {selectedCustomPersona.lastContactDate && (
+                    <div className="flex items-center gap-1 mt-1 text-xs">
+                      <Calendar className="h-3 w-3" />
+                      最后联系: {selectedCustomPersona.lastContactDate}
+                    </div>
+                  )}
+                </CardDescription>
+              </div>
+              <Heart className="h-5 w-5 text-rose-600" />
+            </div>
+          </CardHeader>
+        </Card>
+      )}
 
       {/* Letter Exchange History */}
       <Card>
@@ -238,7 +317,8 @@ export function CloudLetterCompanion({
             书信往来
           </CardTitle>
           <CardDescription>
-            与 {selectedPersona.name} 的长期笔友对话
+            {mode === 'preset' && selectedPersona && `与 ${selectedPersona.name} 的长期笔友对话`}
+            {mode === 'custom' && selectedCustomPersona && `与 ${selectedCustomPersona.name} 的特殊对话`}
           </CardDescription>
         </CardHeader>
         <CardContent>
