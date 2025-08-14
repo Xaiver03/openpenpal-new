@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"openpenpal-backend/internal/adapters"
 	"openpenpal-backend/internal/config"
 	"openpenpal-backend/internal/handlers"
 	"openpenpal-backend/internal/middleware"
@@ -751,6 +752,29 @@ func main() {
 			adminShop.PUT("/orders/:id/status", shopHandler.UpdateOrderStatus)  // 更新订单状态
 			adminShop.GET("/stats", shopHandler.GetShopStatistics)             // 获取商店统计
 		}
+
+		// ==================== SOTA 管理API适配路由 ====================
+		// 兼容Java前端期待的API格式和路径
+		
+		// 用户管理 - 适配Java前端
+		admin.GET("/users", adminAdapter.GetUsersCompat)
+		admin.GET("/users/:id", adminAdapter.GetUserCompat) 
+		admin.PUT("/users/:id", adminAdapter.UpdateUserCompat)
+		admin.POST("/users/:id/unlock", adminAdapter.UnlockUserCompat)
+		admin.POST("/users/:id/reset-password", adminAdapter.ResetPasswordCompat)
+		admin.GET("/users/stats/role", adminAdapter.GetUserStatsCompat)
+		
+		// 信件管理 - 适配Java前端
+		admin.GET("/letters", adminAdapter.GetLettersCompat)
+		admin.GET("/letters/:id", adminAdapter.GetLetterCompat)
+		admin.PUT("/letters/:id/status", adminAdapter.UpdateLetterStatusCompat)
+		admin.GET("/letters/stats/overview", adminAdapter.GetLetterStatsCompat)
+		
+		// 系统配置 - 适配Java前端
+		admin.GET("/system/config", adminAdapter.GetSystemConfigCompat)
+		admin.PUT("/system/config/:key", adminAdapter.UpdateSystemConfigCompat)
+		admin.GET("/system/info", adminAdapter.GetSystemInfoCompat)
+		admin.GET("/system/health", adminAdapter.GetSystemHealthCompat)
 	}
 
 	// 静态文件服务（二维码图片等）

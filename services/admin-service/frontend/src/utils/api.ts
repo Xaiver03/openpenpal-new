@@ -3,19 +3,20 @@ import type { AxiosResponse, AxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
 
-// 创建axios实例
+// 创建axios实例 - SOTA管理后台统一: 指向Go后端
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/admin',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1/admin',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// 请求拦截器
+// 请求拦截器 - SOTA管理后台统一: 兼容Go后端JWT
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('admin_token')
+    // 优先使用admin_token，fallback到Go后端的token
+    const token = localStorage.getItem('admin_token') || localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
