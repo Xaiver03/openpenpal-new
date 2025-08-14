@@ -3,7 +3,7 @@ package services
 import (
 	"fmt"
 	"openpenpal-backend/internal/models"
-	
+
 	"golang.org/x/crypto/bcrypt"
 )
 

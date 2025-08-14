@@ -19,11 +19,11 @@ import (
 func AuthMiddleware(config *config.Config, db *gorm.DB) gin.HandlerFunc {
 	userCache := cache.GetUserCache()
 	blacklist := cache.GetTokenBlacklist()
-	
+
 	return func(c *gin.Context) {
 		// 性能监控
 		start := time.Now()
-		
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -56,7 +56,7 @@ func AuthMiddleware(config *config.Config, db *gorm.DB) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		// 检查Token是否在黑名单中
 		if claims.RegisteredClaims.ID != "" && blacklist.IsBlacklisted(claims.RegisteredClaims.ID) {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -73,11 +73,11 @@ func AuthMiddleware(config *config.Config, db *gorm.DB) gin.HandlerFunc {
 		if !cached {
 			// 缓存未命中，从数据库查询
 			var dbUser models.User
-			
+
 			// 使用上下文超时控制数据库查询
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
-			
+
 			if err := db.WithContext(ctx).Where("id = ?", claims.UserID).First(&dbUser).Error; err != nil {
 				if err == gorm.ErrRecordNotFound {
 					c.JSON(http.StatusUnauthorized, gin.H{
@@ -95,7 +95,7 @@ func AuthMiddleware(config *config.Config, db *gorm.DB) gin.HandlerFunc {
 				c.Abort()
 				return
 			}
-			
+
 			// 更新缓存
 			user = &dbUser
 			userCache.Set(claims.UserID, user)
@@ -105,7 +105,7 @@ func AuthMiddleware(config *config.Config, db *gorm.DB) gin.HandlerFunc {
 		if !user.IsActive {
 			// 清除该用户的缓存
 			userCache.Delete(claims.UserID)
-			
+
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"error":   "账号已被禁用",
@@ -120,12 +120,12 @@ func AuthMiddleware(config *config.Config, db *gorm.DB) gin.HandlerFunc {
 		c.Set("user_role", claims.Role)
 		c.Set("user", user)
 		c.Set("token_jti", claims.RegisteredClaims.ID) // 保存JWT ID用于注销
-		
+
 		// 添加性能监控头
 		duration := time.Since(start)
 		c.Header("X-Auth-Time", fmt.Sprintf("%v", duration))
 		c.Header("X-Cache-Hit", fmt.Sprintf("%t", cached))
-		
+
 		c.Next()
 	}
 }

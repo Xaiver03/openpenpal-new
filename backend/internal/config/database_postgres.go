@@ -39,7 +39,7 @@ func SetupDatabaseDirect(config *Config) (*gorm.DB, error) {
 		}
 		log.Printf("PostgreSQL DSN: host=%s port=%s user=%s dbname=%s sslmode=%s",
 			config.DBHost, config.DBPort, config.DBUser, config.DatabaseName, config.DBSSLMode)
-		
+
 		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to PostgreSQL: %w", err)
@@ -60,7 +60,7 @@ func SetupDatabaseDirect(config *Config) (*gorm.DB, error) {
 	}
 
 	log.Println("Database connected and migrated successfully")
-	
+
 	// Run extended migrations for new features
 	log.Println("Starting extended migrations from SetupDatabaseDirect...")
 	if err := MigrateExtendedModels(db); err != nil {
@@ -68,27 +68,27 @@ func SetupDatabaseDirect(config *Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to run extended migrations: %w", err)
 	}
 	log.Println("Extended migrations completed successfully")
-	
+
 	// Set JSON defaults for PostgreSQL compatibility
 	if config.DatabaseType == "postgres" {
 		if err := SetJSONDefaults(db); err != nil {
 			log.Printf("Warning: Failed to set JSON defaults: %v", err)
 		}
-		
+
 		// 创建性能优化索引 - SOTA实现
 		log.Println("Starting performance optimization...")
 		if err := CreateOptimizedIndexes(db); err != nil {
 			log.Printf("Warning: Failed to create optimized indexes: %v", err)
 		}
-		
+
 		// 创建性能视图
 		if err := CreatePerformanceViews(db); err != nil {
 			log.Printf("Warning: Failed to create performance views: %v", err)
 		}
-		
+
 		log.Println("Performance optimization completed")
 	}
-	
+
 	return db, nil
 }
 

@@ -24,19 +24,19 @@ type ServiceInstance struct {
 
 // ServiceDiscovery 服务发现
 type ServiceDiscovery struct {
-	config    *config.Config
-	logger    *zap.Logger
-	services  map[string][]*ServiceInstance
-	mutex     sync.RWMutex
-	client    *http.Client
-	ctx       context.Context
-	cancel    context.CancelFunc
+	config   *config.Config
+	logger   *zap.Logger
+	services map[string][]*ServiceInstance
+	mutex    sync.RWMutex
+	client   *http.Client
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 // NewServiceDiscovery 创建服务发现实例
 func NewServiceDiscovery(cfg *config.Config) *ServiceDiscovery {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// 创建HTTP客户端
 	client := &http.Client{
 		Timeout: time.Duration(cfg.ConnectTimeout) * time.Second,
@@ -74,7 +74,7 @@ func (sd *ServiceDiscovery) initializeServices() {
 
 	for serviceName, serviceConfig := range sd.config.Services {
 		var instances []*ServiceInstance
-		
+
 		for _, host := range serviceConfig.Hosts {
 			instance := &ServiceInstance{
 				Name:       serviceName,
@@ -86,7 +86,7 @@ func (sd *ServiceDiscovery) initializeServices() {
 			}
 			instances = append(instances, instance)
 		}
-		
+
 		sd.services[serviceName] = instances
 	}
 }
@@ -120,18 +120,18 @@ func (sd *ServiceDiscovery) performHealthCheck() {
 
 	// 并发检查所有服务实例
 	var wg sync.WaitGroup
-	
+
 	for serviceName, instances := range services {
 		for _, instance := range instances {
 			wg.Add(1)
-			
+
 			go func(svcName string, inst *ServiceInstance) {
 				defer wg.Done()
 				sd.checkInstanceHealth(svcName, inst)
 			}(serviceName, instance)
 		}
 	}
-	
+
 	wg.Wait()
 }
 
@@ -143,7 +143,7 @@ func (sd *ServiceDiscovery) checkInstanceHealth(serviceName string, instance *Se
 	}
 
 	healthURL := instance.Host + serviceConfig.HealthCheck
-	
+
 	ctx, cancel := context.WithTimeout(sd.ctx, 5*time.Second)
 	defer cancel()
 
@@ -297,18 +297,18 @@ func (sd *ServiceDiscovery) GetAllServicesHealth() map[string]interface{} {
 	defer sd.mutex.RUnlock()
 
 	result := make(map[string]interface{})
-	
+
 	for serviceName, instances := range sd.services {
 		healthyCount := 0
 		totalCount := len(instances)
-		
+
 		var instancesStatus []map[string]interface{}
-		
+
 		for _, instance := range instances {
 			if instance.Healthy {
 				healthyCount++
 			}
-			
+
 			instancesStatus = append(instancesStatus, map[string]interface{}{
 				"host":        instance.Host,
 				"healthy":     instance.Healthy,
@@ -317,15 +317,15 @@ func (sd *ServiceDiscovery) GetAllServicesHealth() map[string]interface{} {
 				"error_count": instance.ErrorCount,
 			})
 		}
-		
+
 		result[serviceName] = map[string]interface{}{
 			"healthy_instances": healthyCount,
 			"total_instances":   totalCount,
-			"status":           fmt.Sprintf("%d/%d healthy", healthyCount, totalCount),
-			"instances":        instancesStatus,
+			"status":            fmt.Sprintf("%d/%d healthy", healthyCount, totalCount),
+			"instances":         instancesStatus,
 		}
 	}
-	
+
 	return result
 }
 
@@ -337,7 +337,7 @@ func (sd *ServiceDiscovery) GetServiceInstances(serviceName string) []*ServiceIn
 	instances := sd.services[serviceName]
 	result := make([]*ServiceInstance, len(instances))
 	copy(result, instances)
-	
+
 	return result
 }
 

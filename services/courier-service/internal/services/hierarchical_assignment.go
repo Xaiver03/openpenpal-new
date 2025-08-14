@@ -93,7 +93,7 @@ func (s *HierarchicalAssignmentService) directAssignment(manager *models.Courier
 }
 
 // cascadeAssignment 级联分配（向下级分配）
-func (s *HierarchicalAssignmentService) cascadeAssignment(manager *models.Courier, task *models.Task, req *models.HierarchicalTaskAssignmentRequest) (*models.Task, error) {
+func (s *HierarchicalAssignmentService) cascadeAssignment(manager *models.Courier, task *models.Task, _ *models.HierarchicalTaskAssignmentRequest) (*models.Task, error) {
 	// 获取所有下级信使
 	subordinates, err := s.hierarchyService.GetSubordinates(manager.ID)
 	if err != nil {
@@ -132,7 +132,7 @@ func (s *HierarchicalAssignmentService) cascadeAssignment(manager *models.Courie
 func (s *HierarchicalAssignmentService) autoHierarchyAssignment(manager *models.Courier, task *models.Task, req *models.HierarchicalTaskAssignmentRequest) (*models.Task, error) {
 	// 使用现有的自动分配服务，但限制在管理范围内
 	taskZoneCode := s.assignmentService.extractZoneCodeFromLocation(task.PickupLocation)
-	
+
 	// 查找管理范围内的最优信使
 	bestCourier, err := s.findBestCourierInHierarchy(manager, taskZoneCode, task)
 	if err != nil {
@@ -155,11 +155,11 @@ func (s *HierarchicalAssignmentService) BatchAssignByHierarchy(managerID string,
 
 	for _, taskAssignment := range req.TaskAssignments {
 		singleReq := &models.HierarchicalTaskAssignmentRequest{
-			TaskID:           taskAssignment.TaskID,
-			AssignmentType:   req.AssignmentType,
-			TargetCourierID:  taskAssignment.TargetCourierID,
-			Priority:         taskAssignment.Priority,
-			Notes:            taskAssignment.Notes,
+			TaskID:          taskAssignment.TaskID,
+			AssignmentType:  req.AssignmentType,
+			TargetCourierID: taskAssignment.TargetCourierID,
+			Priority:        taskAssignment.Priority,
+			Notes:           taskAssignment.Notes,
 		}
 
 		task, err := s.AssignTaskByHierarchy(managerID, singleReq)
@@ -192,7 +192,7 @@ func (s *HierarchicalAssignmentService) GetAssignmentHistory(managerID string, l
 	var total int64
 
 	query := s.db.Model(&models.TaskAssignmentHistory{}).Where("assigned_by = ?", managerID)
-	
+
 	// 获取总数
 	query.Count(&total)
 
@@ -295,7 +295,7 @@ func (s *HierarchicalAssignmentService) selectBestCourierForTask(couriers []mode
 	// 使用现有的评分机制
 	pickupLat, pickupLng, _ := s.assignmentService.locationService.ParseLocation(task.PickupLocation)
 	scores := s.assignmentService.calculateCourierScoresWithHierarchy(couriers, task, pickupLat, pickupLng)
-	
+
 	if len(scores) > 0 {
 		return &scores[0].Courier
 	}
@@ -307,9 +307,9 @@ func (s *HierarchicalAssignmentService) selectBestCourierForTask(couriers []mode
 func (s *HierarchicalAssignmentService) findBestCourierInHierarchy(manager *models.Courier, taskZoneCode string, task *models.Task) (*models.Courier, error) {
 	// 获取管理范围内的所有信使
 	var managedCouriers []models.Courier
-	
+
 	// 查找所有下属信使
-	s.db.Where("parent_id = ? OR (level <= ? AND zone_code LIKE ?)", 
+	s.db.Where("parent_id = ? OR (level <= ? AND zone_code LIKE ?)",
 		manager.ID, manager.Level, taskZoneCode+"%").
 		Find(&managedCouriers)
 
@@ -381,11 +381,11 @@ func (s *HierarchicalAssignmentService) assignTaskToCourier(task *models.Task, c
 
 	// 记录分配历史
 	history := &models.TaskAssignmentHistory{
-		TaskID:              task.TaskID,
-		AssignedCourierID:   courier.ID,
-		AssignedBy:          assignedBy,
-		AssignmentType:      "hierarchical",
-		CreatedAt:           now,
+		TaskID:            task.TaskID,
+		AssignedCourierID: courier.ID,
+		AssignedBy:        assignedBy,
+		AssignmentType:    "hierarchical",
+		CreatedAt:         now,
 	}
 
 	if err := tx.Create(history).Error; err != nil {
@@ -428,13 +428,13 @@ func (s *HierarchicalAssignmentService) reassignTaskToCourier(task *models.Task,
 
 	// 记录重新分配历史
 	history := &models.TaskAssignmentHistory{
-		TaskID:              task.TaskID,
-		AssignedCourierID:   newCourier.ID,
-		AssignedBy:          assignedBy,
-		AssignmentType:      "reassignment",
-		PreviousCourierID:   oldCourierID,
-		ReassignmentReason:  reason,
-		CreatedAt:           now,
+		TaskID:             task.TaskID,
+		AssignedCourierID:  newCourier.ID,
+		AssignedBy:         assignedBy,
+		AssignmentType:     "reassignment",
+		PreviousCourierID:  oldCourierID,
+		ReassignmentReason: reason,
+		CreatedAt:          now,
 	}
 
 	if err := tx.Create(history).Error; err != nil {
@@ -457,12 +457,12 @@ func (s *HierarchicalAssignmentService) notifyTaskAssigned(task *models.Task, co
 	event := utils.WebSocketEvent{
 		Type: "HIERARCHICAL_TASK_ASSIGNED",
 		Data: map[string]interface{}{
-			"task_id":      task.TaskID,
-			"courier_id":   courier.UserID,
-			"assigned_by":  assignedBy,
-			"level":        courier.Level,
-			"zone_type":    courier.ZoneType,
-			"deadline":     task.Deadline,
+			"task_id":     task.TaskID,
+			"courier_id":  courier.UserID,
+			"assigned_by": assignedBy,
+			"level":       courier.Level,
+			"zone_type":   courier.ZoneType,
+			"deadline":    task.Deadline,
 		},
 		Timestamp: time.Now(),
 	}

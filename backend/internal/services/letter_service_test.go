@@ -54,7 +54,7 @@ func (suite *LetterServiceTestSuite) TestCreateDraft_Success() {
 	}
 
 	letter, err := suite.letterService.CreateDraft(suite.testUser.ID, req)
-	
+
 	suite.NoError(err)
 	suite.NotNil(letter)
 	suite.Equal("Test Letter", letter.Title)
@@ -79,7 +79,7 @@ func (suite *LetterServiceTestSuite) TestCreateDraft_EmptyContent() {
 	}
 
 	letter, err := suite.letterService.CreateDraft(suite.testUser.ID, req)
-	
+
 	suite.NoError(err) // 应该成功
 	suite.NotNil(letter)
 	suite.Equal("", letter.Content) // 内容为空
@@ -95,7 +95,7 @@ func (suite *LetterServiceTestSuite) TestCreateDraft_ValidEmptyTitle() {
 	}
 
 	letter, err := suite.letterService.CreateDraft(suite.testUser.ID, req)
-	
+
 	suite.NoError(err)
 	suite.NotNil(letter)
 	suite.Equal("", letter.Title)
@@ -115,7 +115,7 @@ func (suite *LetterServiceTestSuite) TestGenerateCode_Success() {
 
 	// 生成二维码
 	letterCode, err := suite.letterService.GenerateCode(letter.ID)
-	
+
 	suite.NoError(err)
 	suite.NotNil(letterCode)
 	suite.Equal(letter.ID, letterCode.LetterID)
@@ -139,13 +139,13 @@ func (suite *LetterServiceTestSuite) TestGenerateCode_AlreadyGenerated() {
 	}
 	letter, err := suite.letterService.CreateDraft(suite.testUser.ID, req)
 	suite.NoError(err)
-	
+
 	_, err = suite.letterService.GenerateCode(letter.ID)
 	suite.NoError(err)
 
 	// 尝试重复生成（应该返回现有的code）
 	letterCode, err := suite.letterService.GenerateCode(letter.ID)
-	
+
 	suite.NoError(err) // 应该成功返回现有code
 	suite.NotNil(letterCode)
 	suite.NotEmpty(letterCode.Code)
@@ -168,7 +168,7 @@ func (suite *LetterServiceTestSuite) TestUpdateStatus_Success() {
 		Note:     "Collected for delivery",
 	}
 	err = suite.letterService.UpdateStatus(letterCode.Code, req, "test-courier")
-	
+
 	suite.NoError(err)
 
 	// 验证状态更新
@@ -195,7 +195,7 @@ func (suite *LetterServiceTestSuite) TestUpdateStatus_LetterNotFound() {
 		Note:     "Test Note",
 	}
 	err := suite.letterService.UpdateStatus("NONEXISTENT", req, "test-courier")
-	
+
 	suite.Error(err)
 	suite.Contains(err.Error(), "letter not found")
 }
@@ -221,7 +221,7 @@ func (suite *LetterServiceTestSuite) TestGetUserLetters_Success() {
 		SortOrder: "desc",
 	}
 	letters, total, err := suite.letterService.GetUserLetters(suite.testUser.ID, params)
-	
+
 	suite.NoError(err)
 	suite.Equal(int64(5), total)
 	suite.Len(letters, 5)
@@ -253,7 +253,7 @@ func (suite *LetterServiceTestSuite) TestGetUserLetters_Pagination() {
 		SortOrder: "desc",
 	}
 	page1Letters, total, err := suite.letterService.GetUserLetters(suite.testUser.ID, params1)
-	
+
 	suite.NoError(err)
 	suite.Equal(int64(10), total)
 	suite.Len(page1Letters, 5)
@@ -266,7 +266,7 @@ func (suite *LetterServiceTestSuite) TestGetUserLetters_Pagination() {
 		SortOrder: "desc",
 	}
 	page2Letters, total, err := suite.letterService.GetUserLetters(suite.testUser.ID, params2)
-	
+
 	suite.NoError(err)
 	suite.Equal(int64(10), total)
 	suite.Len(page2Letters, 5)
@@ -291,7 +291,7 @@ func (suite *LetterServiceTestSuite) TestMarkAsRead_Success() {
 
 	// 标记为已读
 	err = suite.letterService.MarkAsRead(letterCode.Code, suite.testUser.ID)
-	
+
 	suite.NoError(err)
 
 	// 验证状态更新
@@ -313,7 +313,7 @@ func (suite *LetterServiceTestSuite) TestGetLetterByCode_Success() {
 
 	// 通过码获取信件
 	retrievedLetter, err := suite.letterService.GetLetterByCode(letterCode.Code)
-	
+
 	suite.NoError(err)
 	suite.NotNil(retrievedLetter)
 	suite.Equal(letter.ID, retrievedLetter.Letter.ID)
@@ -325,7 +325,7 @@ func (suite *LetterServiceTestSuite) TestGetLetterByCode_Success() {
 func (suite *LetterServiceTestSuite) TestGetLetterByCode_NotFound() {
 	// 使用不存在的码
 	letter, err := suite.letterService.GetLetterByCode("NONEXISTENT")
-	
+
 	suite.Error(err)
 	suite.Nil(letter)
 	suite.Contains(err.Error(), "letter not found")
@@ -368,7 +368,7 @@ func (suite *LetterServiceTestSuite) createDeliveredLetter() *models.Letter {
 	}
 	err = suite.letterService.UpdateStatus(letterCode.Code, req1, "test-courier")
 	suite.NoError(err)
-	
+
 	req2 := &models.UpdateLetterStatusRequest{
 		Status:   models.StatusInTransit,
 		Location: "Test Location",
@@ -376,7 +376,7 @@ func (suite *LetterServiceTestSuite) createDeliveredLetter() *models.Letter {
 	}
 	err = suite.letterService.UpdateStatus(letterCode.Code, req2, "test-courier")
 	suite.NoError(err)
-	
+
 	req3 := &models.UpdateLetterStatusRequest{
 		Status:   models.StatusDelivered,
 		Location: "Test Location",

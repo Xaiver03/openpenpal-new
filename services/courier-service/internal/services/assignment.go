@@ -78,32 +78,32 @@ func (s *AssignmentService) AutoAssignTask(task *models.Task) (*models.Courier, 
 func (s *AssignmentService) findCouriersByHierarchy(task *models.Task, lat, lng, radiusKm float64) []models.Courier {
 	// 确定任务的区域编码
 	taskZoneCode := s.extractZoneCodeFromLocation(task.PickupLocation)
-	
+
 	var couriers []models.Courier
 
 	// 按层级优先级查找信使：楼栋级 > 片区级 > 学校级 > 城市级
 	// 1. 优先找楼栋级信使（最精确匹配）
-	s.db.Where("status = ? AND zone_type = ? AND zone_code = ? AND rating >= ?", 
+	s.db.Where("status = ? AND zone_type = ? AND zone_code = ? AND rating >= ?",
 		models.CourierStatusApproved, models.ZoneTypeBuilding, taskZoneCode, 3.0).Find(&couriers)
 
 	// 2. 如果没有楼栋级，找片区级
 	if len(couriers) == 0 {
 		areaZoneCode := s.extractParentZoneCode(taskZoneCode, models.ZoneTypeArea)
-		s.db.Where("status = ? AND zone_type = ? AND zone_code = ? AND rating >= ?", 
+		s.db.Where("status = ? AND zone_type = ? AND zone_code = ? AND rating >= ?",
 			models.CourierStatusApproved, models.ZoneTypeArea, areaZoneCode, 3.0).Find(&couriers)
 	}
 
 	// 3. 如果没有片区级，找学校级
 	if len(couriers) == 0 {
 		schoolZoneCode := s.extractParentZoneCode(taskZoneCode, models.ZoneTypeSchool)
-		s.db.Where("status = ? AND zone_type = ? AND zone_code = ? AND rating >= ?", 
+		s.db.Where("status = ? AND zone_type = ? AND zone_code = ? AND rating >= ?",
 			models.CourierStatusApproved, models.ZoneTypeSchool, schoolZoneCode, 3.0).Find(&couriers)
 	}
 
 	// 4. 最后找城市级（兜底）
 	if len(couriers) == 0 {
 		cityZoneCode := s.extractParentZoneCode(taskZoneCode, models.ZoneTypeCity)
-		s.db.Where("status = ? AND zone_type = ? AND zone_code = ? AND rating >= ?", 
+		s.db.Where("status = ? AND zone_type = ? AND zone_code = ? AND rating >= ?",
 			models.CourierStatusApproved, models.ZoneTypeCity, cityZoneCode, 3.0).Find(&couriers)
 	}
 
@@ -179,7 +179,7 @@ func (s *AssignmentService) calculateIndividualScoreWithHierarchy(courier *model
 
 	// 层级优先级加分（楼栋级最高，城市级最低）
 	hierarchyBonus := s.getHierarchyBonus(courier.ZoneType)
-	
+
 	// 区域匹配度加分
 	zoneMatchScore := s.calculateZoneMatchScore(courier, task)
 
@@ -258,7 +258,7 @@ func (s *AssignmentService) calculateIndividualScore(courier *models.Courier, ta
 // getCurrentTaskCount 获取信使当前的任务数量
 func (s *AssignmentService) getCurrentTaskCount(courierID string) int {
 	var count int64
-	s.db.Model(&models.Task{}).Where("courier_id = ? AND status IN ?", courierID, 
+	s.db.Model(&models.Task{}).Where("courier_id = ? AND status IN ?", courierID,
 		[]string{models.TaskStatusAccepted, models.TaskStatusCollected, models.TaskStatusInTransit}).Count(&count)
 	return int(count)
 }
@@ -362,7 +362,7 @@ func (s *AssignmentService) ReassignFailedTasks() error {
 	deadline := time.Now().Add(-6 * time.Hour) // 6小时前的任务
 	var timeoutTasks []models.Task
 
-	err := s.db.Where("status IN ? AND deadline < ?", 
+	err := s.db.Where("status IN ? AND deadline < ?",
 		[]string{models.TaskStatusAccepted, models.TaskStatusCollected}, deadline).
 		Find(&timeoutTasks).Error
 
@@ -474,24 +474,24 @@ func (s *AssignmentService) getHierarchyBonus(zoneType string) float64 {
 // calculateZoneMatchScore 计算区域匹配度加分
 func (s *AssignmentService) calculateZoneMatchScore(courier *models.Courier, task *models.Task) float64 {
 	taskZoneCode := s.extractZoneCodeFromLocation(task.PickupLocation)
-	
+
 	// 如果是精确匹配
 	if courier.ZoneCode == taskZoneCode {
 		return 50.0
 	}
-	
+
 	// 如果是上级管辖区域
 	if s.isParentZone(courier.ZoneCode, courier.ZoneType, taskZoneCode) {
 		return 30.0
 	}
-	
+
 	// 如果是同级但不同区域
-	if courier.ZoneType == models.ZoneTypeBuilding && 
-		s.extractParentZoneCode(courier.ZoneCode, models.ZoneTypeArea) == 
-		s.extractParentZoneCode(taskZoneCode, models.ZoneTypeArea) {
+	if courier.ZoneType == models.ZoneTypeBuilding &&
+		s.extractParentZoneCode(courier.ZoneCode, models.ZoneTypeArea) ==
+			s.extractParentZoneCode(taskZoneCode, models.ZoneTypeArea) {
 		return 20.0
 	}
-	
+
 	return 0.0
 }
 
@@ -500,11 +500,11 @@ func (s *AssignmentService) isParentZone(courierZoneCode, courierZoneType, taskZ
 	switch courierZoneType {
 	case models.ZoneTypeArea:
 		// 片区级可以管辖同片区的所有楼栋
-		return len(taskZoneCode) > len(courierZoneCode) && 
+		return len(taskZoneCode) > len(courierZoneCode) &&
 			taskZoneCode[:len(courierZoneCode)] == courierZoneCode
 	case models.ZoneTypeSchool:
 		// 学校级可以管辖同学校的所有片区和楼栋
-		return len(taskZoneCode) > len(courierZoneCode) && 
+		return len(taskZoneCode) > len(courierZoneCode) &&
 			taskZoneCode[:len(courierZoneCode)] == courierZoneCode
 	case models.ZoneTypeCity:
 		// 城市级可以管辖城市内所有任务
@@ -524,10 +524,10 @@ func (s *AssignmentService) validateAssignmentPermission(courier *models.Courier
 	if courier.ManagedOPCodePrefix != "" && task.DeliveryOPCode != "" {
 		return s.validateOPCodePermission(courier, task)
 	}
-	
+
 	// 兼容旧系统：使用ZoneCode验证
 	taskZoneCode := s.extractZoneCodeFromLocation(task.PickupLocation)
-	return courier.ZoneCode == taskZoneCode || 
+	return courier.ZoneCode == taskZoneCode ||
 		s.isParentZone(courier.ZoneCode, courier.ZoneType, taskZoneCode)
 }
 
@@ -537,22 +537,22 @@ func (s *AssignmentService) validateOPCodePermission(courier *models.Courier, ta
 	if courier.ManagedOPCodePrefix == "" || task.DeliveryOPCode == "" {
 		return false
 	}
-	
+
 	// 4级信使（城市级）：可以处理同城市的所有任务
 	if courier.Level == 4 && len(courier.ManagedOPCodePrefix) >= 2 && len(task.DeliveryOPCode) >= 2 {
 		return task.DeliveryOPCode[:2] == courier.ManagedOPCodePrefix[:2]
 	}
-	
+
 	// 3级信使（学校级）：可以处理同学校的所有任务
 	if courier.Level == 3 && len(courier.ManagedOPCodePrefix) >= 2 && len(task.DeliveryOPCode) >= 2 {
 		return task.DeliveryOPCode[:2] == courier.ManagedOPCodePrefix[:2]
 	}
-	
+
 	// 2级信使（片区级）：可以处理同区域的任务
 	if courier.Level == 2 && len(courier.ManagedOPCodePrefix) >= 4 && len(task.DeliveryOPCode) >= 4 {
 		return task.DeliveryOPCode[:4] == courier.ManagedOPCodePrefix[:4]
 	}
-	
+
 	// 1级信使（楼栋级）：只能处理完全匹配的任务
 	if courier.Level == 1 {
 		prefixLen := len(courier.ManagedOPCodePrefix)
@@ -560,6 +560,6 @@ func (s *AssignmentService) validateOPCodePermission(courier *models.Courier, ta
 			return task.DeliveryOPCode[:prefixLen] == courier.ManagedOPCodePrefix
 		}
 	}
-	
+
 	return false
 }

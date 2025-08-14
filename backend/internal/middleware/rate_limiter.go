@@ -75,13 +75,13 @@ func init() {
 	// Check if we're in test mode for more lenient rate limiting
 	if isTestMode() {
 		// Test mode: Very lenient rate limits for integration testing
-		generalLimiter = NewIPRateLimiter(rate.Every(time.Millisecond*50), 200)   // 20 req/sec, burst 200
-		authLimiter = NewIPRateLimiter(rate.Every(time.Millisecond*500), 100)     // 2 req/sec, burst 100
+		generalLimiter = NewIPRateLimiter(rate.Every(time.Millisecond*50), 200) // 20 req/sec, burst 200
+		authLimiter = NewIPRateLimiter(rate.Every(time.Millisecond*500), 100)   // 2 req/sec, burst 100
 		log.Printf("[RATE_LIMITER] TEST_MODE enabled - using lenient rate limits")
 	} else {
 		// Production mode: More lenient rate limits for development
-		generalLimiter = NewIPRateLimiter(rate.Every(time.Millisecond*100), 100)  // 10 req/sec, burst 100
-		authLimiter = NewIPRateLimiter(rate.Every(time.Second*10), 20)            // 6 req/min, burst 20
+		generalLimiter = NewIPRateLimiter(rate.Every(time.Millisecond*100), 100) // 10 req/sec, burst 100
+		authLimiter = NewIPRateLimiter(rate.Every(time.Second*10), 20)           // 6 req/min, burst 20
 		log.Printf("[RATE_LIMITER] Production mode - using moderate rate limits for development")
 	}
 }
@@ -161,9 +161,9 @@ func NewUserRateLimiter(r rate.Limit, b int) *UserRateLimiter {
 		r:     r,
 		b:     b,
 	}
-	
+
 	go u.cleanupRoutine()
-	
+
 	return u
 }
 
@@ -172,11 +172,11 @@ func (u *UserRateLimiter) GetLimiter(userID string) *rate.Limiter {
 	u.mu.RLock()
 	limiter, exists := u.users[userID]
 	u.mu.RUnlock()
-	
+
 	if !exists {
 		return u.AddUser(userID)
 	}
-	
+
 	return limiter
 }
 
@@ -184,7 +184,7 @@ func (u *UserRateLimiter) GetLimiter(userID string) *rate.Limiter {
 func (u *UserRateLimiter) AddUser(userID string) *rate.Limiter {
 	u.mu.Lock()
 	defer u.mu.Unlock()
-	
+
 	limiter := rate.NewLimiter(u.r, u.b)
 	u.users[userID] = limiter
 	return limiter
@@ -214,12 +214,12 @@ func init() {
 	// 初始化用户级别的限制器
 	if isTestMode() {
 		// 测试模式：宽松限制
-		userGeneralLimiter = NewUserRateLimiter(rate.Every(time.Millisecond*20), 500)   // 50 req/sec per user
-		userAuthLimiter = NewUserRateLimiter(rate.Every(time.Second), 10)              // 1 req/sec per user
+		userGeneralLimiter = NewUserRateLimiter(rate.Every(time.Millisecond*20), 500) // 50 req/sec per user
+		userAuthLimiter = NewUserRateLimiter(rate.Every(time.Second), 10)             // 1 req/sec per user
 	} else {
 		// 生产模式：适中限制
-		userGeneralLimiter = NewUserRateLimiter(rate.Every(time.Millisecond*50), 200)  // 20 req/sec per user
-		userAuthLimiter = NewUserRateLimiter(rate.Every(time.Second*5), 5)             // 12 req/min per user
+		userGeneralLimiter = NewUserRateLimiter(rate.Every(time.Millisecond*50), 200) // 20 req/sec per user
+		userAuthLimiter = NewUserRateLimiter(rate.Every(time.Second*5), 5)            // 12 req/min per user
 	}
 	log.Printf("[USER_RATE_LIMITER] Initialized user-level rate limiters")
 }
@@ -234,7 +234,7 @@ func UserRateLimitMiddleware() gin.HandlerFunc {
 			RateLimitMiddleware()(c)
 			return
 		}
-		
+
 		limiter := userGeneralLimiter.GetLimiter(userID.(string))
 		if !limiter.Allow() {
 			c.JSON(http.StatusTooManyRequests, gin.H{
@@ -259,7 +259,7 @@ func UserAuthRateLimitMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 对于登录请求，使用用户名作为标识
 		var identifier string
-		
+
 		if c.Request.URL.Path == "/api/v1/auth/login" {
 			// 尝试从请求体获取用户名
 			var loginReq struct {
@@ -275,13 +275,13 @@ func UserAuthRateLimitMiddleware() gin.HandlerFunc {
 				identifier = userID.(string)
 			}
 		}
-		
+
 		// 如果无法识别用户，使用IP限制
 		if identifier == "" {
 			AuthRateLimitMiddleware()(c)
 			return
 		}
-		
+
 		limiter := userAuthLimiter.GetLimiter(identifier)
 		if !limiter.Allow() {
 			c.JSON(http.StatusTooManyRequests, gin.H{

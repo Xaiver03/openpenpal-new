@@ -5,7 +5,7 @@ import (
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/services"
 	"openpenpal-backend/internal/utils"
-	
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -93,15 +93,15 @@ func (h *UserProfileHandler) GetUserLetters(c *gin.Context) {
 	letterResponses := make([]gin.H, len(letters))
 	for i, letter := range letters {
 		letterResponses[i] = gin.H{
-			"id":               letter.ID,
-			"title":            letter.Title,
-			"content_preview":  truncateContent(letter.Content, 100),
-			"created_at":       letter.CreatedAt,
-			"status":           letter.Status,
-			"visibility":       letter.Visibility,
-			"like_count":       letter.LikeCount,
-			"sender_username":  username, // 简化处理
-			"is_public":        letter.Visibility == models.VisibilityPublic,
+			"id":              letter.ID,
+			"title":           letter.Title,
+			"content_preview": truncateContent(letter.Content, 100),
+			"created_at":      letter.CreatedAt,
+			"status":          letter.Status,
+			"visibility":      letter.Visibility,
+			"like_count":      letter.LikeCount,
+			"sender_username": username, // 简化处理
+			"is_public":       letter.Visibility == models.VisibilityPublic,
 		}
 	}
 

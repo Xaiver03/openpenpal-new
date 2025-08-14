@@ -25,14 +25,14 @@ type DelayQueueService struct {
 
 // DelayQueueTask 延迟任务结构
 type DelayQueueTask struct {
-	ID          string                 `json:"id"`
-	Type        string                 `json:"type"`        // ai_reply, ai_match, notification
-	Payload     map[string]interface{} `json:"payload"`     // 任务数据
-	DelayedUntil time.Time             `json:"delayed_until"` // 延迟执行时间
-	CreatedAt   time.Time             `json:"created_at"`
-	Status      string                `json:"status"`      // pending, processing, completed, failed
-	RetryCount  int                   `json:"retry_count"`
-	MaxRetries  int                   `json:"max_retries"`
+	ID           string                 `json:"id"`
+	Type         string                 `json:"type"`          // ai_reply, ai_match, notification
+	Payload      map[string]interface{} `json:"payload"`       // 任务数据
+	DelayedUntil time.Time              `json:"delayed_until"` // 延迟执行时间
+	CreatedAt    time.Time              `json:"created_at"`
+	Status       string                 `json:"status"` // pending, processing, completed, failed
+	RetryCount   int                    `json:"retry_count"`
+	MaxRetries   int                    `json:"max_retries"`
 }
 
 // AIReplyTask AI回信任务数据
@@ -55,7 +55,7 @@ func NewDelayQueueService(db *gorm.DB, config *config.Config) (*DelayQueueServic
 	// 测试连接
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
 		log.Printf("Redis connection failed: %v", err)
@@ -134,7 +134,7 @@ func (s *DelayQueueService) scheduleTask(task *DelayQueueTask) error {
 // StartWorker 启动延迟队列工作进程
 func (s *DelayQueueService) StartWorker() {
 	log.Println("Starting delay queue worker...")
-	
+
 	ticker := time.NewTicker(30 * time.Second) // 每30秒检查一次
 	defer ticker.Stop()
 
@@ -223,14 +223,14 @@ func (s *DelayQueueService) processAIReplyTask(task *DelayQueueTask) error {
 
 	// 这里可以添加发送通知的逻辑
 	// 比如通知用户收到了AI回信
-	
+
 	return nil
 }
 
 // handleTaskError 处理任务错误
 func (s *DelayQueueService) handleTaskError(task *DelayQueueTask) {
 	task.RetryCount++
-	
+
 	if task.RetryCount >= task.MaxRetries {
 		// 超过最大重试次数，标记为失败
 		s.redis.ZRem(context.Background(), "delay_queue", task)

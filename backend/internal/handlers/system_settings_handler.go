@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/smtp"
-	"strconv"
 	"openpenpal-backend/internal/config"
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/services"
 	"openpenpal-backend/internal/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -44,8 +44,8 @@ func (h *SystemSettingsHandler) GetSettings(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "获取系统设置成功", gin.H{
-		"code": 0,
-		"data": settings,
+		"code":    0,
+		"data":    settings,
 		"message": "获取系统设置成功",
 	})
 }
@@ -82,8 +82,8 @@ func (h *SystemSettingsHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "更新系统设置成功", gin.H{
-		"code": 0,
-		"data": updatedConfig,
+		"code":    0,
+		"data":    updatedConfig,
 		"message": "配置保存成功！",
 	})
 }
@@ -105,8 +105,8 @@ func (h *SystemSettingsHandler) ResetSettings(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "重置系统设置成功", gin.H{
-		"code": 0,
-		"data": defaultConfig,
+		"code":    0,
+		"data":    defaultConfig,
 		"message": "配置已重置为默认值！",
 	})
 }
@@ -169,7 +169,7 @@ func (h *SystemSettingsHandler) TestEmailConfig(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "测试邮件发送成功", gin.H{
-		"code": 0,
+		"code":    0,
 		"message": "测试邮件发送成功！请检查邮箱: " + req.TestEmail,
 	})
 }
@@ -260,6 +260,6 @@ func (h *SystemSettingsHandler) sendTestEmail(config *models.SystemConfig, toEma
 	// 发送邮件
 	addr := fmt.Sprintf("%s:%d", config.SMTPHost, config.SMTPPort)
 	err := smtp.SendMail(addr, auth, config.EmailFromAddress, []string{toEmail}, []byte(message))
-	
+
 	return err
 }

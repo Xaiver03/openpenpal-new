@@ -24,30 +24,30 @@ func NewPromotionService(db *gorm.DB) *PromotionService {
 
 // UpgradeRequest 晋升申请结构
 type UpgradeRequest struct {
-	ID           string     `json:"id" gorm:"type:varchar(36);primary_key"`
-	CourierID    string     `json:"courier_id" gorm:"type:varchar(36);not null;index"`
-	CurrentLevel int        `json:"current_level" gorm:"not null"`
-	RequestLevel int        `json:"request_level" gorm:"not null"`
-	Reason       string     `json:"reason" gorm:"type:text;not null"`
-	Evidence     string     `json:"evidence" gorm:"type:jsonb"` // 使用string接收JSON
-	Status       string     `json:"status" gorm:"type:varchar(20);default:'pending';index"`
-	ReviewerID   *string    `json:"reviewer_id" gorm:"type:varchar(36)"`
-	ReviewerComment *string `json:"reviewer_comment" gorm:"type:text"`
-	CreatedAt    time.Time  `json:"created_at"`
-	ReviewedAt   *time.Time `json:"reviewed_at"`
-	ExpiresAt    time.Time  `json:"expires_at"`
+	ID              string     `json:"id" gorm:"type:varchar(36);primary_key"`
+	CourierID       string     `json:"courier_id" gorm:"type:varchar(36);not null;index"`
+	CurrentLevel    int        `json:"current_level" gorm:"not null"`
+	RequestLevel    int        `json:"request_level" gorm:"not null"`
+	Reason          string     `json:"reason" gorm:"type:text;not null"`
+	Evidence        string     `json:"evidence" gorm:"type:jsonb"` // 使用string接收JSON
+	Status          string     `json:"status" gorm:"type:varchar(20);default:'pending';index"`
+	ReviewerID      *string    `json:"reviewer_id" gorm:"type:varchar(36)"`
+	ReviewerComment *string    `json:"reviewer_comment" gorm:"type:text"`
+	CreatedAt       time.Time  `json:"created_at"`
+	ReviewedAt      *time.Time `json:"reviewed_at"`
+	ExpiresAt       time.Time  `json:"expires_at"`
 }
 
 // PromotionHistory 晋升历史记录
 type PromotionHistory struct {
-	ID          string    `json:"id" gorm:"type:varchar(36);primary_key"`
-	CourierID   string    `json:"courier_id" gorm:"type:varchar(36);not null;index"`
-	FromLevel   int       `json:"from_level" gorm:"not null"`
-	ToLevel     int       `json:"to_level" gorm:"not null"`
-	PromotedBy  string    `json:"promoted_by" gorm:"type:varchar(36);not null"`
-	Reason      string    `json:"reason" gorm:"type:text"`
-	Evidence    string    `json:"evidence" gorm:"type:jsonb"` // 使用string接收JSON
-	PromotedAt  time.Time `json:"promoted_at"`
+	ID         string    `json:"id" gorm:"type:varchar(36);primary_key"`
+	CourierID  string    `json:"courier_id" gorm:"type:varchar(36);not null;index"`
+	FromLevel  int       `json:"from_level" gorm:"not null"`
+	ToLevel    int       `json:"to_level" gorm:"not null"`
+	PromotedBy string    `json:"promoted_by" gorm:"type:varchar(36);not null"`
+	Reason     string    `json:"reason" gorm:"type:text"`
+	Evidence   string    `json:"evidence" gorm:"type:jsonb"` // 使用string接收JSON
+	PromotedAt time.Time `json:"promoted_at"`
 }
 
 // LevelRequirement 等级要求结构
@@ -75,7 +75,7 @@ func (LevelRequirement) TableName() string {
 	return "courier_level_requirements"
 }
 
-// SubmitUpgradeRequest 提交晋升申请 - SOTA实现  
+// SubmitUpgradeRequest 提交晋升申请 - SOTA实现
 func (s *PromotionService) SubmitUpgradeRequest(userID string, currentLevel, requestLevel int, reason string, evidence map[string]interface{}) (*UpgradeRequest, error) {
 	// 1. 验证输入参数
 	if requestLevel != currentLevel+1 {
@@ -140,14 +140,14 @@ func (s *PromotionService) CheckUpgradeRequirements(userID string, fromLevel, to
 	}
 
 	var missingRequirements []string
-	
+
 	// 3. 逐一检查要求
 	for _, req := range requirements {
 		satisfied, err := s.checkSingleRequirement(courier, req)
 		if err != nil {
 			return false, nil, fmt.Errorf("检查要求失败: %v", err)
 		}
-		
+
 		if !satisfied {
 			missingRequirements = append(missingRequirements, req.Description)
 		}
@@ -163,29 +163,29 @@ func (s *PromotionService) checkSingleRequirement(courier models.Courier, req Le
 	if err := json.Unmarshal([]byte(req.RequirementValue), &reqValue); err != nil {
 		return false, fmt.Errorf("解析要求值失败: %v", err)
 	}
-	
+
 	switch req.RequirementType {
 	case "min_deliveries":
 		minDeliveries := int(reqValue["value"].(float64))
 		return courier.TaskCount >= minDeliveries, nil
-		
+
 	case "min_success_rate":
 		minRate := reqValue["value"].(float64)
 		// 模拟成功率计算 - 在实际系统中应该查询任务表
 		currentRate := 96.5 // 这里应该是真实计算
 		return currentRate >= minRate, nil
-		
+
 	case "min_service_days":
 		minDays := int(reqValue["value"].(float64))
 		serviceDays := int(time.Since(courier.CreatedAt).Hours() / 24)
 		return serviceDays >= minDays, nil
-		
+
 	case "min_subordinates":
 		minSubs := int(reqValue["value"].(float64))
 		var subCount int64
 		s.db.Model(&models.Courier{}).Where("parent_id = ?", courier.ID).Count(&subCount)
 		return int(subCount) >= minSubs, nil
-		
+
 	default:
 		// 对于不支持的要求类型，暂时返回true
 		return true, nil
@@ -196,23 +196,23 @@ func (s *PromotionService) checkSingleRequirement(courier models.Courier, req Le
 func (s *PromotionService) GetUpgradeRequests(status string, limit, offset int) ([]UpgradeRequest, int64, error) {
 	var requests []UpgradeRequest
 	var total int64
-	
+
 	query := s.db.Model(&UpgradeRequest{})
-	
+
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
-	
+
 	// 获取总数
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	// 获取分页数据
 	if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&requests).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	return requests, total, nil
 }
 
@@ -322,18 +322,18 @@ func (s *PromotionService) GetPromotionHistory(courierID string) ([]PromotionHis
 func (s *PromotionService) GetLevelRequirements(fromLevel, toLevel int) ([]LevelRequirement, error) {
 	var requirements []LevelRequirement
 	query := s.db.Model(&LevelRequirement{})
-	
+
 	if fromLevel > 0 {
 		query = query.Where("from_level = ?", fromLevel)
 	}
-	
+
 	if toLevel > 0 {
 		query = query.Where("to_level = ?", toLevel)
 	}
-	
+
 	if err := query.Order("from_level, to_level, id").Find(&requirements).Error; err != nil {
 		return nil, err
 	}
-	
+
 	return requirements, nil
 }

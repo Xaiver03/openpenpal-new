@@ -55,8 +55,8 @@ func (h *CourierHandler) ApplyCourier(c *gin.Context) {
 
 	response := map[string]interface{}{
 		"application_id": "CA" + courier.ID,
-		"status":        courier.Status,
-		"submitted_at":  courier.CreatedAt,
+		"status":         courier.Status,
+		"submitted_at":   courier.CreatedAt,
 	}
 
 	c.JSON(http.StatusOK, models.SuccessResponse(response))

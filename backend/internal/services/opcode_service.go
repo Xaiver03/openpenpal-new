@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"openpenpal-backend/internal/models"
 	"gorm.io/gorm"
+	"openpenpal-backend/internal/models"
 )
 
 // OPCodeService OP Code服务 - 管理6位编码系统
@@ -58,7 +58,7 @@ func (s *OPCodeService) AssignOPCode(reviewerID string, applicationID string, po
 	if len(pointCode) != 2 {
 		return errors.New("位置代码必须为2位")
 	}
-	
+
 	pointCode = strings.ToUpper(pointCode)
 
 	// 开始事务
@@ -94,23 +94,23 @@ func (s *OPCodeService) AssignOPCode(reviewerID string, applicationID string, po
 	// 创建新的OP Code记录（使用SignalCode表）
 	now := time.Now()
 	opCode := &models.SignalCode{
-		Code:         fullCode,
-		SchoolCode:   application.SchoolCode,
-		AreaCode:     application.AreaCode,
-		PointCode:    pointCode,
-		PointType:    application.PointType,
-		PointName:    application.PointName,
-		FullAddress:  application.FullAddress,
-		IsPublic:     false, // Default to false for privacy
-		IsActive:     true,
-		BindingType:  "user",
-		BindingID:    &application.UserID,
+		Code:          fullCode,
+		SchoolCode:    application.SchoolCode,
+		AreaCode:      application.AreaCode,
+		PointCode:     pointCode,
+		PointType:     application.PointType,
+		PointName:     application.PointName,
+		FullAddress:   application.FullAddress,
+		IsPublic:      false, // Default to false for privacy
+		IsActive:      true,
+		BindingType:   "user",
+		BindingID:     &application.UserID,
 		BindingStatus: "approved",
-		ManagedBy:    reviewerID,
-		ApprovedBy:   &reviewerID,
-		ApprovedAt:   &now,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		ManagedBy:     reviewerID,
+		ApprovedBy:    &reviewerID,
+		ApprovedAt:    &now,
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 
 	if err := tx.Create(opCode).Error; err != nil {
@@ -138,40 +138,40 @@ func (s *OPCodeService) AssignOPCode(reviewerID string, applicationID string, po
 // GetOPCodeByCode 根据编码查询OP Code信息
 func (s *OPCodeService) GetOPCodeByCode(code string, includePrivate bool) (*models.SignalCode, error) {
 	code = strings.ToUpper(code)
-	
+
 	var opCode models.SignalCode
 	query := s.db.Where("code = ? AND is_active = ?", code, true)
-	
+
 	if !includePrivate {
 		query = query.Where("is_public = ?", true)
 	}
-	
+
 	if err := query.First(&opCode).Error; err != nil {
 		return nil, err
 	}
-	
+
 	return &opCode, nil
 }
 
 // ValidateCourierAccess 验证信使是否有权限访问某个OP Code
 func (s *OPCodeService) ValidateCourierAccess(courierID string, targetOPCode string) (bool, error) {
 	targetOPCode = strings.ToUpper(targetOPCode)
-	
+
 	// 获取信使信息
 	var courier models.Courier
 	if err := s.db.First(&courier, "id = ?", courierID).Error; err != nil {
 		return false, err
 	}
-	
+
 	// 如果没有设置OP Code权限，检查旧的Zone权限（兼容性）
 	if courier.ManagedOPCodePrefix == "" {
 		// TODO: 实现Zone到OP Code的映射逻辑
 		return true, nil
 	}
-	
+
 	// 去除通配符
 	prefix := strings.ReplaceAll(courier.ManagedOPCodePrefix, "*", "")
-	
+
 	// 检查前缀匹配
 	return strings.HasPrefix(targetOPCode, prefix), nil
 }
@@ -180,9 +180,9 @@ func (s *OPCodeService) ValidateCourierAccess(courierID string, targetOPCode str
 func (s *OPCodeService) SearchOPCodes(req *models.OPCodeSearchRequest) ([]models.SignalCode, int64, error) {
 	var codes []models.SignalCode
 	var total int64
-	
+
 	query := s.db.Model(&models.SignalCode{})
-	
+
 	// 构建查询条件
 	if req.Code != "" {
 		query = query.Where("code LIKE ?", strings.ToUpper(req.Code)+"%")
@@ -202,16 +202,16 @@ func (s *OPCodeService) SearchOPCodes(req *models.OPCodeSearchRequest) ([]models
 	if req.IsActive != nil {
 		query = query.Where("is_active = ?", *req.IsActive)
 	}
-	
+
 	// 计算总数
 	query.Count(&total)
-	
+
 	// 分页查询
 	offset := (req.Page - 1) * req.PageSize
 	if err := query.Offset(offset).Limit(req.PageSize).Find(&codes).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	return codes, total, nil
 }
 
@@ -222,16 +222,16 @@ func (s *OPCodeService) GetOPCodeStats(schoolCode string) (*models.OPCodeStats, 
 		ByType:     make(map[string]int),
 		ByArea:     make(map[string]int),
 	}
-	
+
 	// 统计总数
 	s.db.Model(&models.SignalCode{}).Where("school_code = ?", schoolCode).Count(&stats.TotalCodes)
-	
+
 	// 统计激活数
 	s.db.Model(&models.SignalCode{}).Where("school_code = ? AND is_active = ?", schoolCode, true).Count(&stats.ActiveCodes)
-	
+
 	// 统计公开数
 	s.db.Model(&models.SignalCode{}).Where("school_code = ? AND is_public = ?", schoolCode, true).Count(&stats.PublicCodes)
-	
+
 	// 按类型统计
 	var typeStats []struct {
 		CodeType string
@@ -242,11 +242,11 @@ func (s *OPCodeService) GetOPCodeStats(schoolCode string) (*models.OPCodeStats, 
 		Where("school_code = ?", schoolCode).
 		Group("code_type").
 		Scan(&typeStats)
-	
+
 	for _, ts := range typeStats {
 		stats.ByType[ts.CodeType] = ts.Count
 	}
-	
+
 	// 按片区统计
 	var areaStats []struct {
 		AreaCode string
@@ -257,16 +257,16 @@ func (s *OPCodeService) GetOPCodeStats(schoolCode string) (*models.OPCodeStats, 
 		Where("school_code = ?", schoolCode).
 		Group("area_code").
 		Scan(&areaStats)
-	
+
 	for _, as := range areaStats {
 		stats.ByArea[as.AreaCode] = as.Count
 	}
-	
+
 	// 计算利用率
 	if stats.TotalCodes > 0 {
 		stats.UtilizationRate = float64(stats.ActiveCodes) / float64(stats.TotalCodes) * 100
 	}
-	
+
 	return stats, nil
 }
 
@@ -277,7 +277,7 @@ func (s *OPCodeService) ValidateOPCode(code string) (bool, error) {
 	if len(code) != 6 {
 		return false, fmt.Errorf("OP Code must be exactly 6 characters")
 	}
-	
+
 	// 验证是否存在于数据库
 	var opcode models.OPCode
 	if err := s.db.Where("code = ? AND is_active = ?", code, true).First(&opcode).Error; err != nil {
@@ -286,7 +286,7 @@ func (s *OPCodeService) ValidateOPCode(code string) (bool, error) {
 		}
 		return false, err
 	}
-	
+
 	return true, nil
 }
 
@@ -300,20 +300,20 @@ func (s *OPCodeService) CheckPermission(userID string, targetOPCode string) (boo
 func (s *OPCodeService) MigrateZoneToOPCode(zone string) (string, error) {
 	// 这是一个示例映射函数，实际项目需要根据具体的Zone格式设计映射规则
 	// 例如: "BJDX-A-101" -> "BD1A01"
-	
+
 	// 简单的映射逻辑示例
 	mappings := map[string]string{
-		"BEIJING":     "BJ",
-		"BJDX":        "BD",
-		"BJDX-A":      "BD1A",
-		"BJDX-A-101":  "BD1A01",
+		"BEIJING":    "BJ",
+		"BJDX":       "BD",
+		"BJDX-A":     "BD1A",
+		"BJDX-A-101": "BD1A01",
 		// 添加更多映射...
 	}
-	
+
 	if opCode, exists := mappings[zone]; exists {
 		return opCode, nil
 	}
-	
+
 	// 如果没有找到映射，尝试生成一个
 	// 这里需要根据实际的Zone命名规则来设计
 	return "", fmt.Errorf("无法将Zone '%s' 转换为OP Code", zone)
@@ -326,27 +326,27 @@ func (s *OPCodeService) SearchAreas(schoolCode string) (map[string]interface{}, 
 		return nil, errors.New("学校代码不能为空")
 	}
 	schoolCode = strings.ToUpper(schoolCode)
-	
+
 	// 验证学校代码是否存在
 	var school models.OPCodeSchool
 	if err := s.db.Where("school_code = ? AND is_active = ?", schoolCode, true).First(&school).Error; err != nil {
 		return nil, errors.New("学校代码不存在")
 	}
-	
+
 	var areas []models.OPCodeArea
-	
+
 	// 查询片区数据
 	if err := s.db.Where("school_code = ? AND is_active = ?", schoolCode, true).
 		Order("area_code").Find(&areas).Error; err != nil {
 		return nil, err
 	}
-	
+
 	// 转换为前端需要的格式
 	result := make(map[string]interface{})
 	result["school_code"] = schoolCode
 	result["school_name"] = school.SchoolName
 	result["areas"] = make([]map[string]interface{}, 0, len(areas))
-	
+
 	for _, area := range areas {
 		areaData := map[string]interface{}{
 			"area_code":   area.AreaCode,
@@ -355,7 +355,7 @@ func (s *OPCodeService) SearchAreas(schoolCode string) (map[string]interface{}, 
 		}
 		result["areas"] = append(result["areas"].([]map[string]interface{}), areaData)
 	}
-	
+
 	return result, nil
 }
 
@@ -365,18 +365,18 @@ func (s *OPCodeService) SearchBuildings(schoolCode, areaCode string) (map[string
 	if schoolCode == "" {
 		return nil, errors.New("学校代码不能为空")
 	}
-	
+
 	schoolCode = strings.ToUpper(schoolCode)
 	if areaCode != "" {
 		areaCode = strings.ToUpper(areaCode)
 	}
-	
+
 	// 构建查询条件
 	query := s.db.Table("signal_codes").Where("school_code = ? AND is_active = ?", schoolCode, true)
 	if areaCode != "" {
 		query = query.Where("area_code = ?", areaCode)
 	}
-	
+
 	// 查询并按楼栋分组
 	var buildings []struct {
 		SchoolCode string `json:"school_code"`
@@ -385,13 +385,13 @@ func (s *OPCodeService) SearchBuildings(schoolCode, areaCode string) (map[string
 		PointName  string `json:"point_name"`
 		PointType  string `json:"point_type"`
 	}
-	
+
 	if err := query.Select("school_code, area_code, point_code, point_name, point_type").
 		Group("school_code, area_code, point_code, point_name, point_type").
 		Order("area_code, point_code").Scan(&buildings).Error; err != nil {
 		return nil, err
 	}
-	
+
 	// 转换为前端需要的格式
 	result := make(map[string]interface{})
 	result["school_code"] = schoolCode
@@ -399,7 +399,7 @@ func (s *OPCodeService) SearchBuildings(schoolCode, areaCode string) (map[string
 		result["area_code"] = areaCode
 	}
 	result["buildings"] = make([]map[string]interface{}, 0, len(buildings))
-	
+
 	for _, building := range buildings {
 		buildingData := map[string]interface{}{
 			"school_code": building.SchoolCode,
@@ -410,7 +410,7 @@ func (s *OPCodeService) SearchBuildings(schoolCode, areaCode string) (map[string
 		}
 		result["buildings"] = append(result["buildings"].([]map[string]interface{}), buildingData)
 	}
-	
+
 	return result, nil
 }
 
@@ -420,12 +420,12 @@ func (s *OPCodeService) SearchPoints(schoolCode, areaCode string) (map[string]in
 	if schoolCode == "" {
 		return nil, errors.New("学校代码不能为空")
 	}
-	
+
 	schoolCode = strings.ToUpper(schoolCode)
 	if areaCode != "" {
 		areaCode = strings.ToUpper(areaCode)
 	}
-	
+
 	// 使用临时结构体映射数据库字段
 	type TempSignalCode struct {
 		Code        string `json:"code"`
@@ -436,20 +436,20 @@ func (s *OPCodeService) SearchPoints(schoolCode, areaCode string) (map[string]in
 		CodeType    string `json:"code_type"`
 		IsPublic    bool   `json:"is_public"`
 	}
-	
+
 	// 构建查询条件
 	query := s.db.Table("signal_codes").Where("school_code = ? AND is_active = ?", schoolCode, true)
 	if areaCode != "" {
 		query = query.Where("area_code = ?", areaCode)
 	}
-	
+
 	var points []TempSignalCode
-	
+
 	if err := query.Select("code, school_code, area_code, point_code, description, code_type, is_public").
 		Order("area_code, point_code").Scan(&points).Error; err != nil {
 		return nil, err
 	}
-	
+
 	// 转换为前端需要的格式
 	result := make(map[string]interface{})
 	result["school_code"] = schoolCode
@@ -457,7 +457,7 @@ func (s *OPCodeService) SearchPoints(schoolCode, areaCode string) (map[string]in
 		result["area_code"] = areaCode
 	}
 	result["points"] = make([]map[string]interface{}, 0, len(points))
-	
+
 	for _, point := range points {
 		pointData := map[string]interface{}{
 			"code":        point.Code,
@@ -470,7 +470,7 @@ func (s *OPCodeService) SearchPoints(schoolCode, areaCode string) (map[string]in
 		}
 		result["points"] = append(result["points"].([]map[string]interface{}), pointData)
 	}
-	
+
 	return result, nil
 }
 
@@ -478,23 +478,23 @@ func (s *OPCodeService) SearchPoints(schoolCode, areaCode string) (map[string]in
 func (s *OPCodeService) SearchSchools(name string, page, limit int) (map[string]interface{}, error) {
 	var schools []models.OPCodeSchool
 	var total int64
-	
+
 	query := s.db.Model(&models.OPCodeSchool{}).Where("is_active = ?", true)
-	
+
 	// 如果提供了名称，进行模糊搜索
 	if name != "" {
 		query = query.Where("school_name ILIKE ? OR full_name ILIKE ?", "%"+name+"%", "%"+name+"%")
 	}
-	
+
 	// 计算总数
 	query.Count(&total)
-	
+
 	// 分页查询
 	offset := (page - 1) * limit
 	if err := query.Offset(offset).Limit(limit).Find(&schools).Error; err != nil {
 		return nil, err
 	}
-	
+
 	// 转换为前端需要的格式
 	result := make(map[string]interface{})
 	result["schools"] = schools
@@ -504,7 +504,7 @@ func (s *OPCodeService) SearchSchools(name string, page, limit int) (map[string]
 		"total":      total,
 		"total_page": (total + int64(limit) - 1) / int64(limit),
 	}
-	
+
 	return result, nil
 }
 

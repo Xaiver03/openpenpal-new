@@ -1,41 +1,41 @@
 package models
 
 import (
-	"time"
 	"gorm.io/gorm"
+	"time"
 )
 
 // CommentStatus 评论状态
 type CommentStatus string
 
 const (
-	CommentStatusActive   CommentStatus = "active"   // 正常显示
-	CommentStatusPending  CommentStatus = "pending"  // 待审核
-	CommentStatusHidden   CommentStatus = "hidden"   // 已隐藏
-	CommentStatusDeleted  CommentStatus = "deleted"  // 已删除
+	CommentStatusActive  CommentStatus = "active"  // 正常显示
+	CommentStatusPending CommentStatus = "pending" // 待审核
+	CommentStatusHidden  CommentStatus = "hidden"  // 已隐藏
+	CommentStatusDeleted CommentStatus = "deleted" // 已删除
 )
 
 // Comment 评论模型 - 支持信件评论和嵌套回复
 type Comment struct {
-	ID        string         `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	LetterID  string         `json:"letter_id" gorm:"type:varchar(36);not null;index"`     // 关联信件ID
-	UserID    string         `json:"user_id" gorm:"type:varchar(36);not null;index"`      // 评论用户ID
-	ParentID  *string        `json:"parent_id" gorm:"type:varchar(36);index"`             // 父评论ID，支持嵌套回复
-	Content   string         `json:"content" gorm:"type:text;not null"`                   // 评论内容
-	Status    CommentStatus  `json:"status" gorm:"type:varchar(20);not null;default:'active'"`
-	LikeCount int            `json:"like_count" gorm:"default:0"`                         // 点赞数
-	ReplyCount int           `json:"reply_count" gorm:"default:0"`                        // 回复数
-	IsTop     bool           `json:"is_top" gorm:"default:false"`                         // 是否置顶
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	ID         string         `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	LetterID   string         `json:"letter_id" gorm:"type:varchar(36);not null;index"` // 关联信件ID
+	UserID     string         `json:"user_id" gorm:"type:varchar(36);not null;index"`   // 评论用户ID
+	ParentID   *string        `json:"parent_id" gorm:"type:varchar(36);index"`          // 父评论ID，支持嵌套回复
+	Content    string         `json:"content" gorm:"type:text;not null"`                // 评论内容
+	Status     CommentStatus  `json:"status" gorm:"type:varchar(20);not null;default:'active'"`
+	LikeCount  int            `json:"like_count" gorm:"default:0"`  // 点赞数
+	ReplyCount int            `json:"reply_count" gorm:"default:0"` // 回复数
+	IsTop      bool           `json:"is_top" gorm:"default:false"`  // 是否置顶
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
+	DeletedAt  gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// 关联关系
-	Letter   *Letter          `json:"letter,omitempty" gorm:"foreignKey:LetterID;references:ID;constraint:OnDelete:CASCADE;"`
-	User     *User            `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE;"`
-	Parent   *Comment         `json:"parent,omitempty" gorm:"foreignKey:ParentID;references:ID;constraint:OnDelete:CASCADE;"`
-	Replies  []Comment        `json:"replies,omitempty" gorm:"foreignKey:ParentID;references:ID"`
-	Likes    []CommentLike    `json:"likes,omitempty" gorm:"foreignKey:CommentID;constraint:OnDelete:CASCADE;"`
+	Letter  *Letter       `json:"letter,omitempty" gorm:"foreignKey:LetterID;references:ID;constraint:OnDelete:CASCADE;"`
+	User    *User         `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE;"`
+	Parent  *Comment      `json:"parent,omitempty" gorm:"foreignKey:ParentID;references:ID;constraint:OnDelete:CASCADE;"`
+	Replies []Comment     `json:"replies,omitempty" gorm:"foreignKey:ParentID;references:ID"`
+	Likes   []CommentLike `json:"likes,omitempty" gorm:"foreignKey:CommentID;constraint:OnDelete:CASCADE;"`
 }
 
 // CommentLike 评论点赞模型
@@ -71,22 +71,22 @@ type CommentUpdateRequest struct {
 
 // CommentResponse 评论响应 - 包含用户信息和统计
 type CommentResponse struct {
-	ID         string             `json:"id"`
-	LetterID   string             `json:"letter_id"`
-	UserID     string             `json:"user_id"`
-	ParentID   *string            `json:"parent_id"`
-	Content    string             `json:"content"`
-	Status     CommentStatus      `json:"status"`
-	LikeCount  int                `json:"like_count"`
-	ReplyCount int                `json:"reply_count"`
-	IsTop      bool               `json:"is_top"`
-	CreatedAt  time.Time          `json:"created_at"`
-	UpdatedAt  time.Time          `json:"updated_at"`
-	
+	ID         string        `json:"id"`
+	LetterID   string        `json:"letter_id"`
+	UserID     string        `json:"user_id"`
+	ParentID   *string       `json:"parent_id"`
+	Content    string        `json:"content"`
+	Status     CommentStatus `json:"status"`
+	LikeCount  int           `json:"like_count"`
+	ReplyCount int           `json:"reply_count"`
+	IsTop      bool          `json:"is_top"`
+	CreatedAt  time.Time     `json:"created_at"`
+	UpdatedAt  time.Time     `json:"updated_at"`
+
 	// 关联数据
-	User     *UserBasicInfo     `json:"user,omitempty"`
-	IsLiked  bool               `json:"is_liked"`           // 当前用户是否点赞
-	Replies  []CommentResponse  `json:"replies,omitempty"`  // 回复列表
+	User    *UserBasicInfo    `json:"user,omitempty"`
+	IsLiked bool              `json:"is_liked"`          // 当前用户是否点赞
+	Replies []CommentResponse `json:"replies,omitempty"` // 回复列表
 }
 
 // UserBasicInfo 评论中显示的用户基础信息
@@ -99,13 +99,13 @@ type UserBasicInfo struct {
 
 // CommentListQuery 评论列表查询参数
 type CommentListQuery struct {
-	LetterID    string `form:"letter_id" binding:"required"`
-	Page        int    `form:"page,default=1" binding:"min=1"`
-	Limit       int    `form:"limit,default=20" binding:"min=1,max=100"`
-	SortBy      string `form:"sort_by,default=created_at" binding:"oneof=created_at like_count"`
-	Order       string `form:"order,default=desc" binding:"oneof=asc desc"`
-	ParentID    string `form:"parent_id,omitempty"`    // 获取特定评论的回复
-	OnlyTopLevel bool  `form:"only_top_level"`        // 仅获取顶级评论
+	LetterID     string `form:"letter_id" binding:"required"`
+	Page         int    `form:"page,default=1" binding:"min=1"`
+	Limit        int    `form:"limit,default=20" binding:"min=1,max=100"`
+	SortBy       string `form:"sort_by,default=created_at" binding:"oneof=created_at like_count"`
+	Order        string `form:"order,default=desc" binding:"oneof=asc desc"`
+	ParentID     string `form:"parent_id,omitempty"` // 获取特定评论的回复
+	OnlyTopLevel bool   `form:"only_top_level"`      // 仅获取顶级评论
 }
 
 // IsReply 判断是否为回复评论
@@ -124,12 +124,12 @@ func (c *Comment) CanDelete(userID string, userRole UserRole) bool {
 	if c.UserID == userID {
 		return true
 	}
-	
+
 	// 管理员可以删除任何评论
 	if userRole == RolePlatformAdmin || userRole == RoleSuperAdmin {
 		return true
 	}
-	
+
 	return false
 }
 

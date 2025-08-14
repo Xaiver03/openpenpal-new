@@ -15,13 +15,13 @@ func JWTAuth(jwtSecret string) gin.HandlerFunc {
 		SkipperFunc: func(c *gin.Context) bool {
 			skipPaths := []string{
 				"/health",
-				"/metrics", 
+				"/metrics",
 				"/api/v1/auth/register",
 				"/api/v1/auth/login",
 				"/api/v1/auth/refresh",
 				"/ping",
 			}
-			
+
 			for _, path := range skipPaths {
 				if c.Request.URL.Path == path {
 					return true
@@ -51,12 +51,12 @@ func GetUserID(c *gin.Context) string {
 	if !exists {
 		return ""
 	}
-	
+
 	jwtClaims, ok := claims.(*middleware.JWTClaims)
 	if !ok {
 		return ""
 	}
-	
+
 	return jwtClaims.UserID
 }
 
@@ -66,12 +66,12 @@ func GetUserRole(c *gin.Context) string {
 	if !exists {
 		return ""
 	}
-	
+
 	jwtClaims, ok := claims.(*middleware.JWTClaims)
 	if !ok {
 		return ""
 	}
-	
+
 	return string(jwtClaims.Role)
 }
 
@@ -81,12 +81,12 @@ func GetUser(c *gin.Context) *permissions.User {
 	if !exists {
 		return nil
 	}
-	
+
 	jwtClaims, ok := claims.(*middleware.JWTClaims)
 	if !ok {
 		return nil
 	}
-	
+
 	return &permissions.User{
 		Role:        jwtClaims.Role,
 		CourierInfo: jwtClaims.CourierInfo,

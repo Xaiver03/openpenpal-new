@@ -7,17 +7,17 @@ import (
 
 // WebSocketService WebSocket服务
 type WebSocketService struct {
-	hub        *Hub
-	handler    *WebSocketHandler
-	mu         sync.RWMutex
-	started    bool
+	hub     *Hub
+	handler *WebSocketHandler
+	mu      sync.RWMutex
+	started bool
 }
 
 // NewWebSocketService 创建WebSocket服务
 func NewWebSocketService() *WebSocketService {
 	hub := NewHub()
 	handler := NewWebSocketHandler(hub)
-	
+
 	return &WebSocketService{
 		hub:     hub,
 		handler: handler,
@@ -29,7 +29,7 @@ func NewWebSocketService() *WebSocketService {
 func (s *WebSocketService) Start() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	if !s.started {
 		go s.hub.Run()
 		s.started = true
@@ -58,7 +58,7 @@ func (s *WebSocketService) IsStarted() bool {
 func (s *WebSocketService) Stop() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	if s.started {
 		s.hub.Stop()
 		s.started = false

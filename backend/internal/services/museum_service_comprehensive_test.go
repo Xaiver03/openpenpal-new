@@ -16,15 +16,15 @@ import (
 // MuseumServiceComprehensiveTestSuite 博物馆服务全面测试套件
 type MuseumServiceComprehensiveTestSuite struct {
 	suite.Suite
-	db            *gorm.DB
-	museumService *MuseumService
-	letterService *LetterService
-	testUser      *models.User
-	testAdmin     *models.User
-	testLetter    *models.Letter
-	testItem      *models.MuseumItem
+	db             *gorm.DB
+	museumService  *MuseumService
+	letterService  *LetterService
+	testUser       *models.User
+	testAdmin      *models.User
+	testLetter     *models.Letter
+	testItem       *models.MuseumItem
 	testExhibition *models.MuseumExhibition
-	config        *config.Config
+	config         *config.Config
 }
 
 func (suite *MuseumServiceComprehensiveTestSuite) SetupSuite() {
@@ -46,14 +46,14 @@ func (suite *MuseumServiceComprehensiveTestSuite) SetupSuite() {
 
 	// 创建测试信件
 	suite.testLetter = &models.Letter{
-		ID:         "test-letter-id",
-		UserID:     suite.testUser.ID,
-		Title:      "测试信件",
-		Content:    "这是一封测试信件的内容",
-		Style:      models.StyleClassic,
-		Status:     models.StatusDelivered,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		ID:        "test-letter-id",
+		UserID:    suite.testUser.ID,
+		Title:     "测试信件",
+		Content:   "这是一封测试信件的内容",
+		Style:     models.StyleClassic,
+		Status:    models.StatusDelivered,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 	db.Create(suite.testLetter)
 
@@ -232,7 +232,7 @@ func (suite *MuseumServiceComprehensiveTestSuite) TestRejectMuseumItem_Success()
 // TestRecordInteraction_Success 测试记录用户互动
 func (suite *MuseumServiceComprehensiveTestSuite) TestRecordInteraction_Success() {
 	interactionTypes := []string{"view", "like", "bookmark", "share"}
-	
+
 	for _, interactionType := range interactionTypes {
 		err := suite.museumService.RecordInteraction(
 			context.Background(),
@@ -246,8 +246,8 @@ func (suite *MuseumServiceComprehensiveTestSuite) TestRecordInteraction_Success(
 	// 验证计数器更新
 	var updatedItem models.MuseumItem
 	suite.db.First(&updatedItem, "id = ?", suite.testItem.ID)
-	suite.Greater(updatedItem.ViewCount, int64(10))    // 原始值为10
-	suite.Greater(updatedItem.LikeCount, int64(5))     // 原始值为5
+	suite.Greater(updatedItem.ViewCount, int64(10)) // 原始值为10
+	suite.Greater(updatedItem.LikeCount, int64(5))  // 原始值为5
 }
 
 // TestRecordInteraction_InvalidType 测试无效的互动类型
@@ -343,14 +343,14 @@ func (suite *MuseumServiceComprehensiveTestSuite) TestGetPopularTags_Success() {
 			Status: models.MuseumItemApproved,
 		},
 		{
-			ID:     "tag-item-2", 
+			ID:     "tag-item-2",
 			Title:  "标签测试2",
 			Tags:   "友谊,成长,青春",
 			Status: models.MuseumItemApproved,
 		},
 		{
 			ID:     "tag-item-3",
-			Title:  "标签测试3", 
+			Title:  "标签测试3",
 			Tags:   "温暖,感动,真诚",
 			Status: models.MuseumItemApproved,
 		},
@@ -627,17 +627,17 @@ func (suite *MuseumServiceComprehensiveTestSuite) TestSearchEntries_Success() {
 
 	entries, total, err := suite.museumService.SearchEntries(
 		context.Background(),
-		"友谊",           // query
-		[]string{},     // tags
-		"",            // theme
-		"",            // status
-		nil,           // featured
-		"",            // dateFrom
-		"",            // dateTo
-		"created_at",  // sortBy
-		"desc",        // sortOrder
-		1,             // page
-		10,            // limit
+		"友谊",         // query
+		[]string{},   // tags
+		"",           // theme
+		"",           // status
+		nil,          // featured
+		"",           // dateFrom
+		"",           // dateTo
+		"created_at", // sortBy
+		"desc",       // sortOrder
+		1,            // page
+		10,           // limit
 	)
 
 	suite.NoError(err)
@@ -779,7 +779,7 @@ func (suite *MuseumServiceComprehensiveTestSuite) TestUpdateExhibitionItemOrder_
 
 	// 验证顺序已更新
 	var entry models.MuseumExhibitionEntry
-	suite.db.Where("collection_id = ? AND item_id = ?", 
+	suite.db.Where("collection_id = ? AND item_id = ?",
 		suite.testExhibition.ID, suite.testItem.ID).First(&entry)
 	suite.Equal(5, entry.DisplayOrder)
 }

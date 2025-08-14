@@ -105,6 +105,9 @@ export interface CourierInfo {
   status: 'active' | 'pending' | 'frozen'
   points: number
   taskCount: number
+  school_code: string
+  username: string
+  school_name: string
 }
 
 export function useCourierPermission() {
@@ -335,6 +338,9 @@ export function useCourierPermission() {
     status: courierInfo.status,
     points: courierInfo.points,
     taskCount: courierInfo.taskCount,
+    school_code: courierInfo.school_code,
+    username: courierInfo.username,
+    school_name: courierInfo.school_name,
   } : null
 
   return {

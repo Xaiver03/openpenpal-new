@@ -117,7 +117,7 @@ func (s *UserService) Login(req *models.LoginRequest) (*models.LoginResponse, er
 		// 如果获取配置失败，使用默认值
 		systemConfig = models.DefaultSystemConfig()
 	}
-	
+
 	// 生成JWT令牌
 	expiryHours := systemConfig.JWTExpiryHours
 	if expiryHours <= 0 {

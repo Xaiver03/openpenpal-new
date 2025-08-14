@@ -33,7 +33,7 @@ func main() {
 		Password: cfg.DBPassword,
 		SSLMode:  cfg.DBSSLMode,
 	}
-	
+
 	// 处理端口号
 	if cfg.DBPort != "" {
 		if port, err := strconv.Atoi(cfg.DBPort); err == nil {
@@ -54,7 +54,7 @@ func main() {
 	if err := manager.AddConfig("default", dbConfig); err != nil {
 		log.Fatal("Failed to add database config:", err)
 	}
-	
+
 	db, err := manager.Connect("default")
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)

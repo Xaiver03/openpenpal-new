@@ -24,29 +24,29 @@ type ContentSecurityService struct {
 
 // SecurityCheckResult 安全检查结果
 type SecurityCheckResult struct {
-	IsSafe         bool                   `json:"is_safe"`
-	RiskLevel      string                 `json:"risk_level"`      // low, medium, high, critical
-	ViolationType  []string               `json:"violation_type"`  // spam, sensitive_info, inappropriate, harmful
-	Confidence     float64                `json:"confidence"`      // 0.0-1.0
-	FilteredContent string                `json:"filtered_content"` // 过滤后的内容
-	Suggestions    []string               `json:"suggestions"`     // 改进建议
-	Details        map[string]interface{} `json:"details"`         // 详细信息
+	IsSafe          bool                   `json:"is_safe"`
+	RiskLevel       string                 `json:"risk_level"`       // low, medium, high, critical
+	ViolationType   []string               `json:"violation_type"`   // spam, sensitive_info, inappropriate, harmful
+	Confidence      float64                `json:"confidence"`       // 0.0-1.0
+	FilteredContent string                 `json:"filtered_content"` // 过滤后的内容
+	Suggestions     []string               `json:"suggestions"`      // 改进建议
+	Details         map[string]interface{} `json:"details"`          // 详细信息
 }
 
 // ContentViolationRecord 内容违规记录
 type ContentViolationRecord struct {
-	ID            string    `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	UserID        string    `json:"user_id" gorm:"type:varchar(36);not null;index"`
-	ContentType   string    `json:"content_type" gorm:"type:varchar(50);not null"` // letter, reply, inspiration
-	ContentID     string    `json:"content_id" gorm:"type:varchar(36);index"`
-	OriginalText  string    `json:"original_text" gorm:"type:text"`
-	ViolationType string    `json:"violation_type" gorm:"type:varchar(100)"`
-	RiskLevel     string    `json:"risk_level" gorm:"type:varchar(20)"`
-	Action        string    `json:"action" gorm:"type:varchar(50)"` // blocked, filtered, flagged, approved
-	ReviewStatus  string    `json:"review_status" gorm:"type:varchar(20);default:'pending'"` // pending, reviewed, dismissed
-	CreatedAt     time.Time `json:"created_at" gorm:"autoCreateTime"`
+	ID            string     `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	UserID        string     `json:"user_id" gorm:"type:varchar(36);not null;index"`
+	ContentType   string     `json:"content_type" gorm:"type:varchar(50);not null"` // letter, reply, inspiration
+	ContentID     string     `json:"content_id" gorm:"type:varchar(36);index"`
+	OriginalText  string     `json:"original_text" gorm:"type:text"`
+	ViolationType string     `json:"violation_type" gorm:"type:varchar(100)"`
+	RiskLevel     string     `json:"risk_level" gorm:"type:varchar(20)"`
+	Action        string     `json:"action" gorm:"type:varchar(50)"`                          // blocked, filtered, flagged, approved
+	ReviewStatus  string     `json:"review_status" gorm:"type:varchar(20);default:'pending'"` // pending, reviewed, dismissed
+	CreatedAt     time.Time  `json:"created_at" gorm:"autoCreateTime"`
 	ReviewedAt    *time.Time `json:"reviewed_at"`
-	ReviewedBy    string    `json:"reviewed_by" gorm:"type:varchar(36)"`
+	ReviewedBy    string     `json:"reviewed_by" gorm:"type:varchar(36)"`
 }
 
 // 敏感词库（基础版本）
@@ -54,11 +54,11 @@ var sensitiveWords = []string{
 	// 个人信息相关
 	"电话", "手机", "微信", "QQ", "邮箱", "地址", "身份证",
 	"phone", "wechat", "email", "address", "id",
-	
+
 	// 商业广告相关
 	"广告", "推广", "代理", "兼职", "赚钱", "投资", "理财",
 	"advertisement", "promotion", "part-time", "investment",
-	
+
 	// 不当内容
 	"暴力", "仇恨", "歧视", "政治", "宗教极端",
 	"violence", "hate", "discrimination",
@@ -66,10 +66,10 @@ var sensitiveWords = []string{
 
 // 敏感信息正则表达式
 var sensitivePatterns = []*regexp.Regexp{
-	regexp.MustCompile(`\d{11}`),                                    // 手机号
-	regexp.MustCompile(`\d{3}-\d{4}-\d{4}`),                        // 电话号码
+	regexp.MustCompile(`\d{11}`),                                         // 手机号
+	regexp.MustCompile(`\d{3}-\d{4}-\d{4}`),                              // 电话号码
 	regexp.MustCompile(`[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}`), // 邮箱
-	regexp.MustCompile(`\d{15}|\d{18}`),                            // 身份证号
+	regexp.MustCompile(`\d{15}|\d{18}`),                                  // 身份证号
 	// 可以添加更多模式
 }
 
@@ -90,13 +90,13 @@ func NewContentSecurityService(db *gorm.DB, config *config.Config, aiService *AI
 // CheckContent 检查内容安全性
 func (s *ContentSecurityService) CheckContent(ctx context.Context, userID, contentType, contentID, content string) (*SecurityCheckResult, error) {
 	result := &SecurityCheckResult{
-		IsSafe:         true,
-		RiskLevel:      "low",
-		ViolationType:  []string{},
-		Confidence:     0.0,
+		IsSafe:          true,
+		RiskLevel:       "low",
+		ViolationType:   []string{},
+		Confidence:      0.0,
 		FilteredContent: content,
-		Suggestions:    []string{},
-		Details:        make(map[string]interface{}),
+		Suggestions:     []string{},
+		Details:         make(map[string]interface{}),
 	}
 
 	// 1. 基础规则检查
@@ -130,13 +130,13 @@ func (s *ContentSecurityService) CheckContent(ctx context.Context, userID, conte
 // checkBasicRules 基础规则检查
 func (s *ContentSecurityService) checkBasicRules(content string, result *SecurityCheckResult) {
 	content = strings.ToLower(content)
-	
+
 	// 检查内容长度
 	if len(content) < 10 {
 		result.ViolationType = append(result.ViolationType, "too_short")
 		result.Suggestions = append(result.Suggestions, "内容过短，建议增加更多表达")
 	}
-	
+
 	if len(content) > 5000 {
 		result.ViolationType = append(result.ViolationType, "too_long")
 		result.Suggestions = append(result.Suggestions, "内容过长，建议精简表达")
@@ -161,19 +161,19 @@ func (s *ContentSecurityService) checkBasicRules(content string, result *Securit
 func (s *ContentSecurityService) checkSensitiveWords(content string, result *SecurityCheckResult) {
 	contentLower := strings.ToLower(content)
 	foundWords := []string{}
-	
+
 	for _, word := range sensitiveWords {
 		if strings.Contains(contentLower, word) {
 			foundWords = append(foundWords, word)
 		}
 	}
-	
+
 	if len(foundWords) > 0 {
 		result.ViolationType = append(result.ViolationType, "sensitive_words")
 		result.Confidence += float64(len(foundWords)) * 0.1
 		result.Details["sensitive_words"] = foundWords
 		result.Suggestions = append(result.Suggestions, "请避免使用敏感词汇，保持内容的纯洁性")
-		
+
 		// 过滤敏感词（替换为星号）
 		filteredContent := content
 		for _, word := range foundWords {
@@ -187,19 +187,19 @@ func (s *ContentSecurityService) checkSensitiveWords(content string, result *Sec
 // checkSensitiveInfo 敏感信息检查
 func (s *ContentSecurityService) checkSensitiveInfo(content string, result *SecurityCheckResult) {
 	foundPatterns := []string{}
-	
+
 	for _, pattern := range sensitivePatterns {
 		if pattern.MatchString(content) {
 			foundPatterns = append(foundPatterns, pattern.String())
 		}
 	}
-	
+
 	if len(foundPatterns) > 0 {
 		result.ViolationType = append(result.ViolationType, "personal_info")
 		result.Confidence += 0.8 // 个人信息泄露是高风险
 		result.Details["sensitive_patterns"] = foundPatterns
 		result.Suggestions = append(result.Suggestions, "检测到可能的个人信息，请避免在信件中透露")
-		
+
 		// 过滤个人信息
 		filteredContent := content
 		for _, pattern := range sensitivePatterns {
@@ -243,10 +243,10 @@ func (s *ContentSecurityService) checkWithAI(ctx context.Context, content string
 
 	// 解析AI响应
 	var aiResult struct {
-		IsSafe       bool     `json:"is_safe"`
-		RiskFactors  []string `json:"risk_factors"`
-		Confidence   float64  `json:"confidence"`
-		Suggestions  []string `json:"suggestions"`
+		IsSafe      bool     `json:"is_safe"`
+		RiskFactors []string `json:"risk_factors"`
+		Confidence  float64  `json:"confidence"`
+		Suggestions []string `json:"suggestions"`
 	}
 
 	if err := json.Unmarshal([]byte(aiResponse), &aiResult); err != nil {
@@ -298,7 +298,7 @@ func (s *ContentSecurityService) calculateFinalRiskLevel(result *SecurityCheckRe
 // recordViolation 记录违规内容
 func (s *ContentSecurityService) recordViolation(userID, contentType, contentID, content string, result *SecurityCheckResult) {
 	violationTypes := strings.Join(result.ViolationType, ",")
-	
+
 	action := "flagged"
 	if result.RiskLevel == "critical" {
 		action = "blocked"
@@ -327,14 +327,14 @@ func (s *ContentSecurityService) recordViolation(userID, contentType, contentID,
 // GetUserViolationHistory 获取用户违规历史
 func (s *ContentSecurityService) GetUserViolationHistory(userID string, limit int) ([]ContentViolationRecord, error) {
 	var records []ContentViolationRecord
-	
+
 	query := s.db.Where("user_id = ?", userID).
 		Order("created_at DESC")
-	
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	err := query.Find(&records).Error
 	return records, err
 }
@@ -342,14 +342,14 @@ func (s *ContentSecurityService) GetUserViolationHistory(userID string, limit in
 // GetPendingReviews 获取待审核的违规内容
 func (s *ContentSecurityService) GetPendingReviews(limit int) ([]ContentViolationRecord, error) {
 	var records []ContentViolationRecord
-	
+
 	query := s.db.Where("review_status = ?", "pending").
 		Order("created_at ASC")
-	
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	err := query.Find(&records).Error
 	return records, err
 }
@@ -377,19 +377,19 @@ func (s *ContentSecurityService) hasExcessiveRepetition(content string) bool {
 			return true
 		}
 	}
-	
+
 	// 检查重复词语模式
 	words := strings.Fields(content)
 	if len(words) < 3 {
 		return false
 	}
-	
+
 	for i := 0; i < len(words)-2; i++ {
 		if words[i] == words[i+1] && words[i+1] == words[i+2] {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -397,15 +397,15 @@ func (s *ContentSecurityService) hasExcessiveRepetition(content string) bool {
 func (s *ContentSecurityService) hasExcessiveSpecialChars(content string) bool {
 	specialCharCount := 0
 	for _, char := range content {
-		if !((char >= 'a' && char <= 'z') || 
-			 (char >= 'A' && char <= 'Z') || 
-			 (char >= '0' && char <= '9') || 
-			 char == ' ' || char == '\n' || char == '\t' ||
-			 (char >= 0x4e00 && char <= 0x9fff)) { // 中文字符范围
+		if !((char >= 'a' && char <= 'z') ||
+			(char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') ||
+			char == ' ' || char == '\n' || char == '\t' ||
+			(char >= 0x4e00 && char <= 0x9fff)) { // 中文字符范围
 			specialCharCount++
 		}
 	}
-	
+
 	// 如果特殊字符超过总字符的30%，认为过多
 	return float64(specialCharCount)/float64(len(content)) > 0.3
 }

@@ -316,15 +316,15 @@ func (s *SignalCodeService) GetSignalCodeStats(schoolID string) (*models.SignalC
 func (s *SignalCodeService) GetUsageLogs(code string, limit int) ([]models.SignalCodeUsageLog, error) {
 	var logs []models.SignalCodeUsageLog
 	query := s.DB.Where("code = ?", code).Order("created_at DESC")
-	
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	if err := query.Find(&logs).Error; err != nil {
 		return nil, err
 	}
-	
+
 	return logs, nil
 }
 
@@ -375,7 +375,7 @@ func (s *SignalCodeService) CreateMockData() error {
 			// 生成一些随机的6位编码
 			startNum := rand.Intn(100000) + 100000
 			endNum := startNum + 99
-			
+
 			batchReq.StartCode = fmt.Sprintf("%06d", startNum)
 			batchReq.EndCode = fmt.Sprintf("%06d", endNum)
 

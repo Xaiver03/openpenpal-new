@@ -55,15 +55,15 @@ func (s *QueueService) PushTaskToQueue(task *models.Task) error {
 	ctx := context.Background()
 
 	event := TaskQueueEvent{
-		Type:      "NEW_TASK",
-		TaskID:    task.TaskID,
+		Type:   "NEW_TASK",
+		TaskID: task.TaskID,
 		Data: map[string]interface{}{
-			"task_id":            task.TaskID,
-			"letter_id":          task.LetterID,
-			"pickup_location":    task.PickupLocation,
-			"delivery_location":  task.DeliveryLocation,
-			"priority":           task.Priority,
-			"reward":             task.Reward,
+			"task_id":           task.TaskID,
+			"letter_id":         task.LetterID,
+			"pickup_location":   task.PickupLocation,
+			"delivery_location": task.DeliveryLocation,
+			"priority":          task.Priority,
+			"reward":            task.Reward,
 		},
 		Timestamp: time.Now(),
 		Retry:     0,
@@ -249,7 +249,7 @@ func (s *QueueService) processAssignmentEvent(event *TaskQueueEvent) {
 		courier, err := s.assignmentService.AutoAssignTask(&task)
 		if err != nil {
 			log.Printf("Auto assignment failed for task %s: %v", event.TaskID, err)
-			
+
 			// 重试机制
 			if event.Retry < 3 {
 				s.retryAssignment(event)
@@ -287,8 +287,8 @@ func (s *QueueService) handleNewTask(event *TaskQueueEvent) {
 
 	// 广播新任务通知
 	notification := utils.WebSocketEvent{
-		Type: "NEW_TASK_AVAILABLE",
-		Data: event.Data,
+		Type:      "NEW_TASK_AVAILABLE",
+		Data:      event.Data,
 		Timestamp: time.Now(),
 	}
 	s.wsManager.BroadcastToAll(notification)
@@ -298,11 +298,11 @@ func (s *QueueService) handleNewTask(event *TaskQueueEvent) {
 func (s *QueueService) handleTaskUpdate(event *TaskQueueEvent) {
 	// 广播任务状态更新
 	notification := utils.WebSocketEvent{
-		Type: "TASK_STATUS_UPDATE",
-		Data: event.Data,
+		Type:      "TASK_STATUS_UPDATE",
+		Data:      event.Data,
 		Timestamp: time.Now(),
 	}
-	
+
 	if courierID, ok := event.Data["courier_id"].(string); ok {
 		s.wsManager.BroadcastToUser(courierID, notification)
 	}
@@ -312,7 +312,7 @@ func (s *QueueService) handleTaskUpdate(event *TaskQueueEvent) {
 // handleTaskTimeout 处理任务超时
 func (s *QueueService) handleTaskTimeout(event *TaskQueueEvent) {
 	log.Printf("Handling task timeout: %s", event.TaskID)
-	
+
 	// 重新分配任务
 	s.assignmentService.ReassignFailedTasks()
 }
@@ -320,7 +320,7 @@ func (s *QueueService) handleTaskTimeout(event *TaskQueueEvent) {
 // retryAssignment 重试任务分配
 func (s *QueueService) retryAssignment(event *TaskQueueEvent) {
 	ctx := context.Background()
-	
+
 	// 增加重试次数
 	event.Retry++
 	event.Timestamp = time.Now()
@@ -333,7 +333,7 @@ func (s *QueueService) retryAssignment(event *TaskQueueEvent) {
 
 	// 延迟重试（2的指数次方分钟）
 	delay := time.Duration(1<<event.Retry) * time.Minute
-	
+
 	// 推送到重试队列
 	s.redis.ZAdd(ctx, QueueTaskRetry, redis.Z{
 		Score:  float64(time.Now().Add(delay).Unix()),
@@ -353,7 +353,7 @@ func (s *QueueService) ProcessRetryQueue() {
 		select {
 		case <-ticker.C:
 			now := time.Now().Unix()
-			
+
 			// 获取到期的重试任务
 			result, err := s.redis.ZRangeByScore(ctx, QueueTaskRetry, &redis.ZRangeBy{
 				Min: "0",
@@ -395,7 +395,7 @@ func (s *QueueService) GetQueueStats() map[string]interface{} {
 	stats := make(map[string]interface{})
 
 	queues := []string{QueueTaskExpress, QueueTaskUrgent, QueueTaskNormal, QueueTaskAssignment, QueueNotification}
-	
+
 	for _, queue := range queues {
 		length, _ := s.redis.LLen(ctx, queue).Result()
 		stats[queue] = map[string]interface{}{

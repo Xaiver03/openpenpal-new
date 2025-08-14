@@ -24,12 +24,12 @@ func GenerateJWT(userID string, role models.UserRole, secret string, expiresAt t
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT ID: %w", err)
 	}
-	
+
 	claims := Claims{
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        jti,  // 添加JWT ID用于黑名单功能
+			ID:        jti, // 添加JWT ID用于黑名单功能
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    "openpenpal",

@@ -118,7 +118,7 @@ func (s *ShopService) DeleteProduct(id uuid.UUID) error {
 func (s *ShopService) GetOrCreateCart(userID string) (*models.Cart, error) {
 	var cart models.Cart
 	err := s.db.Where("user_id = ?", userID).Preload("Items.Product").First(&cart).Error
-	
+
 	if err == gorm.ErrRecordNotFound {
 		// 创建新购物车
 		cart = models.Cart{
@@ -129,11 +129,11 @@ func (s *ShopService) GetOrCreateCart(userID string) (*models.Cart, error) {
 		}
 		return &cart, nil
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &cart, nil
 }
 
@@ -159,7 +159,7 @@ func (s *ShopService) AddToCart(userID string, productID uuid.UUID, quantity int
 	// 检查商品是否已在购物车中
 	var cartItem models.CartItem
 	err = s.db.Where("cart_id = ? AND product_id = ?", cart.ID, productID).First(&cartItem).Error
-	
+
 	if err == gorm.ErrRecordNotFound {
 		// 创建新的购物车项目
 		cartItem = models.CartItem{
@@ -188,7 +188,7 @@ func (s *ShopService) AddToCart(userID string, productID uuid.UUID, quantity int
 
 	// 重新加载购物车项目并关联商品信息
 	s.db.Preload("Product").First(&cartItem, cartItem.ID)
-	
+
 	return &cartItem, nil
 }
 
@@ -198,7 +198,7 @@ func (s *ShopService) UpdateCartItem(userID string, itemID uuid.UUID, quantity i
 	err := s.db.Joins("JOIN carts ON carts.id = cart_items.cart_id").
 		Where("cart_items.id = ? AND carts.user_id = ?", itemID, userID).
 		First(&cartItem).Error
-	
+
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func (s *ShopService) UpdateCartItem(userID string, itemID uuid.UUID, quantity i
 	if err := s.db.First(&product, cartItem.ProductID).Error; err != nil {
 		return err
 	}
-	
+
 	if product.Stock < quantity {
 		return errors.New("insufficient stock")
 	}
@@ -216,7 +216,7 @@ func (s *ShopService) UpdateCartItem(userID string, itemID uuid.UUID, quantity i
 	// 更新数量和小计
 	cartItem.Quantity = quantity
 	cartItem.Subtotal = cartItem.Price * float64(quantity)
-	
+
 	if err := s.db.Save(&cartItem).Error; err != nil {
 		return err
 	}
@@ -233,13 +233,13 @@ func (s *ShopService) RemoveFromCart(userID string, itemID uuid.UUID) error {
 	err := s.db.Joins("JOIN carts ON carts.id = cart_items.cart_id").
 		Where("cart_items.id = ? AND carts.user_id = ?", itemID, userID).
 		First(&cartItem).Error
-	
+
 	if err != nil {
 		return err
 	}
 
 	cartID := cartItem.CartID
-	
+
 	if err := s.db.Delete(&cartItem).Error; err != nil {
 		return err
 	}
@@ -278,12 +278,12 @@ func (s *ShopService) UpdateCartTotals(cartID uuid.UUID) error {
 	// 计算总计
 	var totalItems int
 	var totalAmount float64
-	
+
 	rows, err := s.db.Model(&models.CartItem{}).
 		Where("cart_id = ?", cartID).
 		Select("SUM(quantity) as total_items, SUM(subtotal) as total_amount").
 		Rows()
-	
+
 	if err != nil {
 		return err
 	}
@@ -296,7 +296,7 @@ func (s *ShopService) UpdateCartTotals(cartID uuid.UUID) error {
 	// 更新购物车
 	cart.TotalItems = totalItems
 	cart.TotalAmount = totalAmount
-	
+
 	return s.db.Save(&cart).Error
 }
 
@@ -388,7 +388,7 @@ func (s *ShopService) CreateOrder(userID string, orderData map[string]interface{
 	}
 	order.ShippingFee = s.calculateShippingFee(shippingAddrMap)
 	order.TaxFee = s.calculateTaxFee(subtotal)
-	
+
 	// 应用优惠券
 	if couponCode, ok := orderData["coupon_code"].(string); ok && couponCode != "" {
 		order.CouponCode = couponCode
@@ -473,11 +473,11 @@ func (s *ShopService) GetOrderByID(userID string, orderID uuid.UUID) (*models.Or
 		Preload("Items.Product").
 		Preload("User").
 		First(&order).Error
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &order, nil
 }
 
@@ -532,10 +532,10 @@ func (s *ShopService) CreateReview(review *models.ProductReview) error {
 	var count int64
 	tx.Model(&models.OrderItem{}).
 		Joins("JOIN orders ON orders.id = order_items.order_id").
-		Where("orders.user_id = ? AND order_items.product_id = ? AND orders.status = ?", 
+		Where("orders.user_id = ? AND order_items.product_id = ? AND orders.status = ?",
 			review.UserID, review.ProductID, models.OrderStatusCompleted).
 		Count(&count)
-	
+
 	if count == 0 {
 		tx.Rollback()
 		return errors.New("user has not purchased this product")
@@ -550,7 +550,7 @@ func (s *ShopService) CreateReview(review *models.ProductReview) error {
 	// 更新商品评分
 	var avgRating float64
 	var reviewCount int64
-	
+
 	tx.Model(&models.ProductReview{}).
 		Where("product_id = ?", review.ProductID).
 		Select("AVG(rating) as avg_rating, COUNT(*) as review_count").
@@ -607,7 +607,7 @@ func (s *ShopService) AddToFavorites(userID string, productID uuid.UUID) error {
 	s.db.Model(&models.ProductFavorite{}).
 		Where("user_id = ? AND product_id = ?", userID, productID).
 		Count(&count)
-	
+
 	if count > 0 {
 		return errors.New("product already in favorites")
 	}

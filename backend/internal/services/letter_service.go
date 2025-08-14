@@ -86,7 +86,7 @@ func (s *LetterService) CreateDraft(userID string, req *models.CreateLetterReque
 		if err := models.ValidateOPCode(req.RecipientOPCode); err != nil {
 			return nil, fmt.Errorf("收件人OP Code格式不正确: %w", err)
 		}
-		
+
 		// 验证OP Code是否存在（如果有OP Code服务）
 		if s.opcodeService != nil {
 			isValid, err := s.opcodeService.ValidateOPCode(req.RecipientOPCode)
@@ -98,7 +98,7 @@ func (s *LetterService) CreateDraft(userID string, req *models.CreateLetterReque
 			}
 		}
 	}
-	
+
 	// 验证发件人OP Code（如果提供）
 	if req.SenderOPCode != "" {
 		if err := models.ValidateOPCode(req.SenderOPCode); err != nil {
@@ -155,7 +155,7 @@ func (s *LetterService) GenerateCode(letterID string) (*models.LetterCode, error
 
 	// 生成包含OP Code信息的结构化QR码数据
 	qrData := s.generateEnhancedQRData(letter.ID, code, letter.RecipientOPCode, letter.SenderOPCode)
-	
+
 	// 生成二维码（使用增强数据）
 	qrCodeFileName := fmt.Sprintf("%s.png", code)
 	qrCodePath := filepath.Join(s.config.QRCodeStorePath, qrCodeFileName)
@@ -990,22 +990,22 @@ func (s *LetterService) generateEnhancedQRData(letterID, code, recipientOPCode, 
 
 // QRCodeData QR码数据结构
 type QRCodeData struct {
-	Type             string            `json:"type"`
-	Version          string            `json:"version"`
-	LetterID         string            `json:"letter_id"`
-	Code             string            `json:"code"`
-	ReadURL          string            `json:"read_url"`
-	RecipientOPCode  string            `json:"recipient_opcode,omitempty"`
-	SenderOPCode     string            `json:"sender_opcode,omitempty"`
-	ScanTimestamp    int64             `json:"scan_timestamp"`
-	CourierInfo      *CourierQRInfo    `json:"courier_info,omitempty"`
-	AppInfo          map[string]string `json:"app_info"`
+	Type            string            `json:"type"`
+	Version         string            `json:"version"`
+	LetterID        string            `json:"letter_id"`
+	Code            string            `json:"code"`
+	ReadURL         string            `json:"read_url"`
+	RecipientOPCode string            `json:"recipient_opcode,omitempty"`
+	SenderOPCode    string            `json:"sender_opcode,omitempty"`
+	ScanTimestamp   int64             `json:"scan_timestamp"`
+	CourierInfo     *CourierQRInfo    `json:"courier_info,omitempty"`
+	AppInfo         map[string]string `json:"app_info"`
 }
 
 // CourierQRInfo 信使相关的QR码信息
 type CourierQRInfo struct {
-	RequiredPermission string `json:"required_permission,omitempty"` // 需要的OP Code权限前缀
-	TaskID             string `json:"task_id,omitempty"`             // 关联的任务ID
+	RequiredPermission string `json:"required_permission,omitempty"`   // 需要的OP Code权限前缀
+	TaskID             string `json:"task_id,omitempty"`               // 关联的任务ID
 	DeliveryInst       string `json:"delivery_instructions,omitempty"` // 配送说明
 }
 
@@ -1039,7 +1039,7 @@ func (s *LetterService) GetUserDrafts(ctx context.Context, userID string, page, 
 // PublishLetter 发布信件
 func (s *LetterService) PublishLetter(ctx context.Context, letterID, userID string, scheduledAt *time.Time, visibility string) (*models.Letter, error) {
 	var letter models.Letter
-	
+
 	// 查找信件
 	if err := s.db.Where("id = ? AND author_id = ?", letterID, userID).First(&letter).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -1055,8 +1055,8 @@ func (s *LetterService) PublishLetter(ctx context.Context, letterID, userID stri
 
 	// 更新状态
 	updates := map[string]interface{}{
-		"status": "published",
-		"sent_at": time.Now(),
+		"status":     "published",
+		"sent_at":    time.Now(),
 		"updated_at": time.Now(),
 	}
 
@@ -1084,7 +1084,7 @@ func (s *LetterService) PublishLetter(ctx context.Context, letterID, userID stri
 // LikeLetter 点赞信件
 func (s *LetterService) LikeLetter(ctx context.Context, letterID, userID string) error {
 	var letter models.Letter
-	
+
 	// 查找信件
 	if err := s.db.Where("id = ?", letterID).First(&letter).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -1113,7 +1113,7 @@ func (s *LetterService) LikeLetter(ctx context.Context, letterID, userID string)
 	if s.notificationSvc != nil && letter.UserID != userID && userID != "" {
 		s.notificationSvc.NotifyUser(letter.UserID, "letter_liked", map[string]interface{}{
 			"letter_id": letterID,
-			"title": letter.Title,
+			"title":     letter.Title,
 		})
 	}
 
@@ -1123,7 +1123,7 @@ func (s *LetterService) LikeLetter(ctx context.Context, letterID, userID string)
 // ShareLetter 分享信件
 func (s *LetterService) ShareLetter(ctx context.Context, letterID, userID, platform string) (map[string]interface{}, error) {
 	var letter models.Letter
-	
+
 	// 查找信件
 	if err := s.db.Where("id = ?", letterID).First(&letter).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -1169,7 +1169,7 @@ func (s *LetterService) GetLetterTemplates(ctx context.Context, category string,
 	var total int64
 
 	query := s.db.Model(&models.LetterTemplate{}).Where("is_active = ?", true)
-	
+
 	if category != "" {
 		query = query.Where("category = ?", category)
 	}
@@ -1323,7 +1323,7 @@ func (s *LetterService) GetRecommendedLetters(ctx context.Context, userID string
 	// 如果有用户ID，排除用户自己的信件
 	if userID != "" {
 		query = query.Where("author_id != ?", userID)
-		
+
 		// TODO: 基于用户兴趣推荐
 		// 这里可以根据用户的阅读历史、点赞记录等推荐相似内容
 	}
@@ -1357,7 +1357,7 @@ func (s *LetterService) BatchOperate(ctx context.Context, userID string, letterI
 
 	for _, letterID := range letterIDs {
 		var err error
-		
+
 		switch operation {
 		case "delete":
 			err = s.deleteLetter(ctx, letterID, userID)
@@ -1416,16 +1416,16 @@ func (s *LetterService) ExportLetters(ctx context.Context, userID string, letter
 	if len(letterIDs) > 0 {
 		query = query.Where("id IN ?", letterIDs)
 	}
-	
+
 	if err := query.Find(&letters).Error; err != nil {
 		return nil, err
 	}
 
 	// 根据格式生成导出数据
 	exportData := map[string]interface{}{
-		"format":      format,
+		"format":       format,
 		"letter_count": len(letters),
-		"export_time": time.Now().Format(time.RFC3339),
+		"export_time":  time.Now().Format(time.RFC3339),
 	}
 
 	switch format {
@@ -1474,7 +1474,7 @@ func (s *LetterService) AutoSaveDraft(ctx context.Context, letter *models.Letter
 		// 创建新草稿
 		letter.ID = fmt.Sprintf("letter_%s", time.Now().Format("20060102150405"))
 		letter.CreatedAt = time.Now()
-		
+
 		if err := s.db.Create(letter).Error; err != nil {
 			return nil, err
 		}
@@ -1534,11 +1534,11 @@ func (s *LetterService) GetWritingSuggestions(ctx context.Context, content, styl
 	}
 
 	suggestions["general_tips"] = generalTips
-	
+
 	if tips, ok := styleTips[style]; ok {
 		suggestions["style_tips"] = tips
 	}
-	
+
 	if tips, ok := moodTips[mood]; ok {
 		moodSuggestions := suggestions["style_tips"].([]string)
 		suggestions["style_tips"] = append(moodSuggestions, tips...)
@@ -1621,13 +1621,13 @@ func (s *LetterService) BindBarcodeToEnvelope(req *models.BindBarcodeRequest, op
 	// 更新LetterCode状态和关联信息
 	now := time.Now()
 	updates := map[string]interface{}{
-		"status":         models.BarcodeStatusBound,
-		"recipient_code": req.RecipientCode,
-		"bound_at":       &now,
+		"status":          models.BarcodeStatusBound,
+		"recipient_code":  req.RecipientCode,
+		"bound_at":        &now,
 		"last_scanned_by": operatorID,
 		"last_scanned_at": &now,
-		"scan_count":     gorm.Expr("scan_count + 1"),
-		"updated_at":     now,
+		"scan_count":      gorm.Expr("scan_count + 1"),
+		"updated_at":      now,
 	}
 
 	if req.EnvelopeID != "" {
@@ -1737,7 +1737,7 @@ func (s *LetterService) UpdateBarcodeStatus(barcodeCode string, req *models.Upda
 
 	// 检查状态转换是否有效
 	if !letterCode.IsValidTransition(newStatus) {
-		return fmt.Errorf("invalid status transition from %s to %s", 
+		return fmt.Errorf("invalid status transition from %s to %s",
 			letterCode.GetStatusDisplayName(), string(newStatus))
 	}
 
@@ -1814,14 +1814,14 @@ func (s *LetterService) UpdateBarcodeStatus(barcodeCode string, req *models.Upda
 		go func() {
 			message := s.getStatusUpdateMessage(string(newStatus))
 			s.notificationSvc.NotifyUser(letterCode.Letter.UserID, "barcode_status_updated", map[string]interface{}{
-				"letter_id":     letterCode.LetterID,
-				"barcode_code":  barcodeCode,
-				"status":        string(newStatus),
-				"location":      req.Location,
-				"operator_id":   req.OperatorID,
-				"op_code":       req.OPCode,
-				"message":       message,
-				"notes":         req.Notes,
+				"letter_id":    letterCode.LetterID,
+				"barcode_code": barcodeCode,
+				"status":       string(newStatus),
+				"location":     req.Location,
+				"operator_id":  req.OperatorID,
+				"op_code":      req.OPCode,
+				"message":      message,
+				"notes":        req.Notes,
 			})
 		}()
 	}
@@ -1962,4 +1962,3 @@ func (s *LetterService) validateOPCodeAccess(courier *models.Courier, targetOPCo
 
 	return false
 }
-

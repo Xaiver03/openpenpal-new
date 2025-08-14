@@ -70,10 +70,10 @@ type StructuredLogger struct {
 
 // LoggerConfig 日志器配置
 type LoggerConfig struct {
-	Level       LogLevel
-	Output      io.Writer
-	Service     string
-	Version     string
+	Level        LogLevel
+	Output       io.Writer
+	Service      string
+	Version      string
 	EnableCaller bool
 	TimeFormat   string
 }
@@ -173,11 +173,11 @@ func (l *StructuredLogger) With(fields ...interface{}) Logger {
 // WithContext 从上下文中提取信息
 func (l *StructuredLogger) WithContext(ctx context.Context) Logger {
 	newLogger := l.clone()
-	
+
 	if requestID := GetRequestIDFromContext(ctx); requestID != "" {
 		newLogger.requestID = requestID
 	}
-	
+
 	if userID := GetUserIDFromContext(ctx); userID != "" {
 		newLogger.userID = userID
 	}

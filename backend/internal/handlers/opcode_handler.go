@@ -275,12 +275,12 @@ func (h *OPCodeHandler) GetOPCode(c *gin.Context) {
 	if exists {
 		user := userInterface.(*models.User)
 		// 管理员或信使可以查看私有信息
-		includePrivate = user.Role == models.RolePlatformAdmin || 
-						user.Role == models.RoleSuperAdmin ||
-						user.Role == models.RoleCourierLevel1 ||
-						user.Role == models.RoleCourierLevel2 ||
-						user.Role == models.RoleCourierLevel3 ||
-						user.Role == models.RoleCourierLevel4
+		includePrivate = user.Role == models.RolePlatformAdmin ||
+			user.Role == models.RoleSuperAdmin ||
+			user.Role == models.RoleCourierLevel1 ||
+			user.Role == models.RoleCourierLevel2 ||
+			user.Role == models.RoleCourierLevel3 ||
+			user.Role == models.RoleCourierLevel4
 	}
 
 	opCode, err := h.opcodeService.GetOPCodeByCode(code, includePrivate)
@@ -339,7 +339,7 @@ func (h *OPCodeHandler) SearchAreas(c *gin.Context) {
 func (h *OPCodeHandler) SearchBuildings(c *gin.Context) {
 	schoolCode := c.Query("schoolCode")
 	areaCode := c.Query("areaCode")
-	
+
 	if schoolCode == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -373,7 +373,7 @@ func (h *OPCodeHandler) SearchBuildings(c *gin.Context) {
 func (h *OPCodeHandler) SearchPoints(c *gin.Context) {
 	schoolCode := c.Query("schoolCode")
 	areaCode := c.Query("areaCode")
-	
+
 	if schoolCode == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,

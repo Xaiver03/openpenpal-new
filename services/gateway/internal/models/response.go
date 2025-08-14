@@ -60,24 +60,24 @@ type HealthResponse struct {
 
 // ServiceStatus 服务状态
 type ServiceStatus struct {
-	Name            string    `json:"name"`
-	Status          string    `json:"status"`
-	HealthyCount    int       `json:"healthy_count"`
-	TotalCount      int       `json:"total_count"`
-	LastCheck       time.Time `json:"last_check"`
-	ResponseTime    string    `json:"response_time,omitempty"`
-	ErrorCount      int       `json:"error_count"`
-	SuccessRate     float64   `json:"success_rate"`
+	Name         string    `json:"name"`
+	Status       string    `json:"status"`
+	HealthyCount int       `json:"healthy_count"`
+	TotalCount   int       `json:"total_count"`
+	LastCheck    time.Time `json:"last_check"`
+	ResponseTime string    `json:"response_time,omitempty"`
+	ErrorCount   int       `json:"error_count"`
+	SuccessRate  float64   `json:"success_rate"`
 }
 
 // MetricsResponse 监控指标响应
 type MetricsResponse struct {
 	Gateway struct {
-		Uptime          string  `json:"uptime"`
-		TotalRequests   int64   `json:"total_requests"`
-		ErrorRate       float64 `json:"error_rate"`
-		AverageLatency  string  `json:"average_latency"`
-		RequestsPerSec  float64 `json:"requests_per_sec"`
+		Uptime         string  `json:"uptime"`
+		TotalRequests  int64   `json:"total_requests"`
+		ErrorRate      float64 `json:"error_rate"`
+		AverageLatency string  `json:"average_latency"`
+		RequestsPerSec float64 `json:"requests_per_sec"`
 	} `json:"gateway"`
 	Services map[string]ServiceMetrics `json:"services"`
 }
@@ -94,29 +94,29 @@ type ServiceMetrics struct {
 
 // LoadBalanceInfo 负载均衡信息
 type LoadBalanceInfo struct {
-	ServiceName     string `json:"service_name"`
-	SelectedHost    string `json:"selected_host"`
-	Algorithm       string `json:"algorithm"`
-	TotalInstances  int    `json:"total_instances"`
+	ServiceName      string `json:"service_name"`
+	SelectedHost     string `json:"selected_host"`
+	Algorithm        string `json:"algorithm"`
+	TotalInstances   int    `json:"total_instances"`
 	HealthyInstances int    `json:"healthy_instances"`
 }
 
 // RateLimitInfo 限流信息
 type RateLimitInfo struct {
-	Limit        int     `json:"limit"`
-	Remaining    int     `json:"remaining"`
-	ResetTime    int64   `json:"reset_time"`
-	RetryAfter   int     `json:"retry_after,omitempty"`
+	Limit      int   `json:"limit"`
+	Remaining  int   `json:"remaining"`
+	ResetTime  int64 `json:"reset_time"`
+	RetryAfter int   `json:"retry_after,omitempty"`
 }
 
 // CircuitBreakerStatus 熔断器状态
 type CircuitBreakerStatus struct {
-	ServiceName   string    `json:"service_name"`
-	State         string    `json:"state"` // closed, open, half-open
-	FailureRate   float64   `json:"failure_rate"`
-	FailureCount  int       `json:"failure_count"`
-	LastFailure   time.Time `json:"last_failure"`
-	NextRetry     time.Time `json:"next_retry,omitempty"`
+	ServiceName  string    `json:"service_name"`
+	State        string    `json:"state"` // closed, open, half-open
+	FailureRate  float64   `json:"failure_rate"`
+	FailureCount int       `json:"failure_count"`
+	LastFailure  time.Time `json:"last_failure"`
+	NextRetry    time.Time `json:"next_retry,omitempty"`
 }
 
 // 状态码常量
@@ -125,24 +125,24 @@ const (
 	CodeSuccess = 0
 
 	// 客户端错误状态码
-	CodeBadRequest   = 400
-	CodeUnauthorized = 401
-	CodeForbidden    = 403
-	CodeNotFound     = 404
-	CodeTimeout      = 408
-	CodeConflict     = 409
+	CodeBadRequest      = 400
+	CodeUnauthorized    = 401
+	CodeForbidden       = 403
+	CodeNotFound        = 404
+	CodeTimeout         = 408
+	CodeConflict        = 409
 	CodeTooManyRequests = 429
 
 	// 服务端错误状态码
 	CodeInternalError      = 500
-	CodeBadGateway        = 502
+	CodeBadGateway         = 502
 	CodeServiceUnavailable = 503
-	CodeGatewayTimeout    = 504
+	CodeGatewayTimeout     = 504
 )
 
 // 错误消息常量
 const (
-	MsgSuccess             = "success"
+	MsgSuccess            = "success"
 	MsgBadRequest         = "Bad request"
 	MsgUnauthorized       = "Unauthorized"
 	MsgForbidden          = "Forbidden"

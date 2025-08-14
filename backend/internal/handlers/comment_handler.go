@@ -318,17 +318,17 @@ func RegisterCommentRoutes(router *gin.RouterGroup, commentHandler *CommentHandl
 	comments := router.Group("/comments")
 	{
 		// 基础CRUD
-		comments.POST("", commentHandler.CreateComment)                    // 创建评论
-		comments.GET("/:id", commentHandler.GetCommentByID)               // 获取评论详情
-		comments.PUT("/:id", commentHandler.UpdateComment)                // 更新评论
-		comments.DELETE("/:id", commentHandler.DeleteComment)             // 删除评论
-		comments.POST("/:id/like", commentHandler.LikeComment)            // 点赞/取消点赞
+		comments.POST("", commentHandler.CreateComment)                // 创建评论
+		comments.GET("/:id", commentHandler.GetCommentByID)            // 获取评论详情
+		comments.PUT("/:id", commentHandler.UpdateComment)             // 更新评论
+		comments.DELETE("/:id", commentHandler.DeleteComment)          // 删除评论
+		comments.POST("/:id/like", commentHandler.LikeComment)         // 点赞/取消点赞
 		comments.GET("/:id/replies", commentHandler.GetCommentReplies) // 获取回复列表
 	}
 
 	letters := router.Group("/letters")
 	{
-		letters.GET("/:id/comments", commentHandler.GetCommentsByLetterID)      // 获取信件评论列表
-		letters.GET("/:id/comments/stats", commentHandler.GetCommentStats)     // 获取评论统计
+		letters.GET("/:id/comments", commentHandler.GetCommentsByLetterID) // 获取信件评论列表
+		letters.GET("/:id/comments/stats", commentHandler.GetCommentStats) // 获取评论统计
 	}
 }

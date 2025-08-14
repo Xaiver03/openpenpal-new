@@ -85,17 +85,17 @@ func (suite *CourierHandlerSimpleTestSuite) TearDownTest() {
 func (suite *CourierHandlerSimpleTestSuite) TestApplyCourier_Success() {
 	// 准备请求体
 	body := map[string]interface{}{
-		"name":             "测试信使",
-		"contact":          "test@example.com",
-		"school":           "北京大学",
-		"zone":             "BJDX",
-		"hasPrinter":       "yes",
-		"selfIntro":        "我想帮助同学传递信件",
-		"canMentor":        "maybe",
-		"weeklyHours":      10,
-		"maxDailyTasks":    5,
-		"transportMethod":  "walk",
-		"timeSlots":        []string{"morning", "afternoon"},
+		"name":            "测试信使",
+		"contact":         "test@example.com",
+		"school":          "北京大学",
+		"zone":            "BJDX",
+		"hasPrinter":      "yes",
+		"selfIntro":       "我想帮助同学传递信件",
+		"canMentor":       "maybe",
+		"weeklyHours":     10,
+		"maxDailyTasks":   5,
+		"transportMethod": "walk",
+		"timeSlots":       []string{"morning", "afternoon"},
 	}
 
 	// 执行请求
@@ -270,7 +270,7 @@ func (suite *CourierHandlerSimpleTestSuite) createAuthHeader(user *models.User) 
 	expiresAt := time.Now().Add(24 * time.Hour)
 	token, err := auth.GenerateJWT(user.ID, user.Role, suite.config.JWTSecret, expiresAt)
 	suite.NoError(err)
-	
+
 	return testutils.CreateAuthHeader(token)
 }
 

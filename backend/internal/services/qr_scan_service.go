@@ -31,22 +31,22 @@ func NewQRScanService(db *gorm.DB, letterService *LetterService, courierService 
 
 // QRScanRequest - Clean API contract
 type QRScanRequest struct {
-	Code        string  `json:"code" binding:"required"`
-	CourierID   string  `json:"courier_id" binding:"required"`
-	Action      string  `json:"action" binding:"required,oneof=pickup delivery"`
-	Location    string  `json:"location"`
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
-	Notes       string  `json:"notes"`
+	Code      string  `json:"code" binding:"required"`
+	CourierID string  `json:"courier_id" binding:"required"`
+	Action    string  `json:"action" binding:"required,oneof=pickup delivery"`
+	Location  string  `json:"location"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Notes     string  `json:"notes"`
 }
 
 // QRScanResponse - Rich response with full context
 type QRScanResponse struct {
-	Success     bool                `json:"success"`
-	Letter      *LetterInfo         `json:"letter,omitempty"`
-	Task        *CourierTaskInfo    `json:"task,omitempty"`
-	NextAction  string              `json:"next_action,omitempty"`
-	Message     string              `json:"message"`
+	Success    bool             `json:"success"`
+	Letter     *LetterInfo      `json:"letter,omitempty"`
+	Task       *CourierTaskInfo `json:"task,omitempty"`
+	NextAction string           `json:"next_action,omitempty"`
+	Message    string           `json:"message"`
 }
 
 // LetterInfo - Optimized data structure
@@ -123,7 +123,7 @@ func (s *QRScanService) processPickup(req *QRScanRequest) (*QRScanResponse, erro
 		return nil, err
 	}
 
-	// 4. Update letter status  
+	// 4. Update letter status
 	letter.Status = models.StatusCollected
 	// Note: Letter model doesn't have CollectedAt field, using status tracking
 
@@ -233,8 +233,8 @@ func (s *QRScanService) validateCourierPermissions(courierID, targetOPCode strin
 	}
 
 	// Simple prefix matching - can be enhanced with more sophisticated logic
-	return len(targetOPCode) >= len(courier.ManagedOPCodePrefix) && 
-		   targetOPCode[:len(courier.ManagedOPCodePrefix)] == courier.ManagedOPCodePrefix, nil
+	return len(targetOPCode) >= len(courier.ManagedOPCodePrefix) &&
+		targetOPCode[:len(courier.ManagedOPCodePrefix)] == courier.ManagedOPCodePrefix, nil
 }
 
 func (s *QRScanService) createCourierTask(letter *models.Letter, req *QRScanRequest) (*models.CourierTask, error) {
@@ -279,10 +279,10 @@ func (s *QRScanService) completeCourierTask(letterID string, req *QRScanRequest)
 	s.db.Model(&models.CourierTask{}).
 		Where("letter_id = ? AND courier_id = ?", letterID, req.CourierID).
 		Updates(map[string]interface{}{
-			"status":           "completed",
-			"current_op_code":  req.Location,
-			"delivery_notes":   req.Notes,
-			"completed_at":     time.Now(),
+			"status":          "completed",
+			"current_op_code": req.Location,
+			"delivery_notes":  req.Notes,
+			"completed_at":    time.Now(),
 		})
 }
 
@@ -291,7 +291,7 @@ func (s *QRScanService) updateCourierStats(courierID string, success bool) {
 	updates := map[string]interface{}{
 		"task_count": gorm.Expr("task_count + 1"),
 	}
-	
+
 	if success {
 		updates["points"] = gorm.Expr("points + 10")
 	}
@@ -301,14 +301,14 @@ func (s *QRScanService) updateCourierStats(courierID string, success bool) {
 
 func (s *QRScanService) recordScanHistory(req *QRScanRequest, letter *models.Letter, action string) {
 	scanRecord := &models.ScanRecord{
-		CourierID:   req.CourierID,
-		LetterCode:  req.Code,
-		ScanType:    action,
-		Location:    req.Location,
-		Latitude:    req.Latitude,
-		Longitude:   req.Longitude,
-		Timestamp:   time.Now(),
-		Notes:       req.Notes,
+		CourierID:  req.CourierID,
+		LetterCode: req.Code,
+		ScanType:   action,
+		Location:   req.Location,
+		Latitude:   req.Latitude,
+		Longitude:  req.Longitude,
+		Timestamp:  time.Now(),
+		Notes:      req.Notes,
 	}
 	s.db.Create(scanRecord)
 }
@@ -346,10 +346,10 @@ func (s *QRScanService) mapLetterInfo(letter *models.Letter) *LetterInfo {
 	if letter.Code != nil {
 		letterCode = letter.Code.Code
 	}
-	
+
 	// Get sender name
 	senderName := getSenderName(letter)
-	
+
 	return &LetterInfo{
 		ID:              letter.ID,
 		Code:            letterCode,
@@ -426,7 +426,7 @@ func (s *QRScanService) ValidateQRCode(qrContent string) (bool, map[string]inter
 	// 尝试解析JSON格式的QR码（增强格式）
 	var qrData map[string]interface{}
 	info := make(map[string]interface{})
-	
+
 	if err := json.Unmarshal([]byte(qrContent), &qrData); err == nil {
 		// JSON格式QR码
 		if qrType, ok := qrData["type"].(string); ok && qrType == "openpenpal_letter" {

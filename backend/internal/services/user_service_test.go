@@ -181,7 +181,7 @@ func (suite *UserServiceTestSuite) TestLogin_WithEmail() {
 
 	// 使用邮箱登录
 	loginReq := &models.LoginRequest{
-		Username: "email@example.com",  // 注意：实际实现中可能需要支持邮箱登录
+		Username: "email@example.com", // 注意：实际实现中可能需要支持邮箱登录
 		Password: "password123",
 	}
 	loginResp, err := suite.userService.Login(loginReq)
@@ -279,7 +279,7 @@ func (suite *UserServiceTestSuite) TestUpdateProfile_Success() {
 	suite.NoError(err)
 	suite.NotNil(updatedUser)
 	suite.Equal("新昵称", updatedUser.Nickname)
-	
+
 	// 验证数据库更新
 	var savedUser models.User
 	err = suite.db.First(&savedUser, "id = ?", suite.testUser.ID).Error
@@ -475,7 +475,7 @@ func (suite *UserServiceTestSuite) TestPasswordSecurity() {
 	suite.NotEqual("securepassword123", savedUser.PasswordHash)
 
 	// 验证哈希强度（bcrypt特征）
-	suite.True(len(savedUser.PasswordHash) >= 60) // bcrypt哈希长度
+	suite.True(len(savedUser.PasswordHash) >= 60)  // bcrypt哈希长度
 	suite.Contains(savedUser.PasswordHash, "$2a$") // bcrypt前缀
 
 	// 验证密码验证功能

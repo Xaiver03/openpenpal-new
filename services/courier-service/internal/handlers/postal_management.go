@@ -378,10 +378,10 @@ func (h *PostalManagementHandler) DeactivateCode(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, models.SuccessResponse(map[string]interface{}{
-		"assignment_id": assignmentID,
+		"assignment_id":  assignmentID,
 		"deactivated_by": operatorID,
-		"reason":        request.Reason,
-		"message":       "Postal code deactivated successfully",
+		"reason":         request.Reason,
+		"message":        "Postal code deactivated successfully",
 	}))
 }
 
@@ -443,12 +443,12 @@ func (h *PostalManagementHandler) SearchCodes(c *gin.Context) {
 	courierID := c.GetString("user_id")
 
 	var query struct {
-		Code      string `form:"code"`
-		UserID    string `form:"user_id"`
-		SchoolID  string `form:"school_id"`
-		AreaID    string `form:"area_id"`
-		IsActive  *bool  `form:"is_active"`
-		Limit     int    `form:"limit"`
+		Code     string `form:"code"`
+		UserID   string `form:"user_id"`
+		SchoolID string `form:"school_id"`
+		AreaID   string `form:"area_id"`
+		IsActive *bool  `form:"is_active"`
+		Limit    int    `form:"limit"`
 	}
 
 	if err := c.ShouldBindQuery(&query); err != nil {

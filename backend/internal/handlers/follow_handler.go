@@ -7,7 +7,7 @@ import (
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/services"
 	"openpenpal-backend/internal/utils"
-	
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -102,7 +102,7 @@ func (h *FollowHandler) UnfollowUser(c *gin.Context) {
 func (h *FollowHandler) GetFollowers(c *gin.Context) {
 	currentUserID := c.GetString("user_id")
 	targetUserID := c.Param("user_id")
-	
+
 	// 如果没有指定用户ID，则使用当前用户
 	if targetUserID == "" {
 		targetUserID = currentUserID
@@ -114,7 +114,7 @@ func (h *FollowHandler) GetFollowers(c *gin.Context) {
 	}
 
 	req := h.parseFollowListRequest(c)
-	
+
 	response, err := h.followService.GetFollowers(targetUserID, req)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get followers", err)
@@ -143,7 +143,7 @@ func (h *FollowHandler) GetFollowers(c *gin.Context) {
 func (h *FollowHandler) GetFollowing(c *gin.Context) {
 	currentUserID := c.GetString("user_id")
 	targetUserID := c.Param("user_id")
-	
+
 	// 如果没有指定用户ID，则使用当前用户
 	if targetUserID == "" {
 		targetUserID = currentUserID
@@ -155,7 +155,7 @@ func (h *FollowHandler) GetFollowing(c *gin.Context) {
 	}
 
 	req := h.parseFollowListRequest(c)
-	
+
 	response, err := h.followService.GetFollowing(targetUserID, req)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get following", err)
@@ -187,7 +187,7 @@ func (h *FollowHandler) SearchUsers(c *gin.Context) {
 	currentUserID := c.GetString("user_id")
 
 	req := h.parseUserSearchRequest(c)
-	
+
 	response, err := h.followService.SearchUsers(req, currentUserID)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to search users", err)
@@ -217,7 +217,7 @@ func (h *FollowHandler) GetUserSuggestions(c *gin.Context) {
 	}
 
 	req := h.parseUserSuggestionsRequest(c)
-	
+
 	response, err := h.followService.GetUserSuggestions(userID, req)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get user suggestions", err)
@@ -280,7 +280,7 @@ func (h *FollowHandler) RefreshSuggestions(c *gin.Context) {
 		ExcludeFollowed:  true,
 		MinActivityScore: 0.0,
 	}
-	
+
 	response, err := h.followService.GetUserSuggestions(userID, req)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh suggestions", err)
@@ -295,12 +295,12 @@ func (h *FollowHandler) RefreshSuggestions(c *gin.Context) {
 func (h *FollowHandler) parseFollowListRequest(c *gin.Context) *models.FollowListRequest {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	
+
 	// 限制最大每页数量
 	if limit > 100 {
 		limit = 100
 	}
-	
+
 	return &models.FollowListRequest{
 		Page:         page,
 		Limit:        limit,
@@ -316,12 +316,12 @@ func (h *FollowHandler) parseUserSearchRequest(c *gin.Context) *models.UserSearc
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	minFollowers, _ := strconv.Atoi(c.Query("min_followers"))
 	maxFollowers, _ := strconv.Atoi(c.Query("max_followers"))
-	
+
 	// 限制最大返回数量
 	if limit > 100 {
 		limit = 100
 	}
-	
+
 	return &models.UserSearchRequest{
 		Query:        c.Query("query"),
 		SchoolCode:   c.Query("school_code"),
@@ -340,17 +340,17 @@ func (h *FollowHandler) parseUserSuggestionsRequest(c *gin.Context) *models.User
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	excludeFollowed, _ := strconv.ParseBool(c.DefaultQuery("exclude_followed", "true"))
 	minActivityScore, _ := strconv.ParseFloat(c.Query("min_activity_score"), 64)
-	
+
 	// 限制最大推荐数量
 	if limit > 50 {
 		limit = 50
 	}
-	
+
 	return &models.UserSuggestionsRequest{
-		Limit:             limit,
-		BasedOn:           c.DefaultQuery("based_on", "school"),
-		ExcludeFollowed:   excludeFollowed,
-		MinActivityScore:  minActivityScore,
+		Limit:            limit,
+		BasedOn:          c.DefaultQuery("based_on", "school"),
+		ExcludeFollowed:  excludeFollowed,
+		MinActivityScore: minActivityScore,
 	}
 }
 
@@ -373,7 +373,7 @@ func (h *FollowHandler) FollowMultipleUsers(c *gin.Context) {
 	var req struct {
 		UserIDs []string `json:"user_ids" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request format", err)
 		return
@@ -394,10 +394,10 @@ func (h *FollowHandler) FollowMultipleUsers(c *gin.Context) {
 	}
 
 	response := map[string]interface{}{
-		"success":       successCount,
-		"failed":        failedCount,
-		"total":         len(req.UserIDs),
-		"errors":        errors,
+		"success": successCount,
+		"failed":  failedCount,
+		"total":   len(req.UserIDs),
+		"errors":  errors,
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "Success", response)

@@ -11,13 +11,13 @@ type UserRole string
 const (
 	// 基础角色
 	RoleUser UserRole = "user" // 普通用户
-	
+
 	// 四级信使体系 - 符合PRD设计
 	RoleCourierLevel1 UserRole = "courier_level1" // 一级信使（基础投递信使）
 	RoleCourierLevel2 UserRole = "courier_level2" // 二级信使（片区协调员）
 	RoleCourierLevel3 UserRole = "courier_level3" // 三级信使（校区负责人）
 	RoleCourierLevel4 UserRole = "courier_level4" // 四级信使（城市负责人）
-	
+
 	// 管理角色
 	RolePlatformAdmin UserRole = "platform_admin" // 平台管理员
 	RoleSuperAdmin    UserRole = "super_admin"    // 超级管理员
@@ -123,8 +123,8 @@ var RolePermissions = map[UserRole][]Permission{
 		PermissionAssignTasks,
 		PermissionManageCouriers,
 		PermissionViewReports,
-		PermissionManageSchool,   // 开通新学校
-		PermissionViewAnalytics,  // 查看城市级数据
+		PermissionManageSchool,  // 开通新学校
+		PermissionViewAnalytics, // 查看城市级数据
 	},
 
 	// 平台管理员

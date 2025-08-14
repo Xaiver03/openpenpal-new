@@ -17,7 +17,7 @@ type Config struct {
 	DatabaseType string
 	DatabaseURL  string
 	DatabaseName string
-	
+
 	// PostgreSQL specific (optional)
 	DBHost     string
 	DBPort     string
@@ -41,11 +41,11 @@ type Config struct {
 	QRCodeStorePath string
 
 	// AI
-	OpenAIAPIKey     string
-	ClaudeAPIKey     string
+	OpenAIAPIKey      string
+	ClaudeAPIKey      string
 	SiliconFlowAPIKey string
-	MoonshotAPIKey   string
-	AIProvider       string
+	MoonshotAPIKey    string
+	AIProvider        string
 
 	// Email/SMTP
 	SMTPHost         string
@@ -72,7 +72,7 @@ func Load() (*Config, error) {
 		DatabaseType: getEnv("DATABASE_TYPE", "postgres"),
 		DatabaseURL:  getEnv("DATABASE_URL", "postgres://rocalight:password@localhost:5432/openpenpal"),
 		DatabaseName: getEnv("DATABASE_NAME", "openpenpal"),
-		
+
 		// PostgreSQL specific
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
@@ -96,11 +96,11 @@ func Load() (*Config, error) {
 		QRCodeStorePath: getEnv("QR_CODE_STORE_PATH", "./uploads/qrcodes"),
 
 		// AI
-		OpenAIAPIKey:     getEnv("OPENAI_API_KEY", ""),
-		ClaudeAPIKey:     getEnv("CLAUDE_API_KEY", ""),
+		OpenAIAPIKey:      getEnv("OPENAI_API_KEY", ""),
+		ClaudeAPIKey:      getEnv("CLAUDE_API_KEY", ""),
 		SiliconFlowAPIKey: getEnv("SILICONFLOW_API_KEY", ""),
-		MoonshotAPIKey:   getEnv("MOONSHOT_API_KEY", ""),
-		AIProvider:       getEnv("AI_PROVIDER", "moonshot"),
+		MoonshotAPIKey:    getEnv("MOONSHOT_API_KEY", ""),
+		AIProvider:        getEnv("AI_PROVIDER", "moonshot"),
 
 		// Email/SMTP
 		SMTPHost:         getEnv("SMTP_HOST", ""),

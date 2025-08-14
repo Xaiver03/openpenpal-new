@@ -14,11 +14,11 @@ import (
 
 // ConfigService 配置服务 - 管理AI相关的动态配置
 type ConfigService struct {
-	db           *gorm.DB
-	cache        map[string]interface{}
-	templateCache map[string][]models.AIContentTemplate
-	mutex        sync.RWMutex
-	lastRefresh  time.Time
+	db              *gorm.DB
+	cache           map[string]interface{}
+	templateCache   map[string][]models.AIContentTemplate
+	mutex           sync.RWMutex
+	lastRefresh     time.Time
 	refreshInterval time.Duration
 }
 
@@ -96,7 +96,7 @@ func NewConfigService(db *gorm.DB) *ConfigService {
 
 	// 启动配置监控
 	go service.startConfigWatcher()
-	
+
 	// 初始化缓存
 	if err := service.RefreshCache(); err != nil {
 		log.Printf("⚠️ [ConfigService] 初始化缓存失败: %v", err)
@@ -109,7 +109,7 @@ func NewConfigService(db *gorm.DB) *ConfigService {
 // GetConfig 获取配置
 func (s *ConfigService) GetConfig(configType, key string) (*AIConfigData, error) {
 	cacheKey := fmt.Sprintf("%s:%s", configType, key)
-	
+
 	// 尝试从缓存获取
 	s.mutex.RLock()
 	if cached, exists := s.cache[cacheKey]; exists {
@@ -327,7 +327,7 @@ func (s *ConfigService) RefreshCache() error {
 	for _, cfg := range commonConfigs {
 		var config AIConfigData
 		err := s.db.Table("ai_configs").
-			Where("config_type = ? AND config_key = ? AND is_active = ?", 
+			Where("config_type = ? AND config_key = ? AND is_active = ?",
 				cfg.ConfigType, cfg.ConfigKey, true).
 			First(&config).Error
 

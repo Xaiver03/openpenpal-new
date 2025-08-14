@@ -338,10 +338,10 @@ func (h *MuseumHandler) GetPopularMuseumEntries(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"entries": entries,
-			"total":   total,
-			"page":    page,
-			"limit":   limit,
+			"entries":  entries,
+			"total":    total,
+			"page":     page,
+			"limit":    limit,
 			"has_more": total > int64(page*limit),
 		},
 	})
@@ -895,17 +895,17 @@ func (h *MuseumHandler) GetMuseumAnalytics(c *gin.Context) {
 // SearchMuseumEntries 搜索博物馆条目
 func (h *MuseumHandler) SearchMuseumEntries(c *gin.Context) {
 	var req struct {
-		Query      string   `json:"query"`
-		Tags       []string `json:"tags"`
-		Theme      string   `json:"theme"`
-		Status     string   `json:"status"`
-		Featured   *bool    `json:"featured"`
-		DateFrom   string   `json:"date_from"`
-		DateTo     string   `json:"date_to"`
-		SortBy     string   `json:"sort_by"`     // created_at, view_count, like_count, title
-		SortOrder  string   `json:"sort_order"`  // asc, desc
-		Page       int      `json:"page"`
-		Limit      int      `json:"limit"`
+		Query     string   `json:"query"`
+		Tags      []string `json:"tags"`
+		Theme     string   `json:"theme"`
+		Status    string   `json:"status"`
+		Featured  *bool    `json:"featured"`
+		DateFrom  string   `json:"date_from"`
+		DateTo    string   `json:"date_to"`
+		SortBy    string   `json:"sort_by"`    // created_at, view_count, like_count, title
+		SortOrder string   `json:"sort_order"` // asc, desc
+		Page      int      `json:"page"`
+		Limit     int      `json:"limit"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

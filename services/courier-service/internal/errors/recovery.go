@@ -32,7 +32,7 @@ func (pr *PanicRecovery) Recover() error {
 	if r := recover(); r != nil {
 		// 获取堆栈信息
 		stack := debug.Stack()
-		
+
 		// 获取panic发生的位置
 		pc, file, line, ok := runtime.Caller(2)
 		location := "unknown"
@@ -44,14 +44,14 @@ func (pr *PanicRecovery) Recover() error {
 				location = fmt.Sprintf("%s:%d", getShortFilename(file), line)
 			}
 		}
-		
+
 		// 记录panic日志
 		pr.Logger.Error("Panic recovered",
 			"panic", r,
 			"location", location,
 			"stack", string(stack),
 		)
-		
+
 		// 转换为自定义错误
 		return &CourierServiceError{
 			Code:       CodeInternalError,
@@ -206,7 +206,7 @@ func As(err error, target interface{}) bool {
 	if err == nil {
 		return false
 	}
-	
+
 	switch v := target.(type) {
 	case **CourierServiceError:
 		if courierErr, ok := err.(*CourierServiceError); ok {

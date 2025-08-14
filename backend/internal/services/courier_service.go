@@ -827,7 +827,7 @@ func generateSecurePassword() string {
 		length = 12
 		chars  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
 	)
-	
+
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
 		// Fallback to a base64 encoded random string
@@ -835,11 +835,11 @@ func generateSecurePassword() string {
 		rand.Read(randomBytes)
 		return base64.URLEncoding.EncodeToString(randomBytes)
 	}
-	
+
 	for i, b := range bytes {
 		bytes[i] = chars[b%byte(len(chars))]
 	}
-	
+
 	return string(bytes)
 }
 
@@ -888,67 +888,67 @@ func (s *CourierService) generateMockTasks(userID string) []models.CourierTask {
 	now := time.Now()
 	tasks := []models.CourierTask{
 		{
-			ID:               "task-001",
-			CourierID:        userID,
-			LetterCode:       "LTR-2025-001",
-			Title:            "北大燕园4号楼配送",
-			SenderName:       "张同学",
-			SenderPhone:      "138****5678",
-			RecipientHint:    "李同学（4号楼302室）",
-			TargetLocation:   "北京大学燕园4号楼",
-			CurrentLocation:  "信使中心",
+			ID:              "task-001",
+			CourierID:       userID,
+			LetterCode:      "LTR-2025-001",
+			Title:           "北大燕园4号楼配送",
+			SenderName:      "张同学",
+			SenderPhone:     "138****5678",
+			RecipientHint:   "李同学（4号楼302室）",
+			TargetLocation:  "北京大学燕园4号楼",
+			CurrentLocation: "信使中心",
 			// OP Code集成示例
-			PickupOPCode:     "PK0M01",    // 北大信使中心
-			DeliveryOPCode:   "PK4F02",    // 北大4号楼302室
-			Priority:         "normal",
-			Status:           "pending",
-			EstimatedTime:    30,
-			Distance:         2.5,
-			CreatedAt:        now.Add(-2 * time.Hour),
-			Deadline:         now.Add(4 * time.Hour),
-			Instructions:     "请注意保持信件完整，避免折损",
-			Reward:           10,
+			PickupOPCode:   "PK0M01", // 北大信使中心
+			DeliveryOPCode: "PK4F02", // 北大4号楼302室
+			Priority:       "normal",
+			Status:         "pending",
+			EstimatedTime:  30,
+			Distance:       2.5,
+			CreatedAt:      now.Add(-2 * time.Hour),
+			Deadline:       now.Add(4 * time.Hour),
+			Instructions:   "请注意保持信件完整，避免折损",
+			Reward:         10,
 		},
 		{
-			ID:               "task-002",
-			CourierID:        userID,
-			LetterCode:       "LTR-2025-002",
-			Title:            "紧急文件-理科楼",
-			SenderName:       "王老师",
-			SenderPhone:      "135****1234",
-			RecipientHint:    "教务处（理科楼205）",
-			TargetLocation:   "北京大学理科教学楼",
-			CurrentLocation:  "信使中心",
+			ID:              "task-002",
+			CourierID:       userID,
+			LetterCode:      "LTR-2025-002",
+			Title:           "紧急文件-理科楼",
+			SenderName:      "王老师",
+			SenderPhone:     "135****1234",
+			RecipientHint:   "教务处（理科楼205）",
+			TargetLocation:  "北京大学理科教学楼",
+			CurrentLocation: "信使中心",
 			// OP Code集成示例
-			PickupOPCode:     "PK0M01",    // 北大信使中心
-			DeliveryOPCode:   "PK2T05",    // 北大理科楼205
-			Priority:         "urgent",
-			Status:           "pending",
-			EstimatedTime:    20,
-			Distance:         1.8,
-			CreatedAt:        now.Add(-30 * time.Minute),
-			Deadline:         now.Add(1 * time.Hour),
-			Instructions:     "紧急文件，请优先配送",
-			Reward:           20,
+			PickupOPCode:   "PK0M01", // 北大信使中心
+			DeliveryOPCode: "PK2T05", // 北大理科楼205
+			Priority:       "urgent",
+			Status:         "pending",
+			EstimatedTime:  20,
+			Distance:       1.8,
+			CreatedAt:      now.Add(-30 * time.Minute),
+			Deadline:       now.Add(1 * time.Hour),
+			Instructions:   "紧急文件，请优先配送",
+			Reward:         20,
 		},
 		{
-			ID:               "task-003",
-			CourierID:        userID,
-			LetterCode:       "LTR-2025-003",
-			Title:            "宿舍楼群配送任务",
-			SenderName:       "刘同学",
-			SenderPhone:      "139****8765",
-			RecipientHint:    "赵同学（28号楼501）",
-			TargetLocation:   "北京大学28号宿舍楼",
-			CurrentLocation:  "已取件",
-			Priority:         "normal",
-			Status:           "collected",
-			EstimatedTime:    25,
-			Distance:         1.2,
-			CreatedAt:        now.Add(-3 * time.Hour),
-			Deadline:         now.Add(2 * time.Hour),
-			Instructions:     "收件人可能不在，可联系舍友代收",
-			Reward:           15,
+			ID:              "task-003",
+			CourierID:       userID,
+			LetterCode:      "LTR-2025-003",
+			Title:           "宿舍楼群配送任务",
+			SenderName:      "刘同学",
+			SenderPhone:     "139****8765",
+			RecipientHint:   "赵同学（28号楼501）",
+			TargetLocation:  "北京大学28号宿舍楼",
+			CurrentLocation: "已取件",
+			Priority:        "normal",
+			Status:          "collected",
+			EstimatedTime:   25,
+			Distance:        1.2,
+			CreatedAt:       now.Add(-3 * time.Hour),
+			Deadline:        now.Add(2 * time.Hour),
+			Instructions:    "收件人可能不在，可联系舍友代收",
+			Reward:          15,
 		},
 	}
 
@@ -977,7 +977,7 @@ func (s *CourierService) ValidateOPCodeAccess(courierID string, targetOPCode str
 func (s *CourierService) AssignTaskByOPCode(letterCode string, pickupOPCode string, deliveryOPCode string) (*models.CourierTask, error) {
 	// 查找有权限处理该OP Code区域的信使
 	var couriers []models.Courier
-	
+
 	// 查找管理该OP Code前缀的信使
 	deliveryPrefix := deliveryOPCode[:4] // 取前4位作为区域前缀
 	if err := s.db.Where("managed_op_code_prefix LIKE ? AND status = ?", deliveryPrefix+"%", "approved").Find(&couriers).Error; err != nil {
@@ -1024,8 +1024,8 @@ func (s *CourierService) AssignTaskByOPCode(letterCode string, pickupOPCode stri
 	// 发送实时任务分配通知
 	if s.wsService != nil {
 		s.wsService.BroadcastToUser(selectedCourier.UserID, map[string]interface{}{
-			"type": "task_assigned",
-			"task": task,
+			"type":    "task_assigned",
+			"task":    task,
 			"message": "新任务已分配给您",
 		})
 	}

@@ -1,8 +1,8 @@
 package models
 
 import (
-	"time"
 	"gorm.io/gorm"
+	"time"
 )
 
 // FollowStatus 关注状态枚举
@@ -31,32 +31,32 @@ type UserRelationship struct {
 
 // FollowUser 关注用户响应结构（匹配前端类型）
 type FollowUser struct {
-	ID                    string    `json:"id"`
-	Username              string    `json:"username"`
-	Nickname              string    `json:"nickname"`
-	Avatar                string    `json:"avatar"`
-	Bio                   string    `json:"bio"`
-	School                string    `json:"school"`
-	OPCode                string    `json:"op_code"`
-	WritingLevel          int       `json:"writing_level"`
-	CourierLevel          int       `json:"courier_level"`
-	FollowersCount        int       `json:"followers_count"`
-	FollowingCount        int       `json:"following_count"`
-	LettersCount          int       `json:"letters_count"`
-	IsFollowing           bool      `json:"is_following,omitempty"`
-	IsFollower            bool      `json:"is_follower,omitempty"`
-	FollowStatus          string    `json:"follow_status,omitempty"`
-	FollowedAt            string    `json:"followed_at,omitempty"`
-	MutualFollowersCount  int       `json:"mutual_followers_count,omitempty"`
+	ID                   string `json:"id"`
+	Username             string `json:"username"`
+	Nickname             string `json:"nickname"`
+	Avatar               string `json:"avatar"`
+	Bio                  string `json:"bio"`
+	School               string `json:"school"`
+	OPCode               string `json:"op_code"`
+	WritingLevel         int    `json:"writing_level"`
+	CourierLevel         int    `json:"courier_level"`
+	FollowersCount       int    `json:"followers_count"`
+	FollowingCount       int    `json:"following_count"`
+	LettersCount         int    `json:"letters_count"`
+	IsFollowing          bool   `json:"is_following,omitempty"`
+	IsFollower           bool   `json:"is_follower,omitempty"`
+	FollowStatus         string `json:"follow_status,omitempty"`
+	FollowedAt           string `json:"followed_at,omitempty"`
+	MutualFollowersCount int    `json:"mutual_followers_count,omitempty"`
 }
 
 // FollowStats 关注统计
 type FollowStats struct {
-	UserID              string `json:"user_id" gorm:"primaryKey;type:varchar(36)"`
-	FollowersCount      int    `json:"followers_count" gorm:"default:0"`
-	FollowingCount      int    `json:"following_count" gorm:"default:0"`
-	MutualFollowsCount  int    `json:"mutual_follows_count" gorm:"default:0"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	UserID             string    `json:"user_id" gorm:"primaryKey;type:varchar(36)"`
+	FollowersCount     int       `json:"followers_count" gorm:"default:0"`
+	FollowingCount     int       `json:"following_count" gorm:"default:0"`
+	MutualFollowsCount int       `json:"mutual_follows_count" gorm:"default:0"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 // FollowActivity 关注活动记录
@@ -80,7 +80,7 @@ type UserSuggestion struct {
 	Reason          string    `json:"reason" gorm:"type:varchar(100)"`
 	Score           float64   `json:"score" gorm:"type:decimal(5,4)"`
 	CreatedAt       time.Time `json:"created_at"`
-	
+
 	// 关联
 	User          User `json:"user,omitempty" gorm:"foreignKey:UserID"`
 	SuggestedUser User `json:"suggested_user,omitempty" gorm:"foreignKey:SuggestedUserID"`
@@ -117,7 +117,7 @@ type FollowListRequest struct {
 
 // FollowListResponse 关注列表响应
 type FollowListResponse struct {
-	Users []FollowUser `json:"users"`
+	Users      []FollowUser `json:"users"`
 	Pagination struct {
 		Page  int `json:"page"`
 		Limit int `json:"limit"`
@@ -142,35 +142,35 @@ type UserSearchRequest struct {
 
 // UserSearchResponse 用户搜索响应
 type UserSearchResponse struct {
-	Users           []FollowUser `json:"users"`
-	Total           int          `json:"total"`
-	Query           string       `json:"query"`
-	Suggestions     []string     `json:"suggestions,omitempty"`
-	FiltersApplied  interface{}  `json:"filters_applied"`
+	Users          []FollowUser `json:"users"`
+	Total          int          `json:"total"`
+	Query          string       `json:"query"`
+	Suggestions    []string     `json:"suggestions,omitempty"`
+	FiltersApplied interface{}  `json:"filters_applied"`
 }
 
 // UserSuggestionsRequest 用户推荐请求
 type UserSuggestionsRequest struct {
-	Limit             int     `json:"limit" form:"limit"`
-	BasedOn           string  `json:"based_on" form:"based_on"`
-	ExcludeFollowed   bool    `json:"exclude_followed" form:"exclude_followed"`
-	MinActivityScore  float64 `json:"min_activity_score" form:"min_activity_score"`
+	Limit            int     `json:"limit" form:"limit"`
+	BasedOn          string  `json:"based_on" form:"based_on"`
+	ExcludeFollowed  bool    `json:"exclude_followed" form:"exclude_followed"`
+	MinActivityScore float64 `json:"min_activity_score" form:"min_activity_score"`
 }
 
 // UserSuggestionsResponse 用户推荐响应
 type UserSuggestionsResponse struct {
-	Suggestions         []FollowSuggestionItem `json:"suggestions"`
-	AlgorithmUsed       string                 `json:"algorithm_used"`
-	RefreshAvailableAt  string                 `json:"refresh_available_at"`
+	Suggestions        []FollowSuggestionItem `json:"suggestions"`
+	AlgorithmUsed      string                 `json:"algorithm_used"`
+	RefreshAvailableAt string                 `json:"refresh_available_at"`
 }
 
 // FollowSuggestionItem 推荐项
 type FollowSuggestionItem struct {
-	User             FollowUser   `json:"user"`
-	Reason           string       `json:"reason"`
-	ConfidenceScore  float64      `json:"confidence_score"`
-	MutualFollowers  []FollowUser `json:"mutual_followers,omitempty"`
-	CommonInterests  []string     `json:"common_interests,omitempty"`
+	User            FollowUser   `json:"user"`
+	Reason          string       `json:"reason"`
+	ConfidenceScore float64      `json:"confidence_score"`
+	MutualFollowers []FollowUser `json:"mutual_followers,omitempty"`
+	CommonInterests []string     `json:"common_interests,omitempty"`
 }
 
 // FollowStatsResponse 关注统计响应

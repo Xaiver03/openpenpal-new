@@ -30,14 +30,14 @@ func NewCourierLevelService(db *gorm.DB, redis *redis.Client, wsManager *utils.W
 
 // CourierLevelInfo 信使等级信息结构
 type CourierLevelInfo struct {
-	CourierID    string                  `json:"courier_id"`
-	Level        models.CourierLevel     `json:"level"`
-	LevelName    string                  `json:"level_name"`
-	ZoneType     models.CourierZoneType  `json:"zone_type"`
-	Permissions  []models.CourierPermission `json:"permissions"`
-	Zones        []models.CourierZone    `json:"zones"`
-	CanUpgrade   bool                    `json:"can_upgrade"`
-	NextLevel    *models.CourierLevel    `json:"next_level,omitempty"`
+	CourierID   string                     `json:"courier_id"`
+	Level       models.CourierLevel        `json:"level"`
+	LevelName   string                     `json:"level_name"`
+	ZoneType    models.CourierZoneType     `json:"zone_type"`
+	Permissions []models.CourierPermission `json:"permissions"`
+	Zones       []models.CourierZone       `json:"zones"`
+	CanUpgrade  bool                       `json:"can_upgrade"`
+	NextLevel   *models.CourierLevel       `json:"next_level,omitempty"`
 }
 
 // GetCourierLevelInfo 获取信使等级信息
@@ -49,7 +49,7 @@ func (s *CourierLevelService) GetCourierLevelInfo(courierID string) (*CourierLev
 	}
 
 	level := models.CourierLevel(courier.Level)
-	
+
 	// 获取管理区域
 	var zones []models.CourierZone
 	s.db.Where("courier_id = ? AND is_active = ?", courierID, true).Find(&zones)
@@ -84,7 +84,7 @@ func (s *CourierLevelService) CheckUpgradeEligibility(courierID string, targetLe
 	}
 
 	currentLevel := models.CourierLevel(courier.Level)
-	
+
 	// 检查等级顺序
 	if targetLevel != currentLevel+1 {
 		return false, "只能申请下一等级"
@@ -106,7 +106,7 @@ func (s *CourierLevelService) CheckUpgradeEligibility(courierID string, targetLe
 // checkLevelTwoRequirements 检查二级信使升级条件
 func (s *CourierLevelService) checkLevelTwoRequirements(courierID string) (bool, string) {
 	// 1级→2级: 累计投递10封信 + 连续7天投递
-	
+
 	// 检查累计投递数量
 	var totalDeliveries int64
 	if err := s.db.Model(&models.Task{}).
@@ -135,10 +135,10 @@ func (s *CourierLevelService) checkLevelTwoRequirements(courierID string) (bool,
 	return true, ""
 }
 
-// checkLevelThreeRequirements 检查三级信使升级条件  
+// checkLevelThreeRequirements 检查三级信使升级条件
 func (s *CourierLevelService) checkLevelThreeRequirements(courierID string) (bool, string) {
 	// 2级→3级: 管理≥3位1级信使 + 月完成率>80%
-	
+
 	// 检查管理的一级信使数量 (这里简化为检查分配的区域数量)
 	var managedZones int64
 	if err := s.db.Model(&models.CourierZone{}).
@@ -153,12 +153,12 @@ func (s *CourierLevelService) checkLevelThreeRequirements(courierID string) (boo
 
 	// 检查月完成率
 	oneMonthAgo := time.Now().AddDate(0, -1, 0)
-	
+
 	var totalTasks, completedTasks int64
 	s.db.Model(&models.Task{}).
 		Where("courier_id = ? AND created_at > ?", courierID, oneMonthAgo).
 		Count(&totalTasks)
-	
+
 	s.db.Model(&models.Task{}).
 		Where("courier_id = ? AND status = ? AND created_at > ?", courierID, "delivered", oneMonthAgo).
 		Count(&completedTasks)
@@ -178,7 +178,7 @@ func (s *CourierLevelService) checkLevelThreeRequirements(courierID string) (boo
 // checkLevelFourRequirements 检查四级信使升级条件
 func (s *CourierLevelService) checkLevelFourRequirements(courierID string) (bool, string) {
 	// 3级→4级: 校级推荐 + 3个月服务时长
-	
+
 	// 检查服务时长
 	var courier models.Courier
 	if err := s.db.Where("user_id = ?", courierID).First(&courier).Error; err != nil {
@@ -319,7 +319,7 @@ func (s *CourierLevelService) CanAssignZone(assignerID, targetCourierID string, 
 
 	assignerLevel := models.CourierLevel(assigner.Level)
 
-	// 获取目标信使等级  
+	// 获取目标信使等级
 	var target models.Courier
 	if err := s.db.Where("user_id = ?", targetCourierID).First(&target).Error; err != nil {
 		return false, "目标信使不存在"
@@ -359,7 +359,7 @@ func (s *CourierLevelService) CanAssignZone(assignerID, targetCourierID string, 
 func (s *CourierLevelService) AssignZone(courierID string, zoneType models.CourierZoneType, zoneID, zoneName, assignerID string) error {
 	// 检查是否已分配该区域
 	var existingZone models.CourierZone
-	if err := s.db.Where("courier_id = ? AND zone_type = ? AND zone_id = ? AND is_active = ?", 
+	if err := s.db.Where("courier_id = ? AND zone_type = ? AND zone_id = ? AND is_active = ?",
 		courierID, zoneType, zoneID, true).First(&existingZone).Error; err == nil {
 		return errors.New("该区域已分配给此信使")
 	}
@@ -416,7 +416,7 @@ func (s *CourierLevelService) GetViewablePerformanceScope(courierID string) (boo
 }
 
 // GetPerformanceData 获取绩效数据
-func (s *CourierLevelService) GetPerformanceData(courierID string, zones []models.CourierZone, timeRange, zoneType, zoneID string) (map[string]interface{}, error) {
+func (s *CourierLevelService) GetPerformanceData(_ string, zones []models.CourierZone, timeRange, zoneType, zoneID string) (map[string]interface{}, error) {
 	// 解析时间范围
 	var since time.Time
 	switch timeRange {

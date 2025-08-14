@@ -43,7 +43,7 @@ func main() {
 	// 初始化服务发现
 	serviceDiscovery := discovery.NewServiceDiscovery(cfg)
 	serviceDiscovery.SetLogger(logger)
-	
+
 	// 启动服务健康检查
 	go serviceDiscovery.StartHealthCheck()
 
@@ -53,7 +53,7 @@ func main() {
 	// 初始化路由管理器
 	routerManager := router.NewRouterManager(cfg, proxyManager, logger)
 	routerManager.SetMetricsHandler(metricsHandler)
-	
+
 	// 设置所有路由
 	ginRouter := routerManager.SetupRoutes()
 

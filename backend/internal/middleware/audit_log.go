@@ -34,27 +34,27 @@ type AuditEntry struct {
 func AuditLogMiddleware() gin.HandlerFunc {
 	// 需要审计的路径
 	auditPaths := map[string]bool{
-		"/api/v1/auth/login":           true,
-		"/api/v1/auth/logout":          true,
-		"/api/v1/auth/register":        true,
-		"/api/v1/users":                true,
-		"/api/v1/letters/send":         true,
-		"/api/v1/admin":                true,
-		"/api/v1/courier/assign":       true,
-		"/api/v1/courier/promote":      true,
-		"/api/v1/settings":             true,
+		"/api/v1/auth/login":      true,
+		"/api/v1/auth/logout":     true,
+		"/api/v1/auth/register":   true,
+		"/api/v1/users":           true,
+		"/api/v1/letters/send":    true,
+		"/api/v1/admin":           true,
+		"/api/v1/courier/assign":  true,
+		"/api/v1/courier/promote": true,
+		"/api/v1/settings":        true,
 	}
 
 	// 敏感字段，需要脱敏
 	sensitiveFields := map[string]bool{
-		"password":        true,
-		"new_password":    true,
-		"old_password":    true,
-		"token":          true,
-		"access_token":   true,
-		"refresh_token":  true,
-		"api_key":        true,
-		"secret":         true,
+		"password":      true,
+		"new_password":  true,
+		"old_password":  true,
+		"token":         true,
+		"access_token":  true,
+		"refresh_token": true,
+		"api_key":       true,
+		"secret":        true,
 	}
 
 	return func(c *gin.Context) {
@@ -86,7 +86,7 @@ func AuditLogMiddleware() gin.HandlerFunc {
 		if c.Request.Method != "GET" && c.ContentType() == "application/json" {
 			bodyBytes, _ := io.ReadAll(c.Request.Body)
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-			
+
 			var body map[string]interface{}
 			if json.Unmarshal(bodyBytes, &body) == nil {
 				// 脱敏处理
@@ -193,9 +193,9 @@ func logAuditEntry(entry AuditEntry) {
 		log.Printf("[AUDIT_ERROR] Failed to marshal audit entry: %v", err)
 		return
 	}
-	
+
 	log.Printf("[AUDIT] %s", string(jsonData))
-	
+
 	// TODO: 将审计日志写入数据库
 	// db.Create(&AuditLog{
 	//     UserID: entry.UserID,

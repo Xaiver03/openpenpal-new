@@ -105,8 +105,8 @@ func (h *CourierGrowthHandler) GetAvailableIncentives(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, models.SuccessResponse(map[string]interface{}{
-		"courier_id":  courierID,
-		"incentives":  incentives,
+		"courier_id": courierID,
+		"incentives": incentives,
 	}))
 }
 
@@ -116,7 +116,7 @@ func (h *CourierGrowthHandler) ClaimIncentive(c *gin.Context) {
 	incentiveType := c.Param("type")
 
 	var request struct {
-		Reference string `json:"reference"` // 关联的任务或活动ID
+		Reference string `json:"reference"`        // 关联的任务或活动ID
 		Amount    *int   `json:"amount,omitempty"` // 指定金额（可选）
 	}
 
@@ -145,11 +145,11 @@ func (h *CourierGrowthHandler) ClaimIncentive(c *gin.Context) {
 // GetRanking 获取区域排行榜数据
 func (h *CourierGrowthHandler) GetRanking(c *gin.Context) {
 	var query struct {
-		ZoneType   string `form:"zone_type"`
-		ZoneID     string `form:"zone_id"`
-		TimeRange  string `form:"time_range"` // daily, weekly, monthly
-		Limit      int    `form:"limit"`
-		RankingBy  string `form:"ranking_by"` // points, tasks, completion_rate
+		ZoneType  string `form:"zone_type"`
+		ZoneID    string `form:"zone_id"`
+		TimeRange string `form:"time_range"` // daily, weekly, monthly
+		Limit     int    `form:"limit"`
+		RankingBy string `form:"ranking_by"` // points, tasks, completion_rate
 	}
 
 	if err := c.ShouldBindQuery(&query); err != nil {
@@ -200,11 +200,11 @@ func (h *CourierGrowthHandler) UpdateTaskStatistics(c *gin.Context) {
 	courierID := c.GetString("user_id")
 
 	var request struct {
-		TaskID         string  `json:"task_id" binding:"required"`
-		Action         string  `json:"action" binding:"required,oneof=accepted completed failed"`
-		DeliveryTime   *int    `json:"delivery_time,omitempty"`   // 投递时间(分钟)
-		Distance       *float64 `json:"distance,omitempty"`       // 投递距离(km)
-		Rating         *float64 `json:"rating,omitempty"`         // 评分
+		TaskID         string   `json:"task_id" binding:"required"`
+		Action         string   `json:"action" binding:"required,oneof=accepted completed failed"`
+		DeliveryTime   *int     `json:"delivery_time,omitempty"`   // 投递时间(分钟)
+		Distance       *float64 `json:"distance,omitempty"`        // 投递距离(km)
+		Rating         *float64 `json:"rating,omitempty"`          // 评分
 		EarningsAmount *float64 `json:"earnings_amount,omitempty"` // 收入金额
 	}
 
@@ -333,7 +333,7 @@ func (h *CourierGrowthHandler) GetPointsHistory(c *gin.Context) {
 	courierID := c.GetString("user_id")
 
 	var query struct {
-		Type   string `form:"type"`   // earn, spend, refund, expire
+		Type   string `form:"type"` // earn, spend, refund, expire
 		Limit  int    `form:"limit"`
 		Offset int    `form:"offset"`
 	}
@@ -366,11 +366,11 @@ func (h *CourierGrowthHandler) GetPointsHistory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, models.SuccessResponse(map[string]interface{}{
-		"courier_id":    courierID,
-		"transactions":  transactions,
-		"total":         total,
-		"limit":         query.Limit,
-		"offset":        query.Offset,
+		"courier_id":   courierID,
+		"transactions": transactions,
+		"total":        total,
+		"limit":        query.Limit,
+		"offset":       query.Offset,
 	}))
 }
 

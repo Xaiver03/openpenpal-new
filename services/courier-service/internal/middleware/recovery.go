@@ -37,11 +37,11 @@ func Recovery(config RecoveryConfig) gin.HandlerFunc {
 				// 获取请求信息
 				requestID := c.GetString("request_id")
 				userID := c.GetString("user_id")
-				
+
 				// 创建带上下文的错误
 				courierErr := err.(*errors.CourierServiceError)
 				courierErr.WithRequestID(requestID).WithUserID(userID)
-				
+
 				// 记录详细错误信息
 				config.Logger.Error("Request panic recovered",
 					"method", c.Request.Method,
@@ -60,7 +60,7 @@ func Recovery(config RecoveryConfig) gin.HandlerFunc {
 
 				// 默认恢复处理
 				c.Header("Content-Type", "application/json")
-				
+
 				response := gin.H{
 					"code":    courierErr.Code,
 					"message": courierErr.Message,
@@ -88,7 +88,7 @@ func Recovery(config RecoveryConfig) gin.HandlerFunc {
 // DefaultRecovery 默认恢复中间件
 func DefaultRecovery() gin.HandlerFunc {
 	logger := logging.GetDefaultLogger()
-	
+
 	return Recovery(RecoveryConfig{
 		Logger:    logger,
 		DebugMode: false,
@@ -98,7 +98,7 @@ func DefaultRecovery() gin.HandlerFunc {
 // DebugRecovery 调试模式恢复中间件
 func DebugRecovery() gin.HandlerFunc {
 	logger := logging.GetDefaultLogger()
-	
+
 	return Recovery(RecoveryConfig{
 		Logger:    logger,
 		DebugMode: true,

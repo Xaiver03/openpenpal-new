@@ -100,10 +100,10 @@ type RetryConfig struct {
 // NewEnhancedAIService creates a new enhanced AI service with SOTA features
 func NewEnhancedAIService(db *gorm.DB, config *config.Config) *EnhancedAIService {
 	baseService := NewAIService(db, config)
-	
+
 	return &EnhancedAIService{
 		AIService: baseService,
-		metrics: &AIServiceMetrics{},
+		metrics:   &AIServiceMetrics{},
 		circuitBreaker: &CircuitBreaker{
 			maxFailures:  5,
 			resetTimeout: 30 * time.Second,
@@ -122,17 +122,17 @@ func (s *EnhancedAIService) callMoonshotWithRetry(ctx context.Context, config *m
 	// Start metrics
 	startTime := time.Now()
 	atomic.AddInt64(&s.metrics.TotalRequests, 1)
-	
+
 	// Check circuit breaker
 	if !s.circuitBreaker.canRequest() {
 		atomic.AddInt64(&s.metrics.FailedRequests, 1)
 		s.updateLastError("Circuit breaker is open - too many recent failures")
 		return "", fmt.Errorf("circuit breaker is open")
 	}
-	
+
 	var lastErr error
 	backoff := s.retryConfig.InitialBackoff
-	
+
 	for attempt := 0; attempt <= s.retryConfig.MaxRetries; attempt++ {
 		if attempt > 0 {
 			log.Printf("🔄 [Moonshot] Retry attempt %d/%d after %v backoff", attempt, s.retryConfig.MaxRetries, backoff)
@@ -143,7 +143,7 @@ func (s *EnhancedAIService) callMoonshotWithRetry(ctx context.Context, config *m
 			}
 			backoff = s.calculateBackoff(backoff)
 		}
-		
+
 		result, err := s.callMoonshotOnce(ctx, config, prompt)
 		if err == nil {
 			// Success
@@ -153,9 +153,9 @@ func (s *EnhancedAIService) callMoonshotWithRetry(ctx context.Context, config *m
 			log.Printf("✅ [Moonshot] API call successful (attempt %d)", attempt+1)
 			return result, nil
 		}
-		
+
 		lastErr = err
-		
+
 		// Analyze error type
 		if s.isRetriableError(err) {
 			log.Printf("⚠️ [Moonshot] Retriable error on attempt %d: %v", attempt+1, err)
@@ -166,32 +166,32 @@ func (s *EnhancedAIService) callMoonshotWithRetry(ctx context.Context, config *m
 			break
 		}
 	}
-	
+
 	// All attempts failed
 	s.circuitBreaker.recordFailure()
 	atomic.AddInt64(&s.metrics.FailedRequests, 1)
 	s.updateLastError(lastErr.Error())
-	
+
 	return "", fmt.Errorf("moonshot API call failed after %d attempts: %w", s.retryConfig.MaxRetries+1, lastErr)
 }
 
 // callMoonshotOnce performs a single API call with enhanced error handling
 func (s *EnhancedAIService) callMoonshotOnce(ctx context.Context, config *models.AIConfig, prompt string) (string, error) {
 	log.Printf("🌙 [Moonshot] Starting API call (timeout: 30s)...")
-	
+
 	// Create context with timeout
 	callCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	
+
 	// Validate configuration
 	if config.APIKey == "" {
 		return "", errors.New("moonshot API key is empty")
 	}
-	
+
 	if config.APIEndpoint == "" {
 		config.APIEndpoint = "https://api.moonshot.cn/v1/chat/completions"
 	}
-	
+
 	// Build request body
 	requestBody := map[string]interface{}{
 		"model": config.Model,
@@ -209,53 +209,53 @@ func (s *EnhancedAIService) callMoonshotOnce(ctx context.Context, config *models
 		"max_tokens":  config.MaxTokens,
 		"stream":      false,
 	}
-	
+
 	jsonData, err := json.Marshal(requestBody)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal request: %w", err)
 	}
-	
+
 	log.Printf("🌙 [Moonshot] Request size: %d bytes", len(jsonData))
-	
+
 	// Create request
 	req, err := http.NewRequestWithContext(callCtx, "POST", config.APIEndpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
-	
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.APIKey))
 	req.Header.Set("User-Agent", "OpenPenPal/1.0")
-	
+
 	// 安全日志：不记录任何API密钥信息
 	if len(config.APIKey) > 0 {
 		log.Printf("🔑 [Moonshot] API Key configured")
 	} else {
 		log.Printf("⚠️ [Moonshot] No API Key configured")
 	}
-	
+
 	// Send request
 	log.Printf("🚀 [Moonshot] Sending request to %s", config.APIEndpoint)
-	
+
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response: %w", err)
 	}
-	
+
 	log.Printf("📥 [Moonshot] Response status: %d", resp.StatusCode)
 	log.Printf("📥 [Moonshot] Response size: %d bytes", len(body))
-	
+
 	// Handle non-200 status codes
 	if resp.StatusCode != http.StatusOK {
 		var errorResp struct {
@@ -265,14 +265,14 @@ func (s *EnhancedAIService) callMoonshotOnce(ctx context.Context, config *models
 				Code    string `json:"code"`
 			} `json:"error"`
 		}
-		
+
 		if err := json.Unmarshal(body, &errorResp); err == nil && errorResp.Error.Message != "" {
 			return "", fmt.Errorf("moonshot API error (%d): %s", resp.StatusCode, errorResp.Error.Message)
 		}
-		
+
 		return "", fmt.Errorf("moonshot API error (status %d): %s", resp.StatusCode, string(body))
 	}
-	
+
 	// Parse successful response
 	var result struct {
 		ID      string `json:"id"`
@@ -280,8 +280,8 @@ func (s *EnhancedAIService) callMoonshotOnce(ctx context.Context, config *models
 		Created int64  `json:"created"`
 		Model   string `json:"model"`
 		Choices []struct {
-			Index        int    `json:"index"`
-			Message      struct {
+			Index   int `json:"index"`
+			Message struct {
 				Role    string `json:"role"`
 				Content string `json:"content"`
 			} `json:"message"`
@@ -293,29 +293,29 @@ func (s *EnhancedAIService) callMoonshotOnce(ctx context.Context, config *models
 			TotalTokens      int `json:"total_tokens"`
 		} `json:"usage"`
 	}
-	
+
 	if err := json.Unmarshal(body, &result); err != nil {
 		log.Printf("❌ [Moonshot] Failed to parse response: %v", err)
 		log.Printf("❌ [Moonshot] Raw response: %s", string(body))
 		return "", fmt.Errorf("failed to parse response: %w", err)
 	}
-	
+
 	// Validate response
 	if len(result.Choices) == 0 {
 		return "", errors.New("no choices in response")
 	}
-	
+
 	content := result.Choices[0].Message.Content
 	if content == "" {
 		return "", errors.New("empty content in response")
 	}
-	
+
 	log.Printf("✅ [Moonshot] Successfully received response: %d tokens used", result.Usage.TotalTokens)
-	
+
 	// Update usage metrics
-	s.logAIUsage("system", models.TaskTypeInspiration, "", config, 
+	s.logAIUsage("system", models.TaskTypeInspiration, "", config,
 		result.Usage.PromptTokens, result.Usage.CompletionTokens, "success", "")
-	
+
 	return content, nil
 }
 
@@ -366,7 +366,7 @@ func (s *EnhancedAIService) getFallbackInspiration(req *models.AIInspirationRequ
 		Style  string   `json:"style"`
 		Tags   []string `json:"tags"`
 	}
-	
+
 	if req.Theme != "" {
 		for _, insp := range inspirationPool {
 			if insp.Theme == req.Theme {
@@ -374,7 +374,7 @@ func (s *EnhancedAIService) getFallbackInspiration(req *models.AIInspirationRequ
 			}
 		}
 	}
-	
+
 	if len(selectedInspirations) == 0 {
 		selectedInspirations = inspirationPool[:req.Count]
 	}
@@ -387,7 +387,7 @@ func (s *EnhancedAIService) getFallbackInspiration(req *models.AIInspirationRequ
 // Enhanced GetInspiration with comprehensive error handling
 func (s *EnhancedAIService) GetInspiration(ctx context.Context, req *models.AIInspirationRequest) (*models.AIInspirationResponse, error) {
 	log.Printf("🎯 [GetInspiration] Starting enhanced inspiration generation...")
-	
+
 	// Get AI configuration
 	aiConfig, err := s.GetActiveProvider()
 	if err != nil {
@@ -395,13 +395,13 @@ func (s *EnhancedAIService) GetInspiration(ctx context.Context, req *models.AIIn
 		atomic.AddInt64(&s.metrics.FallbackCount, 1)
 		return s.getFallbackInspirationWithMetrics(req)
 	}
-	
+
 	log.Printf("🔧 [GetInspiration] Using provider: %s, Model: %s", aiConfig.Provider, aiConfig.Model)
-	
+
 	// Build prompt
 	prompt := s.buildInspirationPrompt(req)
 	log.Printf("📝 [GetInspiration] Generated prompt: %d characters", len(prompt))
-	
+
 	// Call API with retry and circuit breaker
 	var aiResponse string
 	if aiConfig.Provider == models.ProviderMoonshot {
@@ -410,15 +410,15 @@ func (s *EnhancedAIService) GetInspiration(ctx context.Context, req *models.AIIn
 		// Fallback to original implementation for other providers
 		aiResponse, err = s.callAIAPI(ctx, aiConfig, prompt, models.TaskTypeInspiration)
 	}
-	
+
 	if err != nil {
 		log.Printf("❌ [GetInspiration] AI API call failed: %v", err)
 		atomic.AddInt64(&s.metrics.FallbackCount, 1)
 		return s.getFallbackInspirationWithMetrics(req)
 	}
-	
+
 	log.Printf("✅ [GetInspiration] AI API response received: %d characters", len(aiResponse))
-	
+
 	// Parse response
 	inspirations, err := s.parseInspirationResponse(aiResponse)
 	if err != nil {
@@ -426,7 +426,7 @@ func (s *EnhancedAIService) GetInspiration(ctx context.Context, req *models.AIIn
 		atomic.AddInt64(&s.metrics.FallbackCount, 1)
 		return s.getFallbackInspirationWithMetrics(req)
 	}
-	
+
 	// Save to database
 	for i, insp := range inspirations.Inspirations {
 		inspiration := &models.AIInspiration{
@@ -444,9 +444,9 @@ func (s *EnhancedAIService) GetInspiration(ctx context.Context, req *models.AIIn
 		}
 		inspirations.Inspirations[i].ID = inspiration.ID
 	}
-	
+
 	log.Printf("✅ [GetInspiration] Successfully generated %d inspirations", len(inspirations.Inspirations))
-	
+
 	return inspirations, nil
 }
 
@@ -456,9 +456,9 @@ func (s *EnhancedAIService) isRetriableError(err error) bool {
 	if err == nil {
 		return false
 	}
-	
+
 	errStr := err.Error()
-	
+
 	// Network errors are retriable
 	if strings.Contains(errStr, "timeout") ||
 		strings.Contains(errStr, "connection refused") ||
@@ -466,25 +466,25 @@ func (s *EnhancedAIService) isRetriableError(err error) bool {
 		strings.Contains(errStr, "temporary failure") {
 		return true
 	}
-	
+
 	// Rate limit errors are retriable
 	if strings.Contains(errStr, "rate limit") ||
 		strings.Contains(errStr, "429") {
 		return true
 	}
-	
+
 	// 5xx errors are retriable
 	if strings.Contains(errStr, "status 5") {
 		return true
 	}
-	
+
 	// Auth errors and 4xx errors are not retriable
 	if strings.Contains(errStr, "401") ||
 		strings.Contains(errStr, "403") ||
 		strings.Contains(errStr, "invalid api key") {
 		return false
 	}
-	
+
 	return false
 }
 
@@ -499,29 +499,29 @@ func (s *EnhancedAIService) calculateBackoff(current time.Duration) time.Duratio
 func (s *EnhancedAIService) updateResponseTime(duration time.Duration) {
 	s.metrics.mu.Lock()
 	defer s.metrics.mu.Unlock()
-	
+
 	// Simple moving average
 	if s.metrics.AvgResponseTime == 0 {
 		s.metrics.AvgResponseTime = duration.Seconds()
 	} else {
-		s.metrics.AvgResponseTime = (s.metrics.AvgResponseTime*0.9) + (duration.Seconds()*0.1)
+		s.metrics.AvgResponseTime = (s.metrics.AvgResponseTime * 0.9) + (duration.Seconds() * 0.1)
 	}
 }
 
 func (s *EnhancedAIService) updateLastError(err string) {
 	s.metrics.mu.Lock()
 	defer s.metrics.mu.Unlock()
-	
+
 	s.metrics.LastError = err
 	s.metrics.LastErrorTime = time.Now()
 }
 
 func (s *EnhancedAIService) getFallbackInspirationWithMetrics(req *models.AIInspirationRequest) (*models.AIInspirationResponse, error) {
 	log.Printf("⚠️ [GetInspiration] Using fallback inspiration due to API issues")
-	
+
 	// Use the original fallback method
 	response := s.getFallbackInspiration(req)
-	
+
 	// Mark response as fallback
 	if response != nil && len(response.Inspirations) > 0 {
 		for i := range response.Inspirations {
@@ -529,7 +529,7 @@ func (s *EnhancedAIService) getFallbackInspirationWithMetrics(req *models.AIInsp
 			response.Inspirations[i].ID = fmt.Sprintf("fallback_%s", response.Inspirations[i].ID)
 		}
 	}
-	
+
 	return response, nil
 }
 
@@ -538,9 +538,9 @@ func (s *EnhancedAIService) getFallbackInspirationWithMetrics(req *models.AIInsp
 func (cb *CircuitBreaker) canRequest() bool {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	state := atomic.LoadInt32(&cb.state)
-	
+
 	switch state {
 	case circuitClosed:
 		return true
@@ -555,14 +555,14 @@ func (cb *CircuitBreaker) canRequest() bool {
 	case circuitHalfOpen:
 		return true
 	}
-	
+
 	return false
 }
 
 func (cb *CircuitBreaker) recordSuccess() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	atomic.StoreInt32(&cb.failures, 0)
 	if atomic.LoadInt32(&cb.state) == circuitHalfOpen {
 		atomic.StoreInt32(&cb.state, circuitClosed)
@@ -573,10 +573,10 @@ func (cb *CircuitBreaker) recordSuccess() {
 func (cb *CircuitBreaker) recordFailure() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	failures := atomic.AddInt32(&cb.failures, 1)
 	cb.lastFailTime = time.Now()
-	
+
 	if failures >= int32(cb.maxFailures) {
 		atomic.StoreInt32(&cb.state, circuitOpen)
 		log.Printf("❌ [CircuitBreaker] Circuit opened after %d failures", failures)
@@ -587,7 +587,7 @@ func (cb *CircuitBreaker) recordFailure() {
 func (s *EnhancedAIService) GetMetrics() AIServiceMetrics {
 	s.metrics.mu.RLock()
 	defer s.metrics.mu.RUnlock()
-	
+
 	return AIServiceMetrics{
 		TotalRequests:   atomic.LoadInt64(&s.metrics.TotalRequests),
 		SuccessRequests: atomic.LoadInt64(&s.metrics.SuccessRequests),

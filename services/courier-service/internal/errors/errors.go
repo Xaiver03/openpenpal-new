@@ -12,78 +12,78 @@ type ErrorCode string
 
 const (
 	// 通用错误代码
-	CodeSuccess         ErrorCode = "SUCCESS"
-	CodeInternalError   ErrorCode = "INTERNAL_ERROR"
-	CodeInvalidRequest  ErrorCode = "INVALID_REQUEST"
-	CodeUnauthorized    ErrorCode = "UNAUTHORIZED"
-	CodeForbidden       ErrorCode = "FORBIDDEN"
-	CodeNotFound        ErrorCode = "NOT_FOUND"
-	CodeConflict        ErrorCode = "CONFLICT"
-	CodeTooManyRequests ErrorCode = "TOO_MANY_REQUESTS"
+	CodeSuccess            ErrorCode = "SUCCESS"
+	CodeInternalError      ErrorCode = "INTERNAL_ERROR"
+	CodeInvalidRequest     ErrorCode = "INVALID_REQUEST"
+	CodeUnauthorized       ErrorCode = "UNAUTHORIZED"
+	CodeForbidden          ErrorCode = "FORBIDDEN"
+	CodeNotFound           ErrorCode = "NOT_FOUND"
+	CodeConflict           ErrorCode = "CONFLICT"
+	CodeTooManyRequests    ErrorCode = "TOO_MANY_REQUESTS"
 	CodeServiceUnavailable ErrorCode = "SERVICE_UNAVAILABLE"
 
 	// 数据库相关错误
-	CodeDatabaseError      ErrorCode = "DATABASE_ERROR"
-	CodeRecordNotFound     ErrorCode = "RECORD_NOT_FOUND"
-	CodeDuplicateRecord    ErrorCode = "DUPLICATE_RECORD"
+	CodeDatabaseError       ErrorCode = "DATABASE_ERROR"
+	CodeRecordNotFound      ErrorCode = "RECORD_NOT_FOUND"
+	CodeDuplicateRecord     ErrorCode = "DUPLICATE_RECORD"
 	CodeConstraintViolation ErrorCode = "CONSTRAINT_VIOLATION"
-	CodeDeadlock           ErrorCode = "DEADLOCK"
-	CodeConnectionTimeout  ErrorCode = "CONNECTION_TIMEOUT"
+	CodeDeadlock            ErrorCode = "DEADLOCK"
+	CodeConnectionTimeout   ErrorCode = "CONNECTION_TIMEOUT"
 
 	// 业务逻辑错误
-	CodeInvalidCourierStatus ErrorCode = "INVALID_COURIER_STATUS"
+	CodeInvalidCourierStatus   ErrorCode = "INVALID_COURIER_STATUS"
 	CodeInsufficientPermission ErrorCode = "INSUFFICIENT_PERMISSION"
-	CodeTaskNotAssignable    ErrorCode = "TASK_NOT_ASSIGNABLE"
-	CodeInvalidZoneCode      ErrorCode = "INVALID_ZONE_CODE"
-	CodeLevelMismatch        ErrorCode = "LEVEL_MISMATCH"
-	CodeInvalidHierarchy     ErrorCode = "INVALID_HIERARCHY"
+	CodeTaskNotAssignable      ErrorCode = "TASK_NOT_ASSIGNABLE"
+	CodeInvalidZoneCode        ErrorCode = "INVALID_ZONE_CODE"
+	CodeLevelMismatch          ErrorCode = "LEVEL_MISMATCH"
+	CodeInvalidHierarchy       ErrorCode = "INVALID_HIERARCHY"
 
 	// 外部服务错误
 	CodeExternalServiceError ErrorCode = "EXTERNAL_SERVICE_ERROR"
 	CodeCircuitBreakerOpen   ErrorCode = "CIRCUIT_BREAKER_OPEN"
-	CodeRetryExhausted      ErrorCode = "RETRY_EXHAUSTED"
+	CodeRetryExhausted       ErrorCode = "RETRY_EXHAUSTED"
 
 	// 队列相关错误
-	CodeQueueError         ErrorCode = "QUEUE_ERROR"
-	CodeMessageProcessing  ErrorCode = "MESSAGE_PROCESSING_ERROR"
-	CodeDeadLetterQueue    ErrorCode = "DEAD_LETTER_QUEUE"
+	CodeQueueError        ErrorCode = "QUEUE_ERROR"
+	CodeMessageProcessing ErrorCode = "MESSAGE_PROCESSING_ERROR"
+	CodeDeadLetterQueue   ErrorCode = "DEAD_LETTER_QUEUE"
 
 	// WebSocket相关错误
-	CodeWebSocketError     ErrorCode = "WEBSOCKET_ERROR"
-	CodeConnectionLost     ErrorCode = "CONNECTION_LOST"
-	CodeBroadcastFailed    ErrorCode = "BROADCAST_FAILED"
+	CodeWebSocketError  ErrorCode = "WEBSOCKET_ERROR"
+	CodeConnectionLost  ErrorCode = "CONNECTION_LOST"
+	CodeBroadcastFailed ErrorCode = "BROADCAST_FAILED"
 
 	// 验证相关错误
-	CodeValidationError    ErrorCode = "VALIDATION_ERROR"
-	CodeMissingField       ErrorCode = "MISSING_FIELD"
-	CodeInvalidFormat      ErrorCode = "INVALID_FORMAT"
+	CodeValidationError ErrorCode = "VALIDATION_ERROR"
+	CodeMissingField    ErrorCode = "MISSING_FIELD"
+	CodeInvalidFormat   ErrorCode = "INVALID_FORMAT"
 )
 
 // ErrorType 定义错误类型
 type ErrorType string
 
 const (
-	TypeTemporary   ErrorType = "TEMPORARY"   // 临时错误，可重试
-	TypePermanent   ErrorType = "PERMANENT"   // 永久错误，不可重试
-	TypeRetryable   ErrorType = "RETRYABLE"   // 可重试错误
-	TypeValidation  ErrorType = "VALIDATION"  // 验证错误
-	TypeBusiness    ErrorType = "BUSINESS"    // 业务逻辑错误
-	TypeSystem      ErrorType = "SYSTEM"      // 系统错误
+	TypeTemporary  ErrorType = "TEMPORARY"  // 临时错误，可重试
+	TypePermanent  ErrorType = "PERMANENT"  // 永久错误，不可重试
+	TypeRetryable  ErrorType = "RETRYABLE"  // 可重试错误
+	TypeValidation ErrorType = "VALIDATION" // 验证错误
+	TypeBusiness   ErrorType = "BUSINESS"   // 业务逻辑错误
+	TypeSystem     ErrorType = "SYSTEM"     // 系统错误
 )
 
 // CourierServiceError 自定义错误结构
 type CourierServiceError struct {
-	Code        ErrorCode              `json:"code"`
-	Message     string                 `json:"message"`
-	Type        ErrorType              `json:"type"`
-	Cause       error                  `json:"-"`
-	Context     map[string]interface{} `json:"context,omitempty"`
-	Timestamp   time.Time              `json:"timestamp"`
-	RequestID   string                 `json:"request_id,omitempty"`
-	UserID      string                 `json:"user_id,omitempty"`
-	StackTrace  string                 `json:"stack_trace,omitempty"`
-	Retryable   bool                   `json:"retryable"`
-	HTTPStatus  int                    `json:"-"`
+	Code       ErrorCode              `json:"code"`
+	Message    string                 `json:"message"`
+	Type       ErrorType              `json:"type"`
+	Cause      error                  `json:"-"`
+	Context    map[string]interface{} `json:"context,omitempty"`
+	Timestamp  time.Time              `json:"timestamp"`
+	RequestID  string                 `json:"request_id,omitempty"`
+	UserID     string                 `json:"user_id,omitempty"`
+	StackTrace string                 `json:"stack_trace,omitempty"`
+	Retryable  bool                   `json:"retryable"`
+	HTTPStatus int                    `json:"-"`
 }
 
 // Error 实现error接口

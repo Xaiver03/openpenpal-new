@@ -21,27 +21,27 @@ const (
 
 // EnvelopeDesign 信封设计 - 增强OP Code支持
 type EnvelopeDesign struct {
-	ID           string         `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	SchoolCode   string         `json:"school_code" gorm:"type:varchar(20)"`           // 支持OP Code前2位学校代码
-	Type         string         `json:"type" gorm:"type:varchar(20);default:'school'"` // city, school
-	Theme        string         `json:"theme" gorm:"type:varchar(100)"`
-	ImageURL     string         `json:"image_url" gorm:"type:varchar(500)"`
-	ThumbnailURL string         `json:"thumbnail_url" gorm:"type:varchar(500)"`
-	CreatorID    string         `json:"creator_id" gorm:"type:varchar(36);not null;index"`
-	CreatorName  string         `json:"creator_name" gorm:"type:varchar(100)"`
-	Description  string         `json:"description" gorm:"type:text"`
-	Status       string         `json:"status" gorm:"type:varchar(20);default:'pending'"`
-	VoteCount    int            `json:"vote_count" gorm:"default:0"`
-	Period       string         `json:"period" gorm:"type:varchar(50)"`
-	IsActive     bool           `json:"is_active" gorm:"default:true"`
-	
+	ID           string `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	SchoolCode   string `json:"school_code" gorm:"type:varchar(20)"`           // 支持OP Code前2位学校代码
+	Type         string `json:"type" gorm:"type:varchar(20);default:'school'"` // city, school
+	Theme        string `json:"theme" gorm:"type:varchar(100)"`
+	ImageURL     string `json:"image_url" gorm:"type:varchar(500)"`
+	ThumbnailURL string `json:"thumbnail_url" gorm:"type:varchar(500)"`
+	CreatorID    string `json:"creator_id" gorm:"type:varchar(36);not null;index"`
+	CreatorName  string `json:"creator_name" gorm:"type:varchar(100)"`
+	Description  string `json:"description" gorm:"type:text"`
+	Status       string `json:"status" gorm:"type:varchar(20);default:'pending'"`
+	VoteCount    int    `json:"vote_count" gorm:"default:0"`
+	Period       string `json:"period" gorm:"type:varchar(50)"`
+	IsActive     bool   `json:"is_active" gorm:"default:true"`
+
 	// OP Code系统增强字段
-	SupportedOPCodePrefix string `json:"supported_op_code_prefix,omitempty" gorm:"type:varchar(4);index"` // 支持的OP Code前缀(如:PK5F)
+	SupportedOPCodePrefix string  `json:"supported_op_code_prefix,omitempty" gorm:"type:varchar(4);index"` // 支持的OP Code前缀(如:PK5F)
 	Price                 float64 `json:"price" gorm:"type:decimal(10,2);default:3.00"`                    // 信封价格
-	
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `json:"deleted_at" gorm:"index"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
 }
 
 func (EnvelopeDesign) TableName() string {
@@ -53,21 +53,21 @@ type Envelope struct {
 	ID        string         `json:"id" gorm:"primaryKey;type:varchar(36)"`
 	DesignID  string         `json:"design_id" gorm:"type:varchar(36);not null"`
 	Design    EnvelopeDesign `json:"design" gorm:"foreignKey:DesignID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
-	UserID    string         `json:"user_id" gorm:"type:varchar(36)"`              // 购买者ID
-	UsedBy    string         `json:"used_by" gorm:"type:varchar(36)"`              // 使用者ID
-	LetterID  string         `json:"letter_id" gorm:"type:varchar(36);index"`      // 关联信件ID
-	BarcodeID string         `json:"barcode_id" gorm:"type:varchar(100);unique"`   // 条码ID(关联LetterCode)
+	UserID    string         `json:"user_id" gorm:"type:varchar(36)"`                 // 购买者ID
+	UsedBy    string         `json:"used_by" gorm:"type:varchar(36)"`                 // 使用者ID
+	LetterID  string         `json:"letter_id" gorm:"type:varchar(36);index"`         // 关联信件ID
+	BarcodeID string         `json:"barcode_id" gorm:"type:varchar(100);unique"`      // 条码ID(关联LetterCode)
 	Status    string         `json:"status" gorm:"type:varchar(20);default:'unsent'"` // unsent/used/cancelled
 	UsedAt    *time.Time     `json:"used_at"`
-	
+
 	// OP Code集成字段
-	RecipientOPCode string `json:"recipient_op_code,omitempty" gorm:"type:varchar(6);index"`   // 收件人OP Code
-	SenderOPCode    string `json:"sender_op_code,omitempty" gorm:"type:varchar(6);index"`      // 发件人OP Code
-	DeliveredAt     *time.Time `json:"delivered_at,omitempty"`                                 // 投递完成时间
-	TrackingInfo    string  `json:"tracking_info,omitempty" gorm:"type:json"`                  // 追踪信息JSON
-	
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	RecipientOPCode string     `json:"recipient_op_code,omitempty" gorm:"type:varchar(6);index"` // 收件人OP Code
+	SenderOPCode    string     `json:"sender_op_code,omitempty" gorm:"type:varchar(6);index"`    // 发件人OP Code
+	DeliveredAt     *time.Time `json:"delivered_at,omitempty"`                                   // 投递完成时间
+	TrackingInfo    string     `json:"tracking_info,omitempty" gorm:"type:json"`                 // 追踪信息JSON
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (Envelope) TableName() string {
@@ -157,11 +157,11 @@ type UpdateBarcodeStatusRequest struct {
 
 // BatchGenerateEnvelopeRequest 批量生成信封请求 - FSD接口
 type BatchGenerateEnvelopeRequest struct {
-	SchoolCode     string `json:"school_code" binding:"required,len=2"`     // 学校代码
-	Quantity       int    `json:"quantity" binding:"required,min=1,max=500"` // 数量
-	BarcodePrefix  string `json:"barcode_prefix,omitempty"`                 // 条码前缀
-	DistributorID  string `json:"distributor_id" binding:"required"`        // 分发者ID
-	DesignID       string `json:"design_id" binding:"required"`             // 信封设计ID
+	SchoolCode    string `json:"school_code" binding:"required,len=2"`      // 学校代码
+	Quantity      int    `json:"quantity" binding:"required,min=1,max=500"` // 数量
+	BarcodePrefix string `json:"barcode_prefix,omitempty"`                  // 条码前缀
+	DistributorID string `json:"distributor_id" binding:"required"`         // 分发者ID
+	DesignID      string `json:"design_id" binding:"required"`              // 信封设计ID
 }
 
 // BarcodeResponse 条码响应 - FSD规格
@@ -173,12 +173,12 @@ type BarcodeResponse struct {
 
 // EnvelopeWithBarcodeResponse 信封+条码响应
 type EnvelopeWithBarcodeResponse struct {
-	EnvelopeID       string `json:"envelope_id"`
-	DesignID         string `json:"design_id"`
-	BarcodeID        string `json:"barcode_id"`
-	BarcodeCode      string `json:"barcode_code"`
-	RecipientOPCode  string `json:"recipient_op_code,omitempty"`
-	Status           string `json:"status"`
-	QRURL            string `json:"qr_url,omitempty"`
-	PDFURL           string `json:"pdf_url,omitempty"`
+	EnvelopeID      string `json:"envelope_id"`
+	DesignID        string `json:"design_id"`
+	BarcodeID       string `json:"barcode_id"`
+	BarcodeCode     string `json:"barcode_code"`
+	RecipientOPCode string `json:"recipient_op_code,omitempty"`
+	Status          string `json:"status"`
+	QRURL           string `json:"qr_url,omitempty"`
+	PDFURL          string `json:"pdf_url,omitempty"`
 }

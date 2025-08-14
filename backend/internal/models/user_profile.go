@@ -1,8 +1,8 @@
 package models
 
 import (
-	"time"
 	"gorm.io/gorm"
+	"time"
 )
 
 // UserProfileExtended 扩展用户档案信息
@@ -17,9 +17,9 @@ type UserProfileExtended struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 
 	// 关联
-	User         User          `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	Stats        UserStatsData `json:"stats,omitempty" gorm:"foreignKey:UserID"`
-	Privacy      UserPrivacy   `json:"privacy,omitempty" gorm:"foreignKey:UserID"`
+	User         User              `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	Stats        UserStatsData     `json:"stats,omitempty" gorm:"foreignKey:UserID"`
+	Privacy      UserPrivacy       `json:"privacy,omitempty" gorm:"foreignKey:UserID"`
 	Achievements []UserAchievement `json:"achievements,omitempty" gorm:"foreignKey:UserID"`
 }
 
@@ -86,26 +86,26 @@ var Achievements = []AchievementDefinition{
 	{Code: "active_writer", Name: "活跃写手", Description: "发送10封信", Icon: "✍️", Category: "writing"},
 	{Code: "prolific_writer", Name: "多产作家", Description: "发送50封信", Icon: "📚", Category: "writing"},
 	{Code: "letter_master", Name: "信件大师", Description: "发送100封信", Icon: "🏆", Category: "writing"},
-	
+
 	// 博物馆相关
 	{Code: "museum_contributor", Name: "博物馆贡献者", Description: "贡献第一封信到博物馆", Icon: "🏛️", Category: "museum"},
 	{Code: "museum_curator", Name: "博物馆策展人", Description: "贡献10封信到博物馆", Icon: "🎨", Category: "museum"},
-	
+
 	// 社交相关
 	{Code: "popular_writer", Name: "人气写手", Description: "收到100个赞", Icon: "⭐", Category: "social"},
 	{Code: "social_butterfly", Name: "社交达人", Description: "与20个不同的人通信", Icon: "🦋", Category: "social"},
-	
+
 	// 信使相关
 	{Code: "rookie_courier", Name: "新手信使", Description: "成为一级信使", Icon: "🎒", Category: "courier"},
 	{Code: "area_coordinator", Name: "片区协调员", Description: "成为二级信使", Icon: "📍", Category: "courier"},
 	{Code: "school_leader", Name: "校区负责人", Description: "成为三级信使", Icon: "🏫", Category: "courier"},
 	{Code: "city_coordinator", Name: "城市总代", Description: "成为四级信使", Icon: "🌆", Category: "courier"},
-	
+
 	// 系统相关
 	{Code: "early_bird", Name: "早期用户", Description: "平台前1000名用户", Icon: "🐦", Category: "system"},
 	{Code: "beta_tester", Name: "测试先锋", Description: "参与测试阶段", Icon: "🧪", Category: "system"},
 	{Code: "bug_reporter", Name: "问题猎手", Description: "报告有效bug", Icon: "🐛", Category: "system"},
-	
+
 	// 活跃度相关
 	{Code: "week_streak", Name: "周连续", Description: "连续活跃7天", Icon: "🔥", Category: "activity"},
 	{Code: "month_streak", Name: "月连续", Description: "连续活跃30天", Icon: "💫", Category: "activity"},
@@ -164,7 +164,7 @@ func (u *UserProfileExtended) GetFormattedOPCode(privacy *UserPrivacy) string {
 	if privacy == nil || !privacy.ShowOPCode || u.OPCode == "" {
 		return ""
 	}
-	
+
 	switch privacy.OPCodePrivacy {
 	case OPCodePrivacyFull:
 		return u.OPCode
@@ -185,10 +185,10 @@ func (s *UserStatsData) CanLevelUp(currentLevel int, isWriting bool) bool {
 	if isWriting {
 		// 写信等级升级条件
 		levelRequirements := map[int]int{
-			1: 100,   // 升到2级需要100积分
-			2: 300,   // 升到3级需要300积分
-			3: 600,   // 升到4级需要600积分
-			4: 1000,  // 升到5级需要1000积分
+			1: 100,  // 升到2级需要100积分
+			2: 300,  // 升到3级需要300积分
+			3: 600,  // 升到4级需要600积分
+			4: 1000, // 升到5级需要1000积分
 		}
 		if req, exists := levelRequirements[currentLevel]; exists {
 			return s.WritingPoints >= req
@@ -196,10 +196,10 @@ func (s *UserStatsData) CanLevelUp(currentLevel int, isWriting bool) bool {
 	} else {
 		// 信使等级升级条件
 		levelRequirements := map[int]int{
-			0: 50,    // 成为1级信使需要50积分
-			1: 200,   // 升到2级需要200积分
-			2: 500,   // 升到3级需要500积分
-			3: 1000,  // 升到4级需要1000积分
+			0: 50,   // 成为1级信使需要50积分
+			1: 200,  // 升到2级需要200积分
+			2: 500,  // 升到3级需要500积分
+			3: 1000, // 升到4级需要1000积分
 		}
 		if req, exists := levelRequirements[currentLevel]; exists {
 			return s.CourierPoints >= req
@@ -227,10 +227,10 @@ func (s *UserStatsData) BeforeCreate(tx *gorm.DB) error {
 func (s *UserStatsData) UpdateStreak() {
 	now := time.Now()
 	lastActive := s.LastActiveDate
-	
+
 	// 计算天数差
 	daysSince := int(now.Sub(lastActive).Hours() / 24)
-	
+
 	if daysSince == 0 {
 		// 同一天，不更新
 		return
@@ -244,6 +244,6 @@ func (s *UserStatsData) UpdateStreak() {
 		// 中断了，重置
 		s.CurrentStreak = 1
 	}
-	
+
 	s.LastActiveDate = now
 }

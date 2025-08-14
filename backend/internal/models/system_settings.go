@@ -22,19 +22,19 @@ func (SystemSettings) TableName() string {
 // SystemConfig 完整的系统配置结构体 - 匹配前端期望的格式
 type SystemConfig struct {
 	// 基本设置
-	SiteName         string `json:"site_name"`
-	SiteDescription  string `json:"site_description"`
-	SiteLogo         string `json:"site_logo"`
-	MaintenanceMode  bool   `json:"maintenance_mode"`
+	SiteName        string `json:"site_name"`
+	SiteDescription string `json:"site_description"`
+	SiteLogo        string `json:"site_logo"`
+	MaintenanceMode bool   `json:"maintenance_mode"`
 
 	// 邮件设置
-	SMTPHost          string `json:"smtp_host"`
-	SMTPPort          int    `json:"smtp_port"`
-	SMTPUsername      string `json:"smtp_username"`
-	SMTPPassword      string `json:"smtp_password"`
-	SMTPEncryption    string `json:"smtp_encryption"` // tls, ssl, none
-	EmailFromName     string `json:"email_from_name"`
-	EmailFromAddress  string `json:"email_from_address"`
+	SMTPHost         string `json:"smtp_host"`
+	SMTPPort         int    `json:"smtp_port"`
+	SMTPUsername     string `json:"smtp_username"`
+	SMTPPassword     string `json:"smtp_password"`
+	SMTPEncryption   string `json:"smtp_encryption"` // tls, ssl, none
+	EmailFromName    string `json:"email_from_name"`
+	EmailFromAddress string `json:"email_from_address"`
 
 	// 信件设置
 	MaxLetterLength      int      `json:"max_letter_length"`
@@ -61,9 +61,9 @@ type SystemConfig struct {
 	PasswordRequireNumbers bool `json:"password_require_numbers"`
 	SessionTimeout         int  `json:"session_timeout"` // seconds
 	MaxLoginAttempts       int  `json:"max_login_attempts"`
-	JWTExpiryHours         int  `json:"jwt_expiry_hours"`        // JWT过期时间（小时）
-	RefreshTokenDays       int  `json:"refresh_token_days"`      // 刷新Token过期时间（天）
-	EnableTokenRefresh     bool `json:"enable_token_refresh"`    // 是否启用Token自动刷新
+	JWTExpiryHours         int  `json:"jwt_expiry_hours"`     // JWT过期时间（小时）
+	RefreshTokenDays       int  `json:"refresh_token_days"`   // 刷新Token过期时间（天）
+	EnableTokenRefresh     bool `json:"enable_token_refresh"` // 是否启用Token自动刷新
 
 	// 通知设置
 	EmailNotifications bool `json:"email_notifications"`
@@ -129,13 +129,13 @@ func DefaultSystemConfig() *SystemConfig {
 
 // SystemConfigCategory 配置分类常量
 const (
-	CategoryGeneral       = "general"
-	CategoryEmail         = "email"
-	CategoryLetter        = "letter"
-	CategoryUser          = "user"
-	CategoryCourier       = "courier"
-	CategorySecurity      = "security"
-	CategoryNotification  = "notification"
+	CategoryGeneral      = "general"
+	CategoryEmail        = "email"
+	CategoryLetter       = "letter"
+	CategoryUser         = "user"
+	CategoryCourier      = "courier"
+	CategorySecurity     = "security"
+	CategoryNotification = "notification"
 )
 
 // SystemConfigKeys 系统配置键常量
@@ -147,13 +147,13 @@ const (
 	KeyMaintenanceMode = "maintenance_mode"
 
 	// 邮件设置
-	KeySMTPHost          = "smtp_host"
-	KeySMTPPort          = "smtp_port"
-	KeySMTPUsername      = "smtp_username"
-	KeySMTPPassword      = "smtp_password"
-	KeySMTPEncryption    = "smtp_encryption"
-	KeyEmailFromName     = "email_from_name"
-	KeyEmailFromAddress  = "email_from_address"
+	KeySMTPHost         = "smtp_host"
+	KeySMTPPort         = "smtp_port"
+	KeySMTPUsername     = "smtp_username"
+	KeySMTPPassword     = "smtp_password"
+	KeySMTPEncryption   = "smtp_encryption"
+	KeyEmailFromName    = "email_from_name"
+	KeyEmailFromAddress = "email_from_address"
 
 	// 信件设置
 	KeyMaxLetterLength      = "max_letter_length"

@@ -15,7 +15,7 @@ const (
 	StatusInTransit LetterStatus = "in_transit"
 	StatusDelivered LetterStatus = "delivered"
 	StatusRead      LetterStatus = "read"
-	
+
 	// AI相关状态别名
 	LetterStatusDraft LetterStatus = "draft"
 )
@@ -51,28 +51,28 @@ const (
 
 // Letter 信件模型
 type Letter struct {
-	ID         string            `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	UserID     string            `json:"user_id" gorm:"type:varchar(36);not null;index"`
-	AuthorID   string            `json:"author_id" gorm:"type:varchar(36);index;default:''"`
-	Title      string            `json:"title" gorm:"type:varchar(255)"`
-	Content    string            `json:"content" gorm:"type:text;not null"`
-	Style      LetterStyle       `json:"style" gorm:"type:varchar(20);not null;default:'classic'"`
-	Status     LetterStatus      `json:"status" gorm:"type:varchar(20);not null;default:'draft'"`
-	Visibility LetterVisibility  `json:"visibility" gorm:"type:varchar(20);not null;default:'private'"`
-	Type       LetterType        `json:"type" gorm:"type:varchar(20);not null;default:'original'"`
-	LikeCount  int               `json:"like_count" gorm:"default:0"`
+	ID         string                 `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	UserID     string                 `json:"user_id" gorm:"type:varchar(36);not null;index"`
+	AuthorID   string                 `json:"author_id" gorm:"type:varchar(36);index;default:''"`
+	Title      string                 `json:"title" gorm:"type:varchar(255)"`
+	Content    string                 `json:"content" gorm:"type:text;not null"`
+	Style      LetterStyle            `json:"style" gorm:"type:varchar(20);not null;default:'classic'"`
+	Status     LetterStatus           `json:"status" gorm:"type:varchar(20);not null;default:'draft'"`
+	Visibility LetterVisibility       `json:"visibility" gorm:"type:varchar(20);not null;default:'private'"`
+	Type       LetterType             `json:"type" gorm:"type:varchar(20);not null;default:'original'"`
+	LikeCount  int                    `json:"like_count" gorm:"default:0"`
 	Metadata   map[string]interface{} `json:"metadata,omitempty" gorm:"type:jsonb"`
-	
+
 	// OP Code System - 核心地址标识
-	RecipientOPCode string          `json:"recipient_op_code" gorm:"type:varchar(6);index"` // 收件人OP Code，如: PK5F3D
-	SenderOPCode    string          `json:"sender_op_code" gorm:"type:varchar(6);index"`    // 发件人OP Code（可选）
-	ShareCount int               `json:"share_count" gorm:"default:0"`
-	ViewCount  int               `json:"view_count" gorm:"default:0"`
-	ReplyTo    string            `json:"reply_to,omitempty" gorm:"type:varchar(36);index;constraint:OnDelete:SET NULL;"`
-	EnvelopeID *string           `json:"envelope_id,omitempty" gorm:"type:varchar(36);index"`
-	CreatedAt  time.Time         `json:"created_at"`
-	UpdatedAt  time.Time         `json:"updated_at"`
-	DeletedAt  gorm.DeletedAt    `json:"-" gorm:"index"`
+	RecipientOPCode string         `json:"recipient_op_code" gorm:"type:varchar(6);index"` // 收件人OP Code，如: PK5F3D
+	SenderOPCode    string         `json:"sender_op_code" gorm:"type:varchar(6);index"`    // 发件人OP Code（可选）
+	ShareCount      int            `json:"share_count" gorm:"default:0"`
+	ViewCount       int            `json:"view_count" gorm:"default:0"`
+	ReplyTo         string         `json:"reply_to,omitempty" gorm:"type:varchar(36);index;constraint:OnDelete:SET NULL;"`
+	EnvelopeID      *string        `json:"envelope_id,omitempty" gorm:"type:varchar(36);index"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	DeletedAt       gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// 关联
 	User       *User         `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE;"`
@@ -109,14 +109,14 @@ type LetterCode struct {
 	UpdatedAt  time.Time  `json:"updated_at"`
 
 	// FSD条码系统增强字段
-	Status         BarcodeStatus `json:"status" gorm:"type:varchar(20);default:'unactivated';index"` // 条码状态
-	RecipientCode  string        `json:"recipient_code,omitempty" gorm:"type:varchar(6);index"`      // 收件人OP Code
-	EnvelopeID     string        `json:"envelope_id,omitempty" gorm:"type:varchar(36);index"`        // 关联信封ID
-	BoundAt        *time.Time    `json:"bound_at,omitempty"`                                         // 绑定时间
-	DeliveredAt    *time.Time    `json:"delivered_at,omitempty"`                                     // 送达时间
-	LastScannedBy  string        `json:"last_scanned_by,omitempty" gorm:"type:varchar(36)"`          // 最后扫码人
-	LastScannedAt  *time.Time    `json:"last_scanned_at,omitempty"`                                  // 最后扫码时间
-	ScanCount      int           `json:"scan_count" gorm:"default:0"`                                // 扫码次数
+	Status        BarcodeStatus `json:"status" gorm:"type:varchar(20);default:'unactivated';index"` // 条码状态
+	RecipientCode string        `json:"recipient_code,omitempty" gorm:"type:varchar(6);index"`      // 收件人OP Code
+	EnvelopeID    string        `json:"envelope_id,omitempty" gorm:"type:varchar(36);index"`        // 关联信封ID
+	BoundAt       *time.Time    `json:"bound_at,omitempty"`                                         // 绑定时间
+	DeliveredAt   *time.Time    `json:"delivered_at,omitempty"`                                     // 送达时间
+	LastScannedBy string        `json:"last_scanned_by,omitempty" gorm:"type:varchar(36)"`          // 最后扫码人
+	LastScannedAt *time.Time    `json:"last_scanned_at,omitempty"`                                  // 最后扫码时间
+	ScanCount     int           `json:"scan_count" gorm:"default:0"`                                // 扫码次数
 
 	// 关联
 	Letter   Letter    `json:"letter,omitempty" gorm:"foreignKey:LetterID;references:ID;constraint:OnDelete:CASCADE;"`
@@ -151,9 +151,9 @@ func (lc *LetterCode) IsValidTransition(newStatus BarcodeStatus) bool {
 
 // IsActive 检查条码是否处于活跃状态
 func (lc *LetterCode) IsActive() bool {
-	return lc.Status != BarcodeStatusExpired && 
-		   lc.Status != BarcodeStatusCancelled && 
-		   lc.Status != BarcodeStatusDelivered
+	return lc.Status != BarcodeStatusExpired &&
+		lc.Status != BarcodeStatusCancelled &&
+		lc.Status != BarcodeStatusDelivered
 }
 
 // CanBeBound 检查条码是否可以绑定
@@ -171,7 +171,7 @@ func (lc *LetterCode) GetStatusDisplayName() string {
 		BarcodeStatusExpired:     "已过期",
 		BarcodeStatusCancelled:   "已取消",
 	}
-	
+
 	if name, exists := statusNames[lc.Status]; exists {
 		return name
 	}

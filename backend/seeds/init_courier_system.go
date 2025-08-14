@@ -57,16 +57,16 @@ func InitializeCourierSystem(db *gorm.DB) error {
 				}
 
 				courier = models.Courier{
-					ID:                   uuid.New().String(),
-					UserID:               user.ID,
-					Level:                level,
-					ZoneCode:             zoneCode,
-					ZoneType:             zoneType,
-					Status:               models.CourierStatusActive,
-					ManagedOPCodePrefix:  managedPrefix,
-					PerformanceScore:     95.0 + float64(level),
-					CreatedAt:            time.Now(),
-					UpdatedAt:            time.Now(),
+					ID:                  uuid.New().String(),
+					UserID:              user.ID,
+					Level:               level,
+					ZoneCode:            zoneCode,
+					ZoneType:            zoneType,
+					Status:              models.CourierStatusActive,
+					ManagedOPCodePrefix: managedPrefix,
+					PerformanceScore:    95.0 + float64(level),
+					CreatedAt:           time.Now(),
+					UpdatedAt:           time.Now(),
 				}
 
 				if err := db.Create(&courier).Error; err != nil {
@@ -85,11 +85,11 @@ func InitializeCourierSystem(db *gorm.DB) error {
 		if l3 := courierMap["courier_level3"]; l3 != nil {
 			l3.ParentID = &l4.ID
 			db.Save(l3)
-			
+
 			if l2 := courierMap["courier_level2"]; l2 != nil {
 				l2.ParentID = &l3.ID
 				db.Save(l2)
-				
+
 				if l1 := courierMap["courier_level1"]; l1 != nil {
 					l1.ParentID = &l2.ID
 					db.Save(l1)
@@ -102,7 +102,7 @@ func InitializeCourierSystem(db *gorm.DB) error {
 	// Step 3: Create sample letters that need delivery
 	var alice models.User
 	db.Where("username = ?", "alice").First(&alice)
-	
+
 	sampleLetters := []models.Letter{
 		{
 			ID:            uuid.New().String(),
@@ -202,26 +202,26 @@ func InitializeCourierSystem(db *gorm.DB) error {
 		tasks[0].Status = models.TaskStatusAccepted
 		tasks[0].AcceptedAt = &now
 		db.Save(&tasks[0])
-		
+
 		// Update courier stats
 		l1.TotalTasks++
 		db.Save(l1)
-		
+
 		log.Printf("Assigned one task to Level 1 courier for demonstration")
 	}
 
 	// Step 6: Create some scan records to show activity
 	if l1 := courierMap["courier_level1"]; l1 != nil && len(tasks) > 0 {
 		scanRecord := models.ScanRecord{
-			ID:          uuid.New().String(),
-			CourierID:   l1.ID,
-			TaskID:      tasks[0].ID,
-			ScanType:    models.ScanTypePickup,
-			Location:    tasks[0].PickupLocation,
-			OPCode:      tasks[0].PickupOPCode,
-			DeviceInfo:  "iOS App v1.0",
-			IsValid:     true,
-			CreatedAt:   time.Now(),
+			ID:         uuid.New().String(),
+			CourierID:  l1.ID,
+			TaskID:     tasks[0].ID,
+			ScanType:   models.ScanTypePickup,
+			Location:   tasks[0].PickupLocation,
+			OPCode:     tasks[0].PickupOPCode,
+			DeviceInfo: "iOS App v1.0",
+			IsValid:    true,
+			CreatedAt:  time.Now(),
 		}
 		db.Create(&scanRecord)
 		log.Println("Created sample scan record")
@@ -229,11 +229,11 @@ func InitializeCourierSystem(db *gorm.DB) error {
 
 	// Step 7: Display final state
 	log.Println("\n=== Courier System Initialized ===")
-	
+
 	// Show hierarchy
 	var allCouriers []models.Courier
 	db.Preload("User").Order("level DESC").Find(&allCouriers)
-	
+
 	log.Println("\nCourier Hierarchy:")
 	for _, c := range allCouriers {
 		parentStr := "None"
@@ -255,7 +255,7 @@ func InitializeCourierSystem(db *gorm.DB) error {
 		Select("status, COUNT(*) as count").
 		Group("status").
 		Scan(&taskStats)
-	
+
 	log.Println("\nTask Distribution:")
 	for _, stat := range taskStats {
 		log.Printf("- %s: %d tasks", stat.Status, stat.Count)

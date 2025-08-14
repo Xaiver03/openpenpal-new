@@ -51,10 +51,10 @@ func APITransformMiddleware() gin.HandlerFunc {
 				if err := json.Unmarshal(rtw.body.Bytes(), &data); err == nil {
 					// Transform keys
 					transformed := transformKeys(data, snakeToCamel)
-					
+
 					// Marshal transformed data
 					transformedBytes, _ := json.Marshal(transformed)
-					
+
 					// Write directly to original writer
 					rtw.ResponseWriter.Header().Set("Content-Type", "application/json")
 					rtw.ResponseWriter.WriteHeader(rtw.Status())
@@ -63,7 +63,7 @@ func APITransformMiddleware() gin.HandlerFunc {
 				}
 			}
 		}
-		
+
 		// If no transformation needed, write original response
 		rtw.ResponseWriter.WriteHeader(rtw.Status())
 		rtw.ResponseWriter.Write(rtw.body.Bytes())
@@ -95,16 +95,16 @@ func transformKeys(data interface{}, transform func(string) string) interface{} 
 func snakeToCamel(s string) string {
 	// Special cases for common fields
 	switch s {
-		case "id", "ok":
-			return s
-		case "created_at":
-			return "createdAt"
-		case "updated_at":
-			return "updatedAt"
-		case "deleted_at":
-			return "deletedAt"
+	case "id", "ok":
+		return s
+	case "created_at":
+		return "createdAt"
+	case "updated_at":
+		return "updatedAt"
+	case "deleted_at":
+		return "deletedAt"
 	}
-	
+
 	parts := strings.Split(s, "_")
 	for i := 1; i < len(parts); i++ {
 		if len(parts[i]) > 0 {
@@ -152,17 +152,17 @@ func RequestTransformMiddleware() gin.HandlerFunc {
 
 		// Transform keys
 		transformed := transformKeys(data, camelToSnake)
-		
+
 		// Write transformed body back
 		transformedBytes, err := json.Marshal(transformed)
 		if err != nil {
 			c.Next()
 			return
 		}
-		
+
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(transformedBytes))
 		c.Request.ContentLength = int64(len(transformedBytes))
-		
+
 		c.Next()
 	}
 }

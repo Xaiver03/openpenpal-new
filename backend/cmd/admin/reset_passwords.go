@@ -18,10 +18,10 @@ import (
 
 func main() {
 	var (
-		username   = flag.String("user", "", "Username to reset password for")
-		password   = flag.String("password", "", "New password (if empty, will generate random)")
-		listUsers  = flag.Bool("list", false, "List all users")
-		dbReset    = flag.Bool("reset-db", false, "Reset all users with secure passwords")
+		username  = flag.String("user", "", "Username to reset password for")
+		password  = flag.String("password", "", "New password (if empty, will generate random)")
+		listUsers = flag.Bool("list", false, "List all users")
+		dbReset   = flag.Bool("reset-db", false, "Reset all users with secure passwords")
 	)
 	flag.Parse()
 
@@ -122,10 +122,10 @@ func resetUserPassword(db *gorm.DB, username, newPassword string, bcryptCost int
 func resetAllUsersSecurely(db *gorm.DB, bcryptCost int) {
 	fmt.Println("🔐 Resetting ALL users with secure passwords...")
 	fmt.Print("⚠️  This will reset passwords for ALL users. Continue? (y/N): ")
-	
+
 	var confirm string
 	fmt.Scanln(&confirm)
-	
+
 	if confirm != "y" && confirm != "Y" {
 		fmt.Println("Operation cancelled.")
 		return

@@ -60,7 +60,7 @@ func (h *LogoutHandler) Logout(c *gin.Context) {
 		"success": true,
 		"message": "注销成功",
 		"data": gin.H{
-			"user_id": userID,
+			"user_id":     userID,
 			"logout_time": time.Now().Format(time.RFC3339),
 		},
 	})
@@ -102,7 +102,7 @@ func (h *LogoutHandler) LogoutAll(c *gin.Context) {
 		"success": true,
 		"message": "已注销所有会话",
 		"data": gin.H{
-			"user_id": userID,
+			"user_id":     userID,
 			"logout_time": time.Now().Format(time.RFC3339),
 		},
 	})

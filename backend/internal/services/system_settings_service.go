@@ -65,7 +65,7 @@ func (s *SystemSettingsService) UpdateSystemConfig(newConfig *models.SystemConfi
 		// 检查是否已存在
 		var existing models.SystemSettings
 		err := tx.Where("key = ?", setting.Key).First(&existing).Error
-		
+
 		if err == nil {
 			// 更新现有配置
 			existing.Value = setting.Value
@@ -124,7 +124,7 @@ func (s *SystemSettingsService) GetSetting(key string) (string, error) {
 func (s *SystemSettingsService) SetSetting(key, value, category, dataType string) error {
 	var setting models.SystemSettings
 	err := s.db.Where("key = ?", key).First(&setting).Error
-	
+
 	if err == nil {
 		// 更新现有配置
 		setting.Value = value
@@ -146,7 +146,7 @@ func (s *SystemSettingsService) SetSetting(key, value, category, dataType string
 		}
 		return s.db.Create(&setting).Error
 	}
-	
+
 	return fmt.Errorf("failed to set setting: %w", err)
 }
 

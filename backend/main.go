@@ -61,8 +61,8 @@ func main() {
 	shopService := services.NewShopService(db)
 	commentService := services.NewCommentService(db, cfg)
 	followService := services.NewFollowService(db) // 关注系统服务
-	// privacyService := services.NewPrivacyService(db) // 隐私设置服务
-	opcodeService := services.NewOPCodeService(db) // OP Code服务 - 重新启用
+	privacyService := services.NewPrivacyService(db) // 隐私设置服务
+	opcodeService := services.NewOPCodeService(db)       // OP Code服务 - 重新启用
 	scanEventService := services.NewScanEventService(db) // 扫描事件服务 - PRD要求
 
 	// 初始化延迟队列服务
@@ -78,7 +78,7 @@ func main() {
 	// 初始化WebSocket服务
 	wsService := websocket.NewWebSocketService()
 	wsService.Start()
-	
+
 	// 创建WebSocket适配器用于服务间通信
 	wsAdapter := websocket.NewWebSocketAdapter(wsService)
 
@@ -89,7 +89,7 @@ func main() {
 	letterService.SetWebSocketService(wsService)
 	letterService.SetAIService(aiService)
 	letterService.SetOPCodeService(opcodeService) // PRD要求：集成OP Code验证
-	letterService.SetUserService(userService) // 添加用户服务依赖
+	letterService.SetUserService(userService)     // 添加用户服务依赖
 	envelopeService.SetCreditService(creditService)
 	envelopeService.SetUserService(userService) // FSD增强：OP Code区域验证
 	museumService.SetCreditService(creditService)
@@ -129,13 +129,13 @@ func main() {
 	moderationHandler := handlers.NewModerationHandler(moderationService)
 	opcodeHandler := handlers.NewOPCodeHandler(opcodeService, courierService)
 	barcodeHandler := handlers.NewBarcodeHandler(letterService, opcodeService, scanEventService) // PRD条码系统处理器
-	scanEventHandler := handlers.NewScanEventHandler(scanEventService) // 扫描事件处理器
+	scanEventHandler := handlers.NewScanEventHandler(scanEventService)                           // 扫描事件处理器
 	shopHandler := handlers.NewShopHandler(shopService, userService)
 	commentHandler := handlers.NewCommentHandler(commentService)
 	followHandler := handlers.NewFollowHandler(followService) // 关注系统处理器
-	// privacyHandler := handlers.NewPrivacyHandler(privacyService) // 隐私设置处理器
+	privacyHandler := handlers.NewPrivacyHandler(privacyService) // 隐私设置处理器
 	userProfileHandler := handlers.NewUserProfileHandler(db) // 用户档案处理器
-	
+
 	// QR扫描服务和处理器 - SOTA集成：复用现有依赖 - Temporarily disabled
 	// qrScanService := services.NewQRScanService(db, letterService, courierService, wsAdapter)
 	// qrScanHandler := handlers.NewQRScanHandler(qrScanService, middleware.NewAuthMiddleware(cfg, db)) - Temporarily disabled
@@ -165,19 +165,19 @@ func main() {
 
 	// 全局中间件 - SOTA级别配置
 	// 1. 基础中间件
-	router.Use(middleware.RequestIDMiddleware())    // 请求追踪
-	router.Use(middleware.LoggerMiddleware())       // 日志记录
-	router.Use(middleware.RecoveryMiddleware())     // 错误恢复
-	router.Use(middleware.MetricsMiddleware())      // 性能监控
-	
+	router.Use(middleware.RequestIDMiddleware()) // 请求追踪
+	router.Use(middleware.LoggerMiddleware())    // 日志记录
+	router.Use(middleware.RecoveryMiddleware())  // 错误恢复
+	router.Use(middleware.MetricsMiddleware())   // 性能监控
+
 	// 2. 安全中间件
-	router.Use(middleware.SecurityHeadersMiddleware())                    // 安全头
-	router.Use(middleware.CORSMiddleware())                              // CORS
+	router.Use(middleware.SecurityHeadersMiddleware())                                  // 安全头
+	router.Use(middleware.CORSMiddleware())                                             // CORS
 	router.Use(middleware.RequestSizeLimitMiddleware(middleware.DefaultMaxRequestSize)) // 请求大小限制
-	
+
 	// 3. 频率限制（IP级别作为默认）
 	router.Use(middleware.RateLimitMiddleware())
-	
+
 	// 4. API转换中间件 - SOTA实现
 	router.Use(middleware.RequestTransformMiddleware())  // 请求转换 (camelCase -> snake_case)
 	router.Use(middleware.ResponseTransformMiddleware()) // 响应转换 (snake_case -> camelCase)
@@ -224,23 +224,23 @@ func main() {
 		auth.Use(middleware.AuthRateLimitMiddleware())
 		{
 			// 基础认证端点（无需CSRF）
-			auth.GET("/csrf", authHandler.GetCSRFToken)        // 获取CSRF令牌
-			
+			auth.GET("/csrf", authHandler.GetCSRFToken) // 获取CSRF令牌
+
 			// 状态改变操作需要CSRF保护
 			csrfProtected := auth.Group("/")
 			csrfProtected.Use(middleware.CSRFMiddleware())
 			{
-				csrfProtected.POST("/register", authHandler.Register)       // 用户注册
-				csrfProtected.POST("/login", authHandler.Login)             // 用户登录
+				csrfProtected.POST("/register", authHandler.Register) // 用户注册
+				csrfProtected.POST("/login", authHandler.Login)       // 用户登录
 			}
-			
+
 			// 用户信息端点（需要认证）
 			authGroup := auth.Group("/")
 			authGroup.Use(middleware.AuthMiddleware(cfg, db))
 			{
-				authGroup.GET("/me", authHandler.GetCurrentUser)         // 获取当前用户信息
-				authGroup.POST("/logout", authHandler.Logout)            // 登出
-				authGroup.POST("/refresh", authHandler.RefreshToken)     // 刷新令牌
+				authGroup.GET("/me", authHandler.GetCurrentUser)             // 获取当前用户信息
+				authGroup.POST("/logout", authHandler.Logout)                // 登出
+				authGroup.POST("/refresh", authHandler.RefreshToken)         // 刷新令牌
 				authGroup.GET("/check-expiry", authHandler.CheckTokenExpiry) // 检查令牌过期
 			}
 		}
@@ -250,10 +250,10 @@ func main() {
 		{
 			letters.GET("/read/:code", letterHandler.GetLetterByCode)
 			letters.POST("/read/:code/mark-read", letterHandler.MarkAsRead)
-			letters.GET("/public", letterHandler.GetPublicLetters) // 新增：广场信件
-			letters.GET("/popular", letterHandler.GetPopularLetters) // 新增：热门信件
+			letters.GET("/public", letterHandler.GetPublicLetters)           // 新增：广场信件
+			letters.GET("/popular", letterHandler.GetPopularLetters)         // 新增：热门信件
 			letters.GET("/recommended", letterHandler.GetRecommendedLetters) // 新增：推荐信件
-			letters.GET("/templates", letterHandler.GetLetterTemplates) // 新增：信件模板（公开）
+			letters.GET("/templates", letterHandler.GetLetterTemplates)      // 新增：信件模板（公开）
 		}
 
 		// 公开的信使统计信息
@@ -268,11 +268,11 @@ func main() {
 			museum.GET("/entries", museumHandler.GetMuseumEntries)
 			museum.GET("/entries/:id", museumHandler.GetMuseumEntry)
 			museum.GET("/exhibitions", museumHandler.GetMuseumExhibitions)
-			museum.GET("/popular", museumHandler.GetPopularMuseumEntries)        // 获取热门条目
-			museum.GET("/exhibitions/:id", museumHandler.GetMuseumExhibitionByID) // 获取展览详情
+			museum.GET("/popular", museumHandler.GetPopularMuseumEntries)          // 获取热门条目
+			museum.GET("/exhibitions/:id", museumHandler.GetMuseumExhibitionByID)  // 获取展览详情
 			museum.GET("/exhibitions/:id/items", museumHandler.GetExhibitionItems) // 获取展览中的物品
-			museum.GET("/tags", museumHandler.GetMuseumTags)                     // 获取标签列表
-			museum.GET("/stats", museumHandler.GetMuseumStats)                   // 获取博物馆统计
+			museum.GET("/tags", museumHandler.GetMuseumTags)                       // 获取标签列表
+			museum.GET("/stats", museumHandler.GetMuseumStats)                     // 获取博物馆统计
 		}
 
 		// 公开的AI相关（无需认证）
@@ -287,28 +287,28 @@ func main() {
 			ai.GET("/stats", aiHandler.GetAIStats)
 			ai.GET("/daily-inspiration", aiHandler.GetDailyInspiration)
 		}
-		
+
 		// 公开的商店信息（无需认证）
 		shop := public.Group("/shop")
 		{
 			shop.GET("/products", shopHandler.GetProducts)                   // 获取商品列表（公开）
-			shop.GET("/products/:id", shopHandler.GetProduct)               // 获取商品详情（公开）
+			shop.GET("/products/:id", shopHandler.GetProduct)                // 获取商品详情（公开）
 			shop.GET("/products/:id/reviews", shopHandler.GetProductReviews) // 获取商品评价（公开）
 		}
-		
+
 		// 公开的OP Code查询（仅公开信息） - Temporarily disabled
 		/*
-		opcode := public.Group("/opcode")
-		{
-			opcode.GET("/:code", opcodeHandler.GetOPCode)                        // 查询OP Code公开信息
-			opcode.GET("/validate", opcodeHandler.ValidateOPCode)                // 验证OP Code格式
-		}
+			opcode := public.Group("/opcode")
+			{
+				opcode.GET("/:code", opcodeHandler.GetOPCode)                        // 查询OP Code公开信息
+				opcode.GET("/validate", opcodeHandler.ValidateOPCode)                // 验证OP Code格式
+			}
 
-		// 公开的QR码验证（无需认证） - Temporarily disabled
-		qr := public.Group("/qr")
-		{
-			qr.GET("/validate", qrScanHandler.ValidateQRCode)                    // 验证QR码格式
-		}
+			// 公开的QR码验证（无需认证） - Temporarily disabled
+			qr := public.Group("/qr")
+			{
+				qr.GET("/validate", qrScanHandler.ValidateQRCode)                    // 验证QR码格式
+			}
 		*/
 
 	}
@@ -318,7 +318,7 @@ func main() {
 	protected.Use(middleware.AuthMiddleware(cfg, db))
 	{
 		// 注意：/auth相关的路由已经在上面的authHandler中处理了，这里不重复定义
-		
+
 		// 用户相关
 		users := protected.Group("/users")
 		users.Use(middleware.UserRateLimitMiddleware()) // 用户级频率限制
@@ -353,27 +353,27 @@ func main() {
 			letters.POST("/replies", letterHandler.CreateReply)                // 创建回信
 			letters.GET("/threads", letterHandler.GetUserThreads)              // 获取用户线程列表
 			letters.GET("/threads/:id", letterHandler.GetThreadByID)           // 获取线程详情
-			
+
 			// 草稿管理
 			letters.GET("/drafts", letterHandler.GetDrafts)           // 获取草稿列表
 			letters.POST("/:id/publish", letterHandler.PublishLetter) // 发布信件
-			
+
 			// 互动功能
 			letters.POST("/:id/like", letterHandler.LikeLetter)   // 点赞信件
 			letters.POST("/:id/share", letterHandler.ShareLetter) // 分享信件
-			
+
 			// 模板功能
 			// templates route moved to public section
 			letters.GET("/templates/:id", letterHandler.GetLetterTemplateByID) // 获取模板详情
-			
+
 			// 搜索和发现
-			letters.POST("/search", letterHandler.SearchLetters)             // 搜索信件
+			letters.POST("/search", letterHandler.SearchLetters) // 搜索信件
 			// Popular and recommended letters routes are already in public section
-			
+
 			// 批量操作和导出
 			letters.POST("/batch", letterHandler.BatchOperateLetters) // 批量操作
 			letters.POST("/export", letterHandler.ExportLetters)      // 导出信件
-			
+
 			// 写作辅助
 			letters.POST("/auto-save", letterHandler.AutoSaveDraft)                   // 自动保存草稿
 			letters.POST("/writing-suggestions", letterHandler.GetWritingSuggestions) // 获取写作建议
@@ -393,17 +393,17 @@ func main() {
 			courier.GET("/me", courierHandler.GetCourierInfo)               // 获取当前信使信息
 			courier.GET("/candidates", courierHandler.GetCourierCandidates) // 获取信使候选人列表
 			courier.GET("/tasks", courierHandler.GetCourierTasks)           // 获取信使任务列表
-			
+
 			// 晋升系统路由 - SOTA完整实现
 			growth := courier.Group("/growth")
 			{
 				growth.GET("/path", courierGrowthHandler.GetGrowthPath)
 				growth.GET("/progress", courierGrowthHandler.GetGrowthProgress)
-				growth.POST("/apply", courierGrowthHandler.SubmitUpgradeRequest)      // 提交晋升申请
-				growth.GET("/applications", courierGrowthHandler.GetUpgradeRequests)  // 获取申请列表
+				growth.POST("/apply", courierGrowthHandler.SubmitUpgradeRequest)                    // 提交晋升申请
+				growth.GET("/applications", courierGrowthHandler.GetUpgradeRequests)                // 获取申请列表
 				growth.PUT("/applications/:request_id", courierGrowthHandler.ProcessUpgradeRequest) // 处理申请
 			}
-			
+
 			// 等级管理路由 - 本地实现
 			level := courier.Group("/level")
 			{
@@ -414,12 +414,12 @@ func main() {
 				level.GET("/upgrade-requests", courierGrowthHandler.GetUpgradeRequests)
 				level.PUT("/upgrade/:request_id", courierGrowthHandler.ProcessUpgradeRequest)
 			}
-			
+
 			// QR扫描相关 - SOTA集成，无缝融入现有架构 - Temporarily disabled
 			/*
-			courier.POST("/scan", qrScanHandler.ProcessQRScan)              // 处理QR码扫描
-			courier.GET("/letters/:code", qrScanHandler.GetLetterByCode)    // 通过编码获取信件信息
-			courier.GET("/scan-history", qrScanHandler.GetScanHistory)      // 获取扫描历史记录
+				courier.POST("/scan", qrScanHandler.ProcessQRScan)              // 处理QR码扫描
+				courier.GET("/letters/:code", qrScanHandler.GetLetterByCode)    // 通过编码获取信件信息
+				courier.GET("/scan-history", qrScanHandler.GetScanHistory)      // 获取扫描历史记录
 			*/
 
 			// 管理级别API
@@ -458,12 +458,12 @@ func main() {
 		{
 			museum.POST("/items", museumHandler.CreateMuseumItem)
 			museum.POST("/items/:id/ai-description", museumHandler.GenerateItemDescription) // 新增：AI生成描述
-			museum.POST("/submit", museumHandler.SubmitLetterToMuseum) // 新增：提交信件到博物馆
-			museum.POST("/entries/:id/interact", museumHandler.InteractWithEntry)  // 记录互动（浏览、点赞等）
-			museum.POST("/entries/:id/react", museumHandler.ReactToEntry)         // 添加反应
-			museum.DELETE("/entries/:id/withdraw", museumHandler.WithdrawMuseumEntry) // 撤回条目
-			museum.GET("/my-submissions", museumHandler.GetMySubmissions)         // 获取我的提交记录
-			museum.POST("/search", museumHandler.SearchMuseumEntries)              // 搜索博物馆条目
+			museum.POST("/submit", museumHandler.SubmitLetterToMuseum)                      // 新增：提交信件到博物馆
+			museum.POST("/entries/:id/interact", museumHandler.InteractWithEntry)           // 记录互动（浏览、点赞等）
+			museum.POST("/entries/:id/react", museumHandler.ReactToEntry)                   // 添加反应
+			museum.DELETE("/entries/:id/withdraw", museumHandler.WithdrawMuseumEntry)       // 撤回条目
+			museum.GET("/my-submissions", museumHandler.GetMySubmissions)                   // 获取我的提交记录
+			museum.POST("/search", museumHandler.SearchMuseumEntries)                       // 搜索博物馆条目
 		}
 
 		// 数据分析相关
@@ -562,57 +562,55 @@ func main() {
 		follow := protected.Group("/follow")
 		{
 			// 关注操作
-			follow.POST("/users", followHandler.FollowUser)                    // 关注用户
-			follow.DELETE("/users/:user_id", followHandler.UnfollowUser)       // 取消关注用户
-			follow.POST("/users/batch", followHandler.FollowMultipleUsers)     // 批量关注用户
-			
+			follow.POST("/users", followHandler.FollowUser)                // 关注用户
+			follow.DELETE("/users/:user_id", followHandler.UnfollowUser)   // 取消关注用户
+			follow.POST("/users/batch", followHandler.FollowMultipleUsers) // 批量关注用户
+
 			// 关注列表
-			follow.GET("/followers", followHandler.GetFollowers)               // 获取当前用户粉丝列表
-			follow.GET("/following", followHandler.GetFollowing)               // 获取当前用户关注列表
+			follow.GET("/followers", followHandler.GetFollowers)                // 获取当前用户粉丝列表
+			follow.GET("/following", followHandler.GetFollowing)                // 获取当前用户关注列表
 			follow.GET("/users/:user_id/followers", followHandler.GetFollowers) // 获取指定用户粉丝列表
 			follow.GET("/users/:user_id/following", followHandler.GetFollowing) // 获取指定用户关注列表
-			
+
 			// 关注状态
 			follow.GET("/users/:user_id/status", followHandler.GetFollowStatus) // 获取关注状态
-			
+
 			// 用户搜索和发现
-			follow.GET("/users/search", followHandler.SearchUsers)             // 搜索用户
-			follow.GET("/suggestions", followHandler.GetUserSuggestions)       // 获取用户推荐
+			follow.GET("/users/search", followHandler.SearchUsers)                // 搜索用户
+			follow.GET("/suggestions", followHandler.GetUserSuggestions)          // 获取用户推荐
 			follow.POST("/suggestions/refresh", followHandler.RefreshSuggestions) // 刷新推荐
-			
+
 			// 粉丝管理
 			follow.DELETE("/followers/:user_id", followHandler.RemoveFollower) // 移除粉丝
 		}
 
-		// 隐私设置系统 - 暂时禁用
-		/*
+		// 隐私设置系统
 		privacy := protected.Group("/privacy")
 		{
 			// 隐私设置管理
 			privacy.GET("/settings", privacyHandler.GetPrivacySettings)        // 获取隐私设置
 			privacy.PUT("/settings", privacyHandler.UpdatePrivacySettings)     // 更新隐私设置
 			privacy.POST("/settings/reset", privacyHandler.ResetPrivacySettings) // 重置隐私设置
-			
+
 			// 隐私权限检查
 			privacy.GET("/check/:user_id", privacyHandler.CheckPrivacy)        // 检查隐私权限
 			privacy.POST("/check/:user_id/batch", privacyHandler.BatchCheckPrivacy) // 批量检查隐私权限
-			
+
 			// 用户屏蔽管理
 			privacy.POST("/block", privacyHandler.BlockUser)                   // 屏蔽用户
 			privacy.DELETE("/block/:user_id", privacyHandler.UnblockUser)      // 取消屏蔽用户
 			privacy.GET("/blocked", privacyHandler.GetBlockedUsers)            // 获取屏蔽用户列表
-			
+
 			// 用户静音管理
 			privacy.POST("/mute", privacyHandler.MuteUser)                     // 静音用户
 			privacy.DELETE("/mute/:user_id", privacyHandler.UnmuteUser)        // 取消静音用户
 			privacy.GET("/muted", privacyHandler.GetMutedUsers)                // 获取静音用户列表
-			
+
 			// 关键词过滤管理
 			privacy.POST("/keywords/block", privacyHandler.AddBlockedKeyword)  // 添加屏蔽关键词
 			privacy.DELETE("/keywords/block/:keyword", privacyHandler.RemoveBlockedKeyword) // 移除屏蔽关键词
 			privacy.GET("/keywords/blocked", privacyHandler.GetBlockedKeywords) // 获取屏蔽关键词列表
 		}
-		*/
 
 		// 商店系统（需要认证的部分）
 		shopAuth := protected.Group("/shop")
@@ -621,38 +619,38 @@ func main() {
 			shopAuth.POST("/products/:id/reviews", shopHandler.CreateProductReview) // 创建商品评价
 
 			// 购物车相关
-			shopAuth.GET("/cart", shopHandler.GetCart)                       // 获取购物车
-			shopAuth.POST("/cart/items", shopHandler.AddToCart)             // 添加商品到购物车
-			shopAuth.PUT("/cart/items/:id", shopHandler.UpdateCartItem)     // 更新购物车项目
-			shopAuth.DELETE("/cart/items/:id", shopHandler.RemoveFromCart)  // 从购物车移除商品
-			shopAuth.DELETE("/cart", shopHandler.ClearCart)                 // 清空购物车
+			shopAuth.GET("/cart", shopHandler.GetCart)                     // 获取购物车
+			shopAuth.POST("/cart/items", shopHandler.AddToCart)            // 添加商品到购物车
+			shopAuth.PUT("/cart/items/:id", shopHandler.UpdateCartItem)    // 更新购物车项目
+			shopAuth.DELETE("/cart/items/:id", shopHandler.RemoveFromCart) // 从购物车移除商品
+			shopAuth.DELETE("/cart", shopHandler.ClearCart)                // 清空购物车
 
 			// 订单相关
-			shopAuth.POST("/orders", shopHandler.CreateOrder)              // 创建订单
-			shopAuth.GET("/orders", shopHandler.GetOrders)                 // 获取订单列表
-			shopAuth.GET("/orders/:id", shopHandler.GetOrder)              // 获取订单详情
-			shopAuth.POST("/orders/:id/pay", shopHandler.PayOrder)         // 支付订单
+			shopAuth.POST("/orders", shopHandler.CreateOrder)      // 创建订单
+			shopAuth.GET("/orders", shopHandler.GetOrders)         // 获取订单列表
+			shopAuth.GET("/orders/:id", shopHandler.GetOrder)      // 获取订单详情
+			shopAuth.POST("/orders/:id/pay", shopHandler.PayOrder) // 支付订单
 
 			// 收藏相关
-			shopAuth.GET("/favorites", shopHandler.GetFavorites)           // 获取收藏列表
-			shopAuth.POST("/favorites", shopHandler.AddToFavorites)        // 添加收藏
+			shopAuth.GET("/favorites", shopHandler.GetFavorites)               // 获取收藏列表
+			shopAuth.POST("/favorites", shopHandler.AddToFavorites)            // 添加收藏
 			shopAuth.DELETE("/favorites/:id", shopHandler.RemoveFromFavorites) // 取消收藏
 		}
-		
+
 		// OP Code系统 - OpenPenPal核心地理编码系统 - 重新启用
 		opcode := protected.Group("/opcode")
 		{
 			// 用户功能
-			opcode.POST("/apply", opcodeHandler.ApplyOPCode)                     // 申请OP Code
-			opcode.GET("/validate", opcodeHandler.ValidateOPCode)                // 验证格式
-			opcode.GET("/search", opcodeHandler.SearchOPCodes)                   // 搜索OP Code
-			opcode.GET("/search/schools", opcodeHandler.SearchSchools)           // 搜索学校
-			opcode.GET("/search/areas", opcodeHandler.SearchAreas)               // 搜索片区
-			opcode.GET("/search/buildings", opcodeHandler.SearchBuildings)       // 搜索楼栋
-			opcode.GET("/search/points", opcodeHandler.SearchPoints)             // 搜索投递点
-			opcode.GET("/stats/:school_code", opcodeHandler.GetOPCodeStats)      // 获取统计
-			opcode.GET("/:code", opcodeHandler.GetOPCode)                        // 获取OP Code信息
-			
+			opcode.POST("/apply", opcodeHandler.ApplyOPCode)                // 申请OP Code
+			opcode.GET("/validate", opcodeHandler.ValidateOPCode)           // 验证格式
+			opcode.GET("/search", opcodeHandler.SearchOPCodes)              // 搜索OP Code
+			opcode.GET("/search/schools", opcodeHandler.SearchSchools)      // 搜索学校
+			opcode.GET("/search/areas", opcodeHandler.SearchAreas)          // 搜索片区
+			opcode.GET("/search/buildings", opcodeHandler.SearchBuildings)  // 搜索楼栋
+			opcode.GET("/search/points", opcodeHandler.SearchPoints)        // 搜索投递点
+			opcode.GET("/stats/:school_code", opcodeHandler.GetOPCodeStats) // 获取统计
+			opcode.GET("/:code", opcodeHandler.GetOPCode)                   // 获取OP Code信息
+
 			// 管理功能（需要额外权限验证）
 			opcodeAdmin := opcode.Group("/admin")
 			{
@@ -663,26 +661,26 @@ func main() {
 		// 条码系统 - PRD规格实现
 		barcodes := protected.Group("/barcodes")
 		{
-			barcodes.POST("", barcodeHandler.CreateBarcode)                      // 创建条码
-			barcodes.PATCH("/:id/bind", barcodeHandler.BindBarcode)              // 绑定条码
-			barcodes.PATCH("/:id/status", barcodeHandler.UpdateBarcodeStatus)    // 更新状态
-			barcodes.GET("/:id/status", barcodeHandler.GetBarcodeStatus)         // 获取状态
+			barcodes.POST("", barcodeHandler.CreateBarcode)                         // 创建条码
+			barcodes.PATCH("/:id/bind", barcodeHandler.BindBarcode)                 // 绑定条码
+			barcodes.PATCH("/:id/status", barcodeHandler.UpdateBarcodeStatus)       // 更新状态
+			barcodes.GET("/:id/status", barcodeHandler.GetBarcodeStatus)            // 获取状态
 			barcodes.POST("/:id/validate", barcodeHandler.ValidateBarcodeOperation) // 验证操作权限
 		}
 
 		// 扫描事件系统 - PRD要求的完整扫描历史
 		scanEvents := protected.Group("/scan-events")
 		{
-			scanEvents.GET("", scanEventHandler.GetScanHistory)                  // 获取扫描历史
-			scanEvents.GET("/:id", scanEventHandler.GetScanEventByID)            // 获取扫描事件详情
+			scanEvents.GET("", scanEventHandler.GetScanHistory)                                  // 获取扫描历史
+			scanEvents.GET("/:id", scanEventHandler.GetScanEventByID)                            // 获取扫描事件详情
 			scanEvents.GET("/barcode/:barcode_id/timeline", scanEventHandler.GetBarcodeTimeline) // 获取条码时间线
-			scanEvents.GET("/summary", scanEventHandler.GetScanEventSummary)     // 获取统计摘要
-			scanEvents.GET("/user/activity", scanEventHandler.GetUserScanActivity) // 获取用户扫描活动
-			scanEvents.GET("/location/:op_code/stats", scanEventHandler.GetLocationScanStats) // 获取位置统计
-			
+			scanEvents.GET("/summary", scanEventHandler.GetScanEventSummary)                     // 获取统计摘要
+			scanEvents.GET("/user/activity", scanEventHandler.GetUserScanActivity)               // 获取用户扫描活动
+			scanEvents.GET("/location/:op_code/stats", scanEventHandler.GetLocationScanStats)    // 获取位置统计
+
 			// 管理员功能
-			scanEvents.POST("", scanEventHandler.CreateScanEvent)               // 手动创建扫描事件
-			scanEvents.POST("/cleanup", scanEventHandler.CleanupOldScanEvents)  // 清理旧事件
+			scanEvents.POST("", scanEventHandler.CreateScanEvent)              // 手动创建扫描事件
+			scanEvents.POST("/cleanup", scanEventHandler.CleanupOldScanEvents) // 清理旧事件
 		}
 	}
 
@@ -699,8 +697,8 @@ func main() {
 		}
 		user := userInterface.(*models.User)
 		// 检查是否是任何管理员角色
-		if user.Role == "admin" || user.Role == models.RoleCourierLevel3 || 
-		   user.Role == models.RolePlatformAdmin || user.Role == models.RoleSuperAdmin {
+		if user.Role == "admin" || user.Role == models.RoleCourierLevel3 ||
+			user.Role == models.RolePlatformAdmin || user.Role == models.RoleSuperAdmin {
 			c.Next()
 			return
 		}
@@ -741,17 +739,17 @@ func main() {
 		adminMuseum := admin.Group("/museum")
 		{
 			adminMuseum.POST("/items/:id/approve", museumHandler.ApproveMuseumItem)
-			adminMuseum.POST("/entries/:id/moderate", museumHandler.ModerateMuseumEntry)    // 审核条目
-			adminMuseum.GET("/entries/pending", museumHandler.GetPendingMuseumEntries)      // 获取待审核条目
-			adminMuseum.POST("/exhibitions", museumHandler.CreateMuseumExhibition)          // 创建展览
-			adminMuseum.PUT("/exhibitions/:id", museumHandler.UpdateMuseumExhibition)       // 更新展览
-			adminMuseum.DELETE("/exhibitions/:id", museumHandler.DeleteMuseumExhibition)    // 删除展览
-			adminMuseum.POST("/exhibitions/:id/items", museumHandler.AddItemsToExhibition)  // 向展览添加物品
-			adminMuseum.DELETE("/exhibitions/:id/items", museumHandler.RemoveItemsFromExhibition) // 从展览移除物品
+			adminMuseum.POST("/entries/:id/moderate", museumHandler.ModerateMuseumEntry)             // 审核条目
+			adminMuseum.GET("/entries/pending", museumHandler.GetPendingMuseumEntries)               // 获取待审核条目
+			adminMuseum.POST("/exhibitions", museumHandler.CreateMuseumExhibition)                   // 创建展览
+			adminMuseum.PUT("/exhibitions/:id", museumHandler.UpdateMuseumExhibition)                // 更新展览
+			adminMuseum.DELETE("/exhibitions/:id", museumHandler.DeleteMuseumExhibition)             // 删除展览
+			adminMuseum.POST("/exhibitions/:id/items", museumHandler.AddItemsToExhibition)           // 向展览添加物品
+			adminMuseum.DELETE("/exhibitions/:id/items", museumHandler.RemoveItemsFromExhibition)    // 从展览移除物品
 			adminMuseum.PUT("/exhibitions/:id/items/order", museumHandler.UpdateExhibitionItemOrder) // 更新物品显示顺序
-			adminMuseum.POST("/exhibitions/:id/publish", museumHandler.PublishExhibition)   // 发布展览
-			adminMuseum.POST("/refresh-stats", museumHandler.RefreshMuseumStats)            // 刷新统计数据
-			adminMuseum.GET("/analytics", museumHandler.GetMuseumAnalytics)                 // 获取分析数据
+			adminMuseum.POST("/exhibitions/:id/publish", museumHandler.PublishExhibition)            // 发布展览
+			adminMuseum.POST("/refresh-stats", museumHandler.RefreshMuseumStats)                     // 刷新统计数据
+			adminMuseum.GET("/analytics", museumHandler.GetMuseumAnalytics)                          // 获取分析数据
 		}
 
 		// 数据分析管理
@@ -795,43 +793,43 @@ func main() {
 		// AI管理
 		adminAI := admin.Group("/ai")
 		{
-			adminAI.GET("/config", aiHandler.GetAIConfig)           // 获取AI配置
-			adminAI.PUT("/config", aiHandler.UpdateAIConfig)        // 更新AI配置
-			adminAI.GET("/templates", aiHandler.GetContentTemplates) // 获取内容模板
+			adminAI.GET("/config", aiHandler.GetAIConfig)               // 获取AI配置
+			adminAI.PUT("/config", aiHandler.UpdateAIConfig)            // 更新AI配置
+			adminAI.GET("/templates", aiHandler.GetContentTemplates)    // 获取内容模板
 			adminAI.POST("/templates", aiHandler.CreateContentTemplate) // 创建内容模板
-			adminAI.GET("/monitoring", aiHandler.GetAIMonitoring)   // 获取AI监控数据
-			adminAI.GET("/analytics", aiHandler.GetAIAnalytics)     // 获取AI分析数据
-			adminAI.GET("/logs", aiHandler.GetAILogs)               // 获取AI操作日志
-			adminAI.POST("/test-provider", aiHandler.TestAIProvider) // 测试AI提供商连接
+			adminAI.GET("/monitoring", aiHandler.GetAIMonitoring)       // 获取AI监控数据
+			adminAI.GET("/analytics", aiHandler.GetAIAnalytics)         // 获取AI分析数据
+			adminAI.GET("/logs", aiHandler.GetAILogs)                   // 获取AI操作日志
+			adminAI.POST("/test-provider", aiHandler.TestAIProvider)    // 测试AI提供商连接
 		}
 
 		// 商店管理
 		adminShop := admin.Group("/shop")
 		{
-			adminShop.POST("/products", shopHandler.CreateProduct)              // 创建商品
-			adminShop.PUT("/products/:id", shopHandler.UpdateProduct)           // 更新商品
-			adminShop.DELETE("/products/:id", shopHandler.DeleteProduct)        // 删除商品
-			adminShop.PUT("/orders/:id/status", shopHandler.UpdateOrderStatus)  // 更新订单状态
+			adminShop.POST("/products", shopHandler.CreateProduct)             // 创建商品
+			adminShop.PUT("/products/:id", shopHandler.UpdateProduct)          // 更新商品
+			adminShop.DELETE("/products/:id", shopHandler.DeleteProduct)       // 删除商品
+			adminShop.PUT("/orders/:id/status", shopHandler.UpdateOrderStatus) // 更新订单状态
 			adminShop.GET("/stats", shopHandler.GetShopStatistics)             // 获取商店统计
 		}
 
 		// ==================== SOTA 管理API适配路由 ====================
 		// 兼容Java前端期待的API格式和路径
-		
+
 		// 用户管理 - 适配Java前端
 		admin.GET("/users", adminAdapter.GetUsersCompat)
-		admin.GET("/users/:id", adminAdapter.GetUserCompat) 
-		admin.PUT("/users/:id", adminAdapter.UpdateUserCompat)
+		// admin.GET("/users/:id", adminAdapter.GetUserCompat) // 与adminUsers组路由冲突，已注释
+		// admin.PUT("/users/:id", adminAdapter.UpdateUserCompat) // 与adminUsers组路由冲突，已注释
 		admin.POST("/users/:id/unlock", adminAdapter.UnlockUserCompat)
 		admin.POST("/users/:id/reset-password", adminAdapter.ResetPasswordCompat)
 		admin.GET("/users/stats/role", adminAdapter.GetUserStatsCompat)
-		
+
 		// 信件管理 - 适配Java前端
 		admin.GET("/letters", adminAdapter.GetLettersCompat)
 		admin.GET("/letters/:id", adminAdapter.GetLetterCompat)
 		admin.PUT("/letters/:id/status", adminAdapter.UpdateLetterStatusCompat)
 		admin.GET("/letters/stats/overview", adminAdapter.GetLetterStatsCompat)
-		
+
 		// 系统配置 - 适配Java前端
 		admin.GET("/system/config", adminAdapter.GetSystemConfigCompat)
 		admin.PUT("/system/config/:key", adminAdapter.UpdateSystemConfigCompat)

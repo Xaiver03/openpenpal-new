@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"openpenpal-backend/internal/models"
 	"gorm.io/gorm"
+	"openpenpal-backend/internal/models"
 )
 
 type FollowService struct {
@@ -39,7 +39,7 @@ func (s *FollowService) FollowUser(followerID, followingID string, notificationE
 	// 检查是否已经关注
 	var existingRelation models.UserRelationship
 	err := s.db.Where("follower_id = ? AND following_id = ?", followerID, followingID).First(&existingRelation).Error
-	
+
 	if err == nil {
 		// 已存在关注关系
 		if existingRelation.Status == models.FollowStatusActive {
@@ -49,12 +49,12 @@ func (s *FollowService) FollowUser(followerID, followingID string, notificationE
 				Message:     "Already following this user",
 			}, nil
 		}
-		
+
 		// 重新激活关注关系
 		existingRelation.Status = models.FollowStatusActive
 		existingRelation.NotificationEnabled = notificationEnabled
 		existingRelation.UpdatedAt = time.Now()
-		
+
 		if err := s.db.Save(&existingRelation).Error; err != nil {
 			return nil, err
 		}
@@ -66,7 +66,7 @@ func (s *FollowService) FollowUser(followerID, followingID string, notificationE
 			Status:              models.FollowStatusActive,
 			NotificationEnabled: notificationEnabled,
 		}
-		
+
 		if err := s.db.Create(&newRelation).Error; err != nil {
 			return nil, err
 		}
@@ -96,11 +96,11 @@ func (s *FollowService) FollowUser(followerID, followingID string, notificationE
 	}
 
 	return &models.FollowActionResponse{
-		Success:        true,
-		IsFollowing:    true,
-		FollowerCount:  followerCount,
-		FollowedAt:     time.Now().Format(time.RFC3339),
-		Message:        "Successfully followed user",
+		Success:       true,
+		IsFollowing:   true,
+		FollowerCount: followerCount,
+		FollowedAt:    time.Now().Format(time.RFC3339),
+		Message:       "Successfully followed user",
 	}, nil
 }
 
@@ -109,7 +109,7 @@ func (s *FollowService) UnfollowUser(followerID, followingID string) (*models.Fo
 	// 查找关注关系
 	var relation models.UserRelationship
 	err := s.db.Where("follower_id = ? AND following_id = ?", followerID, followingID).First(&relation).Error
-	
+
 	if err == gorm.ErrRecordNotFound {
 		return &models.FollowActionResponse{
 			Success:     false,
@@ -117,7 +117,7 @@ func (s *FollowService) UnfollowUser(followerID, followingID string) (*models.Fo
 			Message:     "Not following this user",
 		}, nil
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (s *FollowService) UnfollowUser(followerID, followingID string) (*models.Fo
 // GetFollowers 获取用户的粉丝列表
 func (s *FollowService) GetFollowers(userID string, req *models.FollowListRequest) (*models.FollowListResponse, error) {
 	offset := (req.Page - 1) * req.Limit
-	
+
 	query := s.db.Table("user_relationships").
 		Select("users.*").
 		Joins("JOIN users ON users.id = user_relationships.follower_id").
@@ -177,7 +177,7 @@ func (s *FollowService) GetFollowers(userID string, req *models.FollowListReques
 	case "created_at":
 		orderField = "user_relationships.created_at"
 	}
-	
+
 	order := "DESC"
 	if req.Order == "asc" {
 		order = "ASC"
@@ -200,7 +200,7 @@ func (s *FollowService) GetFollowers(userID string, req *models.FollowListReques
 	for _, user := range users {
 		stats, _ := s.getUserFollowStats(user.ID)
 		profile, _ := s.getUserProfile(user.ID)
-		
+
 		followUser := user.ToFollowUser(stats, profile)
 		followUsers = append(followUsers, *followUser)
 	}
@@ -208,7 +208,7 @@ func (s *FollowService) GetFollowers(userID string, req *models.FollowListReques
 	response := &models.FollowListResponse{
 		Users: followUsers,
 	}
-	
+
 	response.Pagination.Page = req.Page
 	response.Pagination.Limit = req.Limit
 	response.Pagination.Total = int(total)
@@ -220,7 +220,7 @@ func (s *FollowService) GetFollowers(userID string, req *models.FollowListReques
 // GetFollowing 获取用户的关注列表
 func (s *FollowService) GetFollowing(userID string, req *models.FollowListRequest) (*models.FollowListResponse, error) {
 	offset := (req.Page - 1) * req.Limit
-	
+
 	query := s.db.Table("user_relationships").
 		Select("users.*").
 		Joins("JOIN users ON users.id = user_relationships.following_id").
@@ -247,7 +247,7 @@ func (s *FollowService) GetFollowing(userID string, req *models.FollowListReques
 	case "created_at":
 		orderField = "user_relationships.created_at"
 	}
-	
+
 	order := "DESC"
 	if req.Order == "asc" {
 		order = "ASC"
@@ -270,7 +270,7 @@ func (s *FollowService) GetFollowing(userID string, req *models.FollowListReques
 	for _, user := range users {
 		stats, _ := s.getUserFollowStats(user.ID)
 		profile, _ := s.getUserProfile(user.ID)
-		
+
 		followUser := user.ToFollowUser(stats, profile)
 		// 标记为正在关注
 		followUser.IsFollowing = true
@@ -280,7 +280,7 @@ func (s *FollowService) GetFollowing(userID string, req *models.FollowListReques
 	response := &models.FollowListResponse{
 		Users: followUsers,
 	}
-	
+
 	response.Pagination.Page = req.Page
 	response.Pagination.Limit = req.Limit
 	response.Pagination.Total = int(total)
@@ -349,15 +349,15 @@ func (s *FollowService) SearchUsers(req *models.UserSearchRequest, currentUserID
 	for _, user := range users {
 		stats, _ := s.getUserFollowStats(user.ID)
 		profile, _ := s.getUserProfile(user.ID)
-		
+
 		followUser := user.ToFollowUser(stats, profile)
-		
+
 		// 检查当前用户是否关注了这个用户
 		if currentUserID != "" {
 			isFollowing, _ := s.IsFollowing(currentUserID, user.ID)
 			followUser.IsFollowing = isFollowing
 		}
-		
+
 		followUsers = append(followUsers, *followUser)
 	}
 
@@ -405,21 +405,21 @@ func (s *FollowService) GetUserSuggestions(userID string, req *models.UserSugges
 	for _, user := range users {
 		stats, _ := s.getUserFollowStats(user.ID)
 		profile, _ := s.getUserProfile(user.ID)
-		
+
 		followUser := user.ToFollowUser(stats, profile)
-		
+
 		// 确定推荐理由
 		reason := "活跃用户"
 		if user.SchoolCode == currentUser.SchoolCode {
 			reason = "同校推荐"
 		}
-		
+
 		suggestion := models.FollowSuggestionItem{
 			User:            *followUser,
 			Reason:          reason,
 			ConfidenceScore: 0.8, // 固定置信度
 		}
-		
+
 		suggestions = append(suggestions, suggestion)
 	}
 
@@ -433,17 +433,17 @@ func (s *FollowService) GetUserSuggestions(userID string, req *models.UserSugges
 // IsFollowing 检查是否关注用户
 func (s *FollowService) IsFollowing(followerID, followingID string) (bool, error) {
 	var relation models.UserRelationship
-	err := s.db.Where("follower_id = ? AND following_id = ? AND status = ?", 
+	err := s.db.Where("follower_id = ? AND following_id = ? AND status = ?",
 		followerID, followingID, models.FollowStatusActive).First(&relation).Error
-		
+
 	if err == gorm.ErrRecordNotFound {
 		return false, nil
 	}
-	
+
 	if err != nil {
 		return false, err
 	}
-	
+
 	return true, nil
 }
 
@@ -453,7 +453,7 @@ func (s *FollowService) GetFollowStatus(currentUserID, targetUserID string) (map
 	if err != nil {
 		return nil, err
 	}
-	
+
 	isFollower, err := s.IsFollowing(targetUserID, currentUserID)
 	if err != nil {
 		return nil, err
@@ -504,14 +504,14 @@ func (s *FollowService) updateFollowStats(followerID, followingID string) error 
 func (s *FollowService) getUserFollowStats(userID string) (*models.FollowStats, error) {
 	var stats models.FollowStats
 	err := s.db.Where("user_id = ?", userID).First(&stats).Error
-	
+
 	if err == gorm.ErrRecordNotFound {
 		// 如果统计记录不存在，创建一个
 		stats = models.FollowStats{UserID: userID}
 		s.db.Create(&stats)
 		return &stats, nil
 	}
-	
+
 	return &stats, err
 }
 

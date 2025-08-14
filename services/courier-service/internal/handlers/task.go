@@ -54,9 +54,9 @@ func (h *TaskHandler) GetTasks(c *gin.Context) {
 	}
 
 	response := map[string]interface{}{
-		"tasks": tasks,
-		"total": total,
-		"limit": query.Limit,
+		"tasks":  tasks,
+		"total":  total,
+		"limit":  query.Limit,
 		"offset": query.Offset,
 	}
 

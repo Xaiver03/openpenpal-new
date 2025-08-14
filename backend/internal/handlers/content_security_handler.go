@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 	"openpenpal-backend/internal/services"
 	"openpenpal-backend/internal/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,7 +48,7 @@ func (h *ContentSecurityHandler) CheckContent(c *gin.Context) {
 		utils.UnauthorizedResponse(c, "User not authenticated")
 		return
 	}
-	
+
 	userIDStr, ok := userID.(string)
 	if !ok {
 		utils.InternalServerErrorResponse(c, "Invalid user ID format", nil)
@@ -85,7 +85,7 @@ func (h *ContentSecurityHandler) GetUserViolations(c *gin.Context) {
 		utils.UnauthorizedResponse(c, "User not authenticated")
 		return
 	}
-	
+
 	userIDStr, ok := userID.(string)
 	if !ok {
 		utils.InternalServerErrorResponse(c, "Invalid user ID format", nil)
@@ -121,7 +121,7 @@ func (h *ContentSecurityHandler) GetUserViolations(c *gin.Context) {
 func (h *ContentSecurityHandler) GetPendingReviews(c *gin.Context) {
 	// 检查管理员权限
 	// 这里应该有权限检查逻辑
-	
+
 	// 获取limit参数
 	limit := 50 // 默认50条
 	if limitStr := c.Query("limit"); limitStr != "" {
@@ -183,7 +183,7 @@ func (h *ContentSecurityHandler) ReviewViolation(c *gin.Context) {
 		utils.UnauthorizedResponse(c, "User not authenticated")
 		return
 	}
-	
+
 	reviewerIDStr, ok := reviewerID.(string)
 	if !ok {
 		utils.InternalServerErrorResponse(c, "Invalid user ID format", nil)

@@ -39,9 +39,9 @@ type UserUsageLimits struct {
 
 // DefaultUsageLimits 默认使用限制（符合PRD要求）
 var DefaultUsageLimits = UserUsageLimits{
-	DailyInspirations: 2, // 每日最多2条灵感，符合PRD要求
-	DailyAIReplies:    5, // 每日最多5条AI回信
-	DailyMatches:      3, // 每日最多3次匹配
+	DailyInspirations: 2,  // 每日最多2条灵感，符合PRD要求
+	DailyAIReplies:    5,  // 每日最多5条AI回信
+	DailyMatches:      3,  // 每日最多3次匹配
 	DailyCurations:    10, // 每日最多10次策展
 }
 
@@ -61,10 +61,10 @@ func NewUserUsageService(db *gorm.DB, config *config.Config) *UserUsageService {
 // GetUserDailyUsage 获取用户今日使用量
 func (s *UserUsageService) GetUserDailyUsage(userID string) (*UserDailyUsage, error) {
 	today := time.Now().Truncate(24 * time.Hour)
-	
+
 	var usage UserDailyUsage
 	err := s.db.Where("user_id = ? AND date = ?", userID, today).First(&usage).Error
-	
+
 	if err != nil && err == gorm.ErrRecordNotFound {
 		// 如果没有记录，创建新的
 		usage = UserDailyUsage{
@@ -78,7 +78,7 @@ func (s *UserUsageService) GetUserDailyUsage(userID string) (*UserDailyUsage, er
 		}
 		err = s.db.Create(&usage).Error
 	}
-	
+
 	return &usage, err
 }
 
@@ -88,7 +88,7 @@ func (s *UserUsageService) CanUseInspiration(userID string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	return usage.InspirationsUsed < DefaultUsageLimits.DailyInspirations, nil
 }
 
@@ -98,11 +98,11 @@ func (s *UserUsageService) UseInspiration(userID string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if usage.InspirationsUsed >= DefaultUsageLimits.DailyInspirations {
 		return fmt.Errorf("daily inspiration limit exceeded")
 	}
-	
+
 	usage.InspirationsUsed++
 	return s.db.Save(usage).Error
 }
@@ -113,7 +113,7 @@ func (s *UserUsageService) CanUseAIReply(userID string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	return usage.AIRepliesGenerated < DefaultUsageLimits.DailyAIReplies, nil
 }
 
@@ -123,11 +123,11 @@ func (s *UserUsageService) UseAIReply(userID string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if usage.AIRepliesGenerated >= DefaultUsageLimits.DailyAIReplies {
 		return fmt.Errorf("daily AI reply limit exceeded")
 	}
-	
+
 	usage.AIRepliesGenerated++
 	return s.db.Save(usage).Error
 }
@@ -138,7 +138,7 @@ func (s *UserUsageService) CanUsePenpalMatch(userID string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	return usage.PenpalMatches < DefaultUsageLimits.DailyMatches, nil
 }
 
@@ -148,11 +148,11 @@ func (s *UserUsageService) UsePenpalMatch(userID string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if usage.PenpalMatches >= DefaultUsageLimits.DailyMatches {
 		return fmt.Errorf("daily penpal match limit exceeded")
 	}
-	
+
 	usage.PenpalMatches++
 	return s.db.Save(usage).Error
 }
@@ -163,7 +163,7 @@ func (s *UserUsageService) CanUseCuration(userID string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	return usage.LettersCurated < DefaultUsageLimits.DailyCurations, nil
 }
 
@@ -173,11 +173,11 @@ func (s *UserUsageService) UseCuration(userID string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if usage.LettersCurated >= DefaultUsageLimits.DailyCurations {
 		return fmt.Errorf("daily curation limit exceeded")
 	}
-	
+
 	usage.LettersCurated++
 	return s.db.Save(usage).Error
 }
@@ -188,7 +188,7 @@ func (s *UserUsageService) GetUserUsageStats(userID string) (*models.AIUsageStat
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &models.AIUsageStats{
 		UserID:        userID,
 		RequestCount:  usage.AIRepliesGenerated + usage.InspirationsUsed + usage.PenpalMatches + usage.LettersCurated,
@@ -203,20 +203,20 @@ func (s *UserUsageService) GetUserUsageStats(userID string) (*models.AIUsageStat
 // GetUserUsageHistory 获取用户使用历史（最近7天）
 func (s *UserUsageService) GetUserUsageHistory(userID string) ([]UserDailyUsage, error) {
 	var history []UserDailyUsage
-	
+
 	sevenDaysAgo := time.Now().AddDate(0, 0, -7).Truncate(24 * time.Hour)
-	
+
 	err := s.db.Where("user_id = ? AND date >= ?", userID, sevenDaysAgo).
 		Order("date DESC").
 		Find(&history).Error
-		
+
 	return history, err
 }
 
 // CleanupOldRecords 清理旧记录（保留30天）
 func (s *UserUsageService) CleanupOldRecords() error {
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30).Truncate(24 * time.Hour)
-	
+
 	return s.db.Where("date < ?", thirtyDaysAgo).Delete(&UserDailyUsage{}).Error
 }
 

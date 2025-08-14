@@ -10,8 +10,8 @@ import (
 
 // CourierLevelHandler 信使等级管理处理器
 type CourierLevelHandler struct {
-	courierService    *services.CourierService
-	levelService      *services.CourierLevelService
+	courierService *services.CourierService
+	levelService   *services.CourierLevelService
 }
 
 // NewCourierLevelHandler 创建信使等级处理器
@@ -140,10 +140,10 @@ func (h *CourierLevelHandler) ProcessUpgradeRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, models.SuccessResponse(map[string]interface{}{
-		"request_id": requestID,
-		"action":     request.Action,
+		"request_id":   requestID,
+		"action":       request.Action,
 		"processed_by": reviewerID,
-		"message":    "Upgrade request processed successfully",
+		"message":      "Upgrade request processed successfully",
 	}))
 }
 
@@ -152,8 +152,8 @@ func (h *CourierLevelHandler) SubmitUpgradeRequest(c *gin.Context) {
 	courierID := c.GetString("user_id")
 
 	var request struct {
-		RequestLevel models.CourierLevel `json:"request_level" binding:"required,min=2,max=4"`
-		Reason       string              `json:"reason" binding:"required"`
+		RequestLevel models.CourierLevel    `json:"request_level" binding:"required,min=2,max=4"`
+		Reason       string                 `json:"reason" binding:"required"`
 		Evidence     map[string]interface{} `json:"evidence"`
 	}
 
@@ -215,10 +215,10 @@ func (h *CourierLevelHandler) AssignZone(c *gin.Context) {
 	assignerID := c.GetString("user_id")
 
 	var request struct {
-		CourierID string                  `json:"courier_id" binding:"required"`
-		ZoneType  models.CourierZoneType  `json:"zone_type" binding:"required"`
-		ZoneID    string                  `json:"zone_id" binding:"required"`
-		ZoneName  string                  `json:"zone_name" binding:"required"`
+		CourierID string                 `json:"courier_id" binding:"required"`
+		ZoneType  models.CourierZoneType `json:"zone_type" binding:"required"`
+		ZoneID    string                 `json:"zone_id" binding:"required"`
+		ZoneName  string                 `json:"zone_name" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -252,12 +252,12 @@ func (h *CourierLevelHandler) AssignZone(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, models.SuccessResponse(map[string]interface{}{
-		"courier_id": request.CourierID,
-		"zone_type":  request.ZoneType,
-		"zone_id":    request.ZoneID,
-		"zone_name":  request.ZoneName,
+		"courier_id":  request.CourierID,
+		"zone_type":   request.ZoneType,
+		"zone_id":     request.ZoneID,
+		"zone_name":   request.ZoneName,
 		"assigned_by": assignerID,
-		"message":    "Zone assigned successfully",
+		"message":     "Zone assigned successfully",
 	}))
 }
 

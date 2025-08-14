@@ -36,11 +36,11 @@ func (pm *ProxyManager) ProxyHandler(serviceName string) gin.HandlerFunc {
 		// 获取目标服务实例
 		instance, err := pm.serviceDiscovery.GetHealthyInstance(serviceName)
 		if err != nil {
-			pm.logger.Error("Failed to get healthy instance", 
+			pm.logger.Error("Failed to get healthy instance",
 				zap.String("service", serviceName),
 				zap.Error(err),
 			)
-			
+
 			c.JSON(http.StatusServiceUnavailable, models.ErrorResponse{
 				Code:      http.StatusServiceUnavailable,
 				Message:   "Service temporarily unavailable",
@@ -71,7 +71,7 @@ func (pm *ProxyManager) ProxyHandler(serviceName string) gin.HandlerFunc {
 // getOrCreateProxy 获取或创建代理
 func (pm *ProxyManager) getOrCreateProxy(serviceName, targetHost string) *httputil.ReverseProxy {
 	key := fmt.Sprintf("%s-%s", serviceName, targetHost)
-	
+
 	if proxy, exists := pm.proxies[key]; exists {
 		return proxy
 	}
@@ -125,10 +125,10 @@ func (pm *ProxyManager) setupProxyRequest(c *gin.Context, serviceName string) {
 func (pm *ProxyManager) modifyRequest(req *http.Request, serviceName string) {
 	// 重写路径：移除服务前缀
 	req.URL.Path = pm.rewritePath(req.URL.Path, serviceName)
-	
+
 	// 设置User-Agent
 	req.Header.Set("User-Agent", "OpenPenPal-API-Gateway/1.0")
-	
+
 	pm.logger.Debug("Proxy request modified",
 		zap.String("service", serviceName),
 		zap.String("path", req.URL.Path),
@@ -140,7 +140,7 @@ func (pm *ProxyManager) modifyRequest(req *http.Request, serviceName string) {
 func (pm *ProxyManager) rewritePath(originalPath, serviceName string) string {
 	// 移除 /api/v1 前缀
 	path := strings.TrimPrefix(originalPath, "/api/v1")
-	
+
 	// 根据服务名重写路径
 	switch serviceName {
 	case "main-backend":
@@ -168,7 +168,7 @@ func (pm *ProxyManager) modifyResponse(resp *http.Response, serviceName string) 
 	// 添加服务标识头
 	resp.Header.Set("X-Service-Source", serviceName)
 	resp.Header.Set("X-Gateway", "openpenpal-api-gateway")
-	
+
 	// 统一CORS头
 	resp.Header.Set("Access-Control-Allow-Origin", "*")
 	resp.Header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -179,7 +179,7 @@ func (pm *ProxyManager) modifyResponse(resp *http.Response, serviceName string) 
 
 // handleProxyError 处理代理错误
 func (pm *ProxyManager) handleProxyError(w http.ResponseWriter, r *http.Request, serviceName string, err error) {
-	pm.logger.Error("Proxy error", 
+	pm.logger.Error("Proxy error",
 		zap.String("service", serviceName),
 		zap.String("path", r.URL.Path),
 		zap.Error(err),
@@ -190,7 +190,7 @@ func (pm *ProxyManager) handleProxyError(w http.ResponseWriter, r *http.Request,
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadGateway)
-	
+
 	errorResponse := models.ErrorResponse{
 		Code:      http.StatusBadGateway,
 		Message:   "Service temporarily unavailable",
@@ -224,7 +224,7 @@ func (pm *ProxyManager) logRequest(c *gin.Context, serviceName, targetHost strin
 func (pm *ProxyManager) HealthCheckHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		serviceName := c.Param("service")
-		
+
 		if serviceName == "" {
 			// 检查所有服务
 			status := pm.serviceDiscovery.GetAllServicesHealth()

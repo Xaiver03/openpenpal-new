@@ -14,7 +14,7 @@ func NewWebSocketAdapter(service *WebSocketService) *WebSocketAdapter {
 func (a *WebSocketAdapter) BroadcastToUser(userID string, message interface{}) error {
 	// Convert interface{} to *Message format expected by Hub
 	var messageData map[string]interface{}
-	
+
 	// Type assertion to handle different message formats
 	switch v := message.(type) {
 	case map[string]interface{}:
@@ -25,7 +25,7 @@ func (a *WebSocketAdapter) BroadcastToUser(userID string, message interface{}) e
 			"data": v,
 		}
 	}
-	
+
 	wsMessage := NewMessage("courier_notification", messageData)
 	a.service.GetHub().BroadcastToUser(userID, wsMessage)
 	return nil

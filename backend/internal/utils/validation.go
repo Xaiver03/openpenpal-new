@@ -30,34 +30,34 @@ type DetailedValidationResponse struct {
 
 // Field display name mappings for Chinese UI
 var fieldDisplayNames = map[string]string{
-	"username":     "用户名",
-	"email":        "邮箱",
-	"password":     "密码",
-	"nickname":     "昵称",
-	"school_code":  "学校代码",
-	"content":      "内容",
-	"title":        "标题",
-	"recipient":    "收件人",
-	"sender":       "发件人",
-	"description":  "描述",
-	"tags":         "标签",
-	"name":         "名称",
-	"price":        "价格",
-	"category":     "分类",
-	"status":       "状态",
-	"type":         "类型",
-	"amount":       "金额",
-	"quantity":     "数量",
-	"zone":         "区域",
-	"level":        "等级",
-	"reason":       "原因",
-	"comment":      "评论",
-	"rating":       "评分",
-	"address":      "地址",
-	"phone":        "电话",
-	"code":         "编码",
-	"message":      "消息",
-	"data":         "数据",
+	"username":    "用户名",
+	"email":       "邮箱",
+	"password":    "密码",
+	"nickname":    "昵称",
+	"school_code": "学校代码",
+	"content":     "内容",
+	"title":       "标题",
+	"recipient":   "收件人",
+	"sender":      "发件人",
+	"description": "描述",
+	"tags":        "标签",
+	"name":        "名称",
+	"price":       "价格",
+	"category":    "分类",
+	"status":      "状态",
+	"type":        "类型",
+	"amount":      "金额",
+	"quantity":    "数量",
+	"zone":        "区域",
+	"level":       "等级",
+	"reason":      "原因",
+	"comment":     "评论",
+	"rating":      "评分",
+	"address":     "地址",
+	"phone":       "电话",
+	"code":        "编码",
+	"message":     "消息",
+	"data":        "数据",
 }
 
 // ParseValidationErrors converts Go validator errors to user-friendly field errors
@@ -187,13 +187,13 @@ func ParseAndRespondValidationError(c *gin.Context, err error, contextMessage st
 const (
 	UserRegistrationValidationMsg = "用户注册信息验证失败"
 	UserLoginValidationMsg        = "用户登录信息验证失败"
-	LetterValidationMsg          = "信件信息验证失败"
-	MuseumValidationMsg          = "博物馆信息验证失败"
-	ShopValidationMsg            = "商店信息验证失败"
-	CourierValidationMsg         = "信使信息验证失败"
-	AdminValidationMsg           = "管理员操作验证失败"
-	AIValidationMsg              = "AI请求信息验证失败"
-	EnvelopeValidationMsg        = "信封信息验证失败"
+	LetterValidationMsg           = "信件信息验证失败"
+	MuseumValidationMsg           = "博物馆信息验证失败"
+	ShopValidationMsg             = "商店信息验证失败"
+	CourierValidationMsg          = "信使信息验证失败"
+	AdminValidationMsg            = "管理员操作验证失败"
+	AIValidationMsg               = "AI请求信息验证失败"
+	EnvelopeValidationMsg         = "信封信息验证失败"
 )
 
 // Helper functions

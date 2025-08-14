@@ -40,10 +40,10 @@ func (s *CourierGrowthService) GetGrowthPath(courierID string) (map[string]inter
 
 	// 构建成长路径数据
 	growthPath := map[string]interface{}{
-		"courier_id":     courierID,
-		"current_level":  currentLevel,
-		"current_name":   currentLevel.GetLevelName(),
-		"paths":          make([]map[string]interface{}, 0),
+		"courier_id":    courierID,
+		"current_level": currentLevel,
+		"current_name":  currentLevel.GetLevelName(),
+		"paths":         make([]map[string]interface{}, 0),
 	}
 
 	// 添加所有可能的升级路径
@@ -54,11 +54,11 @@ func (s *CourierGrowthService) GetGrowthPath(courierID string) (map[string]inter
 
 		requirements := models.DefaultGrowthRequirements[level]
 		pathInfo := map[string]interface{}{
-			"target_level":   level,
-			"target_name":    level.GetLevelName(),
-			"requirements":   requirements,
-			"zone_type":      models.DefaultZoneMapping[level],
-			"permissions":    models.DefaultPermissionMatrix[level],
+			"target_level": level,
+			"target_name":  level.GetLevelName(),
+			"requirements": requirements,
+			"zone_type":    models.DefaultZoneMapping[level],
+			"permissions":  models.DefaultPermissionMatrix[level],
 		}
 
 		// 检查是否可以升级到这个等级
@@ -210,11 +210,11 @@ func (s *CourierGrowthService) checkSingleRequirement(courierID string, req mode
 		// 检查完成率
 		oneMonthAgo := time.Now().AddDate(0, -1, 0)
 		var totalTasks, completedTasks int64
-		
+
 		s.db.Model(&models.Task{}).
 			Where("courier_id = ? AND created_at > ?", courierID, oneMonthAgo).
 			Count(&totalTasks)
-		
+
 		s.db.Model(&models.Task{}).
 			Where("courier_id = ? AND status = ? AND created_at > ?", courierID, "delivered", oneMonthAgo).
 			Count(&completedTasks)
@@ -302,7 +302,7 @@ func (s *CourierGrowthService) checkIncentiveAvailability(courierID string, ince
 		s.db.Model(&models.Task{}).
 			Where("courier_id = ? AND status = ? AND subsidy_claimed = ?", courierID, "delivered", false).
 			Count(&unclaimedTasks)
-		
+
 		if unclaimedTasks > 0 {
 			return true, float64(unclaimedTasks) * incentive.Value, fmt.Sprintf("%d个未领取投递补贴", unclaimedTasks)
 		}
@@ -323,30 +323,30 @@ func (s *CourierGrowthService) checkIncentiveAvailability(courierID string, ince
 func (s *CourierGrowthService) checkMonthlyCommission(courierID string, incentive models.CourierIncentive) (bool, float64, string) {
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	
+
 	var monthlyTasks int64
 	var totalEarnings float64
-	
+
 	s.db.Model(&models.Task{}).
 		Where("courier_id = ? AND status = ? AND completed_at >= ?", courierID, "delivered", startOfMonth).
 		Count(&monthlyTasks)
-	
+
 	// 这里需要根据实际数据结构计算总收入
 	// 简化实现，假设每单基础收入
 	totalEarnings = float64(monthlyTasks) * 5.0 // 假设每单5元基础收入
-	
+
 	// 检查是否满足最小任务数
 	var conditions map[string]interface{}
 	json.Unmarshal([]byte(incentive.Conditions), &conditions)
-	
+
 	minTasks := int64(conditions["min_tasks"].(float64))
 	rate := conditions["rate"].(float64)
-	
+
 	if monthlyTasks >= minTasks {
 		commission := totalEarnings * rate
 		return true, commission, fmt.Sprintf("本月完成%d单，返佣%.1f%%", monthlyTasks, rate*100)
 	}
-	
+
 	return false, 0, ""
 }
 
@@ -356,7 +356,7 @@ func (s *CourierGrowthService) checkSpecialBonus(courierID string, incentive mod
 	if err := s.db.Where("user_id = ?", courierID).First(&courier).Error; err != nil {
 		return false, 0, ""
 	}
-	
+
 	// 检查是否是新手（注册不到30天）
 	if courier.ApprovedAt != nil {
 		daysSinceApproval := int(time.Since(*courier.ApprovedAt).Hours() / 24)
@@ -366,27 +366,27 @@ func (s *CourierGrowthService) checkSpecialBonus(courierID string, incentive mod
 			return true, incentive.Value, "新手专享奖励"
 		}
 	}
-	
+
 	return false, 0, ""
 }
 
 // checkAutoAwardBadges 检查自动颁发的徽章
 func (s *CourierGrowthService) checkAutoAwardBadges(courierID string) []models.CourierBadge {
 	var availableBadges []models.CourierBadge
-	
+
 	for _, defaultBadge := range models.DefaultBadges {
 		// 检查是否已经获得该徽章
 		var earnedBadge models.CourierBadgeEarned
 		if err := s.db.Where("courier_id = ? AND badge_id = ?", courierID, defaultBadge.ID).First(&earnedBadge).Error; err == nil {
 			continue // 已经获得了这个徽章
 		}
-		
+
 		// 检查是否满足获得条件
 		if s.checkBadgeConditions(courierID, defaultBadge) {
 			availableBadges = append(availableBadges, defaultBadge)
 		}
 	}
-	
+
 	return availableBadges
 }
 
@@ -396,68 +396,68 @@ func (s *CourierGrowthService) checkBadgeConditions(courierID string, badge mode
 	if err := json.Unmarshal([]byte(badge.Conditions), &conditions); err != nil {
 		return false
 	}
-	
+
 	conditionType := conditions["type"].(string)
-	
+
 	switch conditionType {
 	case "rating":
 		// 检查评分条件
 		targetRating := conditions["value"].(float64)
 		_ = conditions["duration"].(string) // 暂时忽略duration
-		
+
 		var avgRating float64
 		// 根据duration计算时间范围内的平均评分
 		// 这里需要根据实际的评分数据结构实现
-		
+
 		return avgRating >= targetRating
-		
+
 	case "ranking":
 		// 检查排名条件
 		_ = conditions["value"].(float64) // 暂时忽略topPercent
 		_ = conditions["period"].(string) // 暂时忽略period
-		
+
 		// 计算在指定期间内的排名百分比
 		// 这里需要实现排名计算逻辑
-		
+
 		return false // 简化实现
-		
+
 	case "delivery_time":
 		// 检查投递时间条件
 		maxTime := conditions["value"].(float64)
-		
+
 		var avgTime float64
 		// 计算平均投递时间
 		// 这里需要根据实际的统计数据实现
-		
+
 		return avgTime <= maxTime
-		
+
 	case "distance":
 		// 检查投递距离条件
 		_ = conditions["value"].(float64) // 暂时忽略targetDistance
 		_ = conditions["period"].(string) // 暂时忽略period
-		
+
 		// 计算指定期间内的总投递距离
 		// 这里需要根据实际的统计数据实现
-		
+
 		return false // 简化实现
-		
+
 	case "service_duration":
 		// 检查服务时长条件
 		targetMonths := conditions["value"].(float64)
-		
+
 		var courier models.Courier
 		if err := s.db.Where("user_id = ?", courierID).First(&courier).Error; err != nil {
 			return false
 		}
-		
+
 		if courier.ApprovedAt == nil {
 			return false
 		}
-		
+
 		months := time.Since(*courier.ApprovedAt).Hours() / 24 / 30
 		return months >= targetMonths
 	}
-	
+
 	return false
 }
 
@@ -466,16 +466,16 @@ func (s *CourierGrowthService) ClaimIncentive(courierID string, incentiveType mo
 	switch incentiveType {
 	case models.IncentiveTypeSubsidy:
 		return s.claimSubsidy(courierID, reference)
-		
+
 	case models.IncentiveTypePoints:
 		return s.claimPoints(courierID, reference, amount)
-		
+
 	case models.IncentiveTypeCommission:
 		return s.claimCommission(courierID, reference)
-		
+
 	case models.IncentiveTypeBadge:
 		return s.claimBadge(courierID, reference)
-		
+
 	default:
 		return nil, errors.New("不支持的激励类型")
 	}
@@ -488,23 +488,23 @@ func (s *CourierGrowthService) claimSubsidy(courierID, taskID string) (map[strin
 	if err := s.db.Where("courier_id = ? AND task_id = ? AND status = ?", courierID, taskID, "delivered").First(&task).Error; err != nil {
 		return nil, errors.New("任务不存在或未完成")
 	}
-	
+
 	// 这里需要检查是否已经领取过补贴
 	// 假设任务表中有subsidy_claimed字段
-	
+
 	// 更新任务状态为已领取补贴
 	// 这里需要根据实际的数据结构实现
-	
+
 	// 记录积分交易
 	points := 10 // 基础积分奖励
 	s.addPoints(courierID, points, "投递补贴", taskID)
-	
+
 	return map[string]interface{}{
-		"type":      "subsidy",
-		"amount":    2.0, // 基础补贴金额
-		"points":    points,
-		"task_id":   taskID,
-		"message":   "投递补贴领取成功",
+		"type":    "subsidy",
+		"amount":  2.0, // 基础补贴金额
+		"points":  points,
+		"task_id": taskID,
+		"message": "投递补贴领取成功",
 	}, nil
 }
 
@@ -514,11 +514,11 @@ func (s *CourierGrowthService) claimPoints(courierID, reference string, amount *
 	if amount != nil {
 		pointsAmount = *amount
 	}
-	
+
 	if err := s.addPoints(courierID, pointsAmount, "任务完成奖励", reference); err != nil {
 		return nil, err
 	}
-	
+
 	return map[string]interface{}{
 		"type":      "points",
 		"amount":    pointsAmount,
@@ -528,12 +528,12 @@ func (s *CourierGrowthService) claimPoints(courierID, reference string, amount *
 }
 
 // claimCommission 领取返佣
-func (s *CourierGrowthService) claimCommission(courierID, reference string) (map[string]interface{}, error) {
+func (s *CourierGrowthService) claimCommission(_ string, reference string) (map[string]interface{}, error) {
 	// 计算本月返佣金额
 	// 这里需要根据实际的业务逻辑实现
-	
+
 	commissionAmount := 25.0 // 示例金额
-	
+
 	return map[string]interface{}{
 		"type":      "commission",
 		"amount":    commissionAmount,
@@ -549,18 +549,18 @@ func (s *CourierGrowthService) claimBadge(courierID, badgeCode string) (map[stri
 	if err := s.db.Where("code = ? AND is_active = ?", badgeCode, true).First(&badge).Error; err != nil {
 		return nil, errors.New("徽章不存在")
 	}
-	
+
 	// 检查是否已经获得
 	var earnedBadge models.CourierBadgeEarned
 	if err := s.db.Where("courier_id = ? AND badge_id = ?", courierID, badge.ID).First(&earnedBadge).Error; err == nil {
 		return nil, errors.New("已经获得该徽章")
 	}
-	
+
 	// 颁发徽章
 	if err := s.AwardBadge(courierID, badgeCode, "自动获得", "", "system"); err != nil {
 		return nil, err
 	}
-	
+
 	return map[string]interface{}{
 		"type":       "badge",
 		"badge_code": badgeCode,
@@ -571,22 +571,22 @@ func (s *CourierGrowthService) claimBadge(courierID, badgeCode string) (map[stri
 }
 
 // GetRanking 获取排行榜数据
-func (s *CourierGrowthService) GetRanking(zoneType, zoneID, timeRange, rankingBy string, limit int) ([]models.CourierRankingInfo, error) {
+func (s *CourierGrowthService) GetRanking(zoneType, zoneID, timeRange, _ string, limit int) ([]models.CourierRankingInfo, error) {
 	// 这里需要根据实际的数据结构和业务逻辑实现排行榜查询
 	// 简化实现，返回示例数据
-	
+
 	var ranking []models.CourierRankingInfo
-	
+
 	// 构建基础查询
 	query := s.db.Model(&models.Courier{}).
 		Select("user_id as courier_id, level, rating").
 		Where("status = ?", "approved")
-	
+
 	// 根据区域类型过滤
 	if zoneType != "" && zoneID != "" {
 		// 这里需要添加区域过滤逻辑
 	}
-	
+
 	// 根据时间范围过滤
 	switch timeRange {
 	case "daily":
@@ -596,31 +596,31 @@ func (s *CourierGrowthService) GetRanking(zoneType, zoneID, timeRange, rankingBy
 	case "monthly":
 		query = query.Where("created_at >= ?", time.Now().AddDate(0, -1, 0))
 	}
-	
+
 	// 执行查询
 	var couriers []models.Courier
 	if err := query.Limit(limit).Find(&couriers).Error; err != nil {
 		return nil, err
 	}
-	
+
 	// 构建排行榜数据
 	for i, courier := range couriers {
 		rankingInfo := models.CourierRankingInfo{
-			CourierID:      courier.UserID,
-			Level:          courier.Level,
-			Rank:           i + 1,
+			CourierID: courier.UserID,
+			Level:     courier.Level,
+			Rank:      i + 1,
 			// 这里需要从其他表获取更多统计数据
 		}
 		ranking = append(ranking, rankingInfo)
 	}
-	
+
 	return ranking, nil
 }
 
 // UpdateTaskStatistics 更新任务统计
 func (s *CourierGrowthService) UpdateTaskStatistics(courierID, taskID, action string, data map[string]interface{}) error {
 	today := time.Now().Truncate(24 * time.Hour)
-	
+
 	// 获取或创建今日统计记录
 	var stats models.CourierStatistics
 	if err := s.db.Where("courier_id = ? AND date = ?", courierID, today).First(&stats).Error; err != nil {
@@ -634,53 +634,53 @@ func (s *CourierGrowthService) UpdateTaskStatistics(courierID, taskID, action st
 			return err
 		}
 	}
-	
+
 	// 根据动作更新统计
 	switch action {
 	case "accepted":
 		stats.TasksAccepted++
-		
+
 	case "completed":
 		stats.TasksCompleted++
-		
+
 		// 更新相关数据
 		if deliveryTime, ok := data["delivery_time"].(*int); ok && deliveryTime != nil {
 			stats.TotalDeliveryTime += *deliveryTime
 		}
-		
+
 		if distance, ok := data["distance"].(*float64); ok && distance != nil {
 			stats.DistanceTraveled += *distance
 		}
-		
+
 		if earnings, ok := data["earnings_amount"].(*float64); ok && earnings != nil {
 			stats.EarningsAmount += *earnings
 		}
-		
+
 		// 重新计算完成率
 		if stats.TasksAccepted > 0 {
 			stats.CompletionRate = float64(stats.TasksCompleted) / float64(stats.TasksAccepted) * 100
 		}
-		
+
 		// 自动奖励积分
 		s.addPoints(courierID, 10, "任务完成", taskID)
-		
+
 	case "failed":
 		stats.TasksFailed++
-		
+
 		// 重新计算完成率
 		if stats.TasksAccepted > 0 {
 			stats.CompletionRate = float64(stats.TasksCompleted) / float64(stats.TasksAccepted) * 100
 		}
 	}
-	
+
 	// 保存更新
 	if err := s.db.Save(&stats).Error; err != nil {
 		return err
 	}
-	
+
 	// 检查是否可以自动颁发徽章
 	go s.checkAndAwardBadges(courierID)
-	
+
 	return nil
 }
 
@@ -694,19 +694,19 @@ func (s *CourierGrowthService) GetEarnedBadges(courierID string) ([]models.Couri
 }
 
 // AwardBadge 颁发徽章
-func (s *CourierGrowthService) AwardBadge(courierID, badgeCode, reason, reference, awardedBy string) error {
+func (s *CourierGrowthService) AwardBadge(courierID, badgeCode, reason, reference, _ string) error {
 	// 查找徽章
 	var badge models.CourierBadge
 	if err := s.db.Where("code = ? AND is_active = ?", badgeCode, true).First(&badge).Error; err != nil {
 		return errors.New("徽章不存在")
 	}
-	
+
 	// 检查是否已经获得
 	var earnedBadge models.CourierBadgeEarned
 	if err := s.db.Where("courier_id = ? AND badge_id = ?", courierID, badge.ID).First(&earnedBadge).Error; err == nil {
 		return errors.New("已经获得该徽章")
 	}
-	
+
 	// 创建获得记录
 	earnedBadge = models.CourierBadgeEarned{
 		CourierID: courierID,
@@ -715,19 +715,19 @@ func (s *CourierGrowthService) AwardBadge(courierID, badgeCode, reason, referenc
 		Reason:    reason,
 		Reference: reference,
 	}
-	
+
 	if err := s.db.Create(&earnedBadge).Error; err != nil {
 		return err
 	}
-	
+
 	// 奖励积分
 	if badge.Points > 0 {
 		s.addPoints(courierID, badge.Points, "徽章奖励: "+badge.Name, badgeCode)
 	}
-	
+
 	// 发送通知
 	s.notifyBadgeAwarded(courierID, badge, reason)
-	
+
 	return nil
 }
 
@@ -740,21 +740,21 @@ func (s *CourierGrowthService) GetPointsBalance(courierID string) (*models.Couri
 func (s *CourierGrowthService) GetPointsHistory(courierID, transactionType string, limit, offset int) ([]models.CourierPointsTransaction, int64, error) {
 	var transactions []models.CourierPointsTransaction
 	var total int64
-	
+
 	query := s.db.Model(&models.CourierPointsTransaction{}).Where("courier_id = ?", courierID)
-	
+
 	if transactionType != "" {
 		query = query.Where("type = ?", transactionType)
 	}
-	
+
 	// 获取总数
 	query.Count(&total)
-	
+
 	// 获取分页数据
 	if err := query.Limit(limit).Offset(offset).Order("created_at DESC").Find(&transactions).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	return transactions, total, nil
 }
 
@@ -772,7 +772,7 @@ func (s *CourierGrowthService) GetPerformanceStatistics(courierID, timeRange, st
 	// 计算时间范围
 	var since, until time.Time
 	now := time.Now()
-	
+
 	if startDate != "" && endDate != "" {
 		// 使用指定的日期范围
 		var err error
@@ -800,19 +800,19 @@ func (s *CourierGrowthService) GetPerformanceStatistics(courierID, timeRange, st
 		}
 		until = now
 	}
-	
+
 	// 查询统计数据
 	var stats []models.CourierStatistics
 	if err := s.db.Where("courier_id = ? AND date >= ? AND date <= ?", courierID, since, until).Find(&stats).Error; err != nil {
 		return nil, err
 	}
-	
+
 	// 计算汇总数据
 	var totalAccepted, totalCompleted, totalFailed int
 	var totalDeliveryTime int
 	var totalDistance, totalEarnings float64
 	var totalPoints int
-	
+
 	for _, stat := range stats {
 		totalAccepted += stat.TasksAccepted
 		totalCompleted += stat.TasksCompleted
@@ -822,32 +822,32 @@ func (s *CourierGrowthService) GetPerformanceStatistics(courierID, timeRange, st
 		totalEarnings += stat.EarningsAmount
 		totalPoints += stat.PointsEarned
 	}
-	
+
 	// 计算平均值
 	var completionRate float64
 	if totalAccepted > 0 {
 		completionRate = float64(totalCompleted) / float64(totalAccepted) * 100
 	}
-	
+
 	var avgDeliveryTime float64
 	if totalCompleted > 0 {
 		avgDeliveryTime = float64(totalDeliveryTime) / float64(totalCompleted)
 	}
-	
+
 	return map[string]interface{}{
-		"time_range":         timeRange,
-		"start_date":         since.Format("2006-01-02"),
-		"end_date":           until.Format("2006-01-02"),
-		"total_accepted":     totalAccepted,
-		"total_completed":    totalCompleted,
-		"total_failed":       totalFailed,
-		"completion_rate":    completionRate,
+		"time_range":          timeRange,
+		"start_date":          since.Format("2006-01-02"),
+		"end_date":            until.Format("2006-01-02"),
+		"total_accepted":      totalAccepted,
+		"total_completed":     totalCompleted,
+		"total_failed":        totalFailed,
+		"completion_rate":     completionRate,
 		"total_delivery_time": totalDeliveryTime,
-		"avg_delivery_time":  avgDeliveryTime,
-		"total_distance":     totalDistance,
-		"total_earnings":     totalEarnings,
-		"total_points":       totalPoints,
-		"daily_stats":        stats,
+		"avg_delivery_time":   avgDeliveryTime,
+		"total_distance":      totalDistance,
+		"total_earnings":      totalEarnings,
+		"total_points":        totalPoints,
+		"daily_stats":         stats,
 	}, nil
 }
 
@@ -882,16 +882,16 @@ func (s *CourierGrowthService) addPoints(courierID string, amount int, descripti
 	if err != nil {
 		return err
 	}
-	
+
 	// 更新积分
 	points.Total += amount
 	points.Available += amount
 	points.Earned += amount
-	
+
 	if err := s.db.Save(points).Error; err != nil {
 		return err
 	}
-	
+
 	// 创建交易记录
 	transaction := models.CourierPointsTransaction{
 		CourierID:   courierID,
@@ -900,7 +900,7 @@ func (s *CourierGrowthService) addPoints(courierID string, amount int, descripti
 		Description: description,
 		Reference:   reference,
 	}
-	
+
 	return s.db.Create(&transaction).Error
 }
 

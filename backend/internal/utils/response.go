@@ -41,20 +41,20 @@ func ErrorResponse(c *gin.Context, statusCode int, message string, err error) {
 		Message: message,
 		Code:    statusCode,
 	}
-	
+
 	if err != nil {
 		response.Error = err.Error()
 	}
-	
+
 	c.JSON(statusCode, response)
 }
 
 // ValidationErrorResponse 验证错误响应
 func ValidationErrorResponse(c *gin.Context, message string, validationErrors map[string]string) {
 	c.JSON(http.StatusBadRequest, gin.H{
-		"success":    false,
-		"message":    message,
-		"code":       http.StatusBadRequest,
+		"success":           false,
+		"message":           message,
+		"code":              http.StatusBadRequest,
 		"validation_errors": validationErrors,
 	})
 }

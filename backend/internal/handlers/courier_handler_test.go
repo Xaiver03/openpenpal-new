@@ -359,7 +359,7 @@ func (suite *CourierHandlerTestSuite) TestCreateCourier_Unauthorized() {
 func (suite *CourierHandlerTestSuite) TestGetSubordinates_Success() {
 	// 创建高级信使
 	parentCourier := config.CreateTestUser(suite.db, "parent_courier", models.RoleCourier3)
-	
+
 	// 创建一些下级信使（通过服务层模拟）
 	for i := 0; i < 2; i++ {
 		req := &models.CreateCourierRequest{
@@ -506,7 +506,7 @@ func (suite *CourierHandlerTestSuite) createAuthHeader(user *models.User) http.H
 	expiresAt := time.Now().Add(24 * time.Hour)
 	token, err := auth.GenerateJWT(user.ID, user.Role, suite.config.JWTSecret, expiresAt)
 	suite.NoError(err)
-	
+
 	return testutils.CreateAuthHeader(token)
 }
 
@@ -528,11 +528,11 @@ func (suite *CourierHandlerTestSuite) createApprovedCourier(user *models.User) *
 	courier := suite.createTestCourierApplication(user)
 	err := suite.courierService.ApproveCourier(courier.ID)
 	suite.NoError(err)
-	
+
 	// 重新获取更新后的信使
 	err = suite.db.First(courier, "id = ?", courier.ID).Error
 	suite.NoError(err)
-	
+
 	return courier
 }
 

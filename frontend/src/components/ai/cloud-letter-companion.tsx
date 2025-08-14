@@ -348,12 +348,12 @@ export function CloudLetterCompanion({
                       {letter.from === 'ai' && (
                         <Avatar className="h-6 w-6">
                           <AvatarFallback className="text-xs">
-                            {personaIcons[selectedPersona.id] || '🤖'}
+                            {selectedPersona ? personaIcons[selectedPersona.id] || '🤖' : '🤖'}
                           </AvatarFallback>
                         </Avatar>
                       )}
                       <span className="text-xs opacity-75">
-                        {letter.from === 'user' ? '你' : selectedPersona.name}
+                        {letter.from === 'user' ? '你' : selectedPersona?.name || '未知'}
                       </span>
                       <span className="text-xs opacity-60">
                         {letter.timestamp.toLocaleTimeString()}
@@ -375,12 +375,12 @@ export function CloudLetterCompanion({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
-            写信给 {selectedPersona.name}
+            写信给 {selectedPersona?.name || '未选择'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Textarea
-            placeholder={`写下你想对${selectedPersona.name}说的话...`}
+            placeholder={`写下你想对${selectedPersona?.name || '对方'}说的话...`}
             value={letterContent}
             onChange={(e) => setLetterContent(e.target.value)}
             rows={6}
@@ -416,7 +416,7 @@ export function CloudLetterCompanion({
       <Alert>
         <Sparkles className="h-4 w-4" />
         <AlertDescription>
-          <strong>提示：</strong> {selectedPersona.name} 会记住你们的对话历史，随着交流的深入，回信会越来越个性化和贴心。
+          <strong>提示：</strong> {selectedPersona?.name || '对方'} 会记住你们的对话历史，随着交流的深入，回信会越来越个性化和贴心。
         </AlertDescription>
       </Alert>
     </div>

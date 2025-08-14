@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
-	"time"
 	"openpenpal-backend/internal/middleware"
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/services"
 	"openpenpal-backend/internal/utils"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -106,7 +106,7 @@ func (h *AIHandler) GenerateReply(c *gin.Context) {
 			utils.InternalServerErrorResponse(c, "Failed to schedule AI reply", err)
 			return
 		}
-		
+
 		utils.SuccessResponse(c, http.StatusAccepted, "AI reply scheduled successfully", gin.H{
 			"conversation_id": conversationID,
 			"scheduled_at":    time.Now().Add(time.Duration(req.DelayHours) * time.Hour),
@@ -199,7 +199,7 @@ func (h *AIHandler) GetInspiration(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	var response *models.AIInspirationResponse
 	var err error
-	
+
 	if exists {
 		// 有用户登录，使用带限制的方法
 		userIDStr, ok := userID.(string)
@@ -215,13 +215,13 @@ func (h *AIHandler) GetInspiration(c *gin.Context) {
 	if err != nil {
 		// 记录详细错误信息
 		log.Printf("❌ [AIHandler] GetInspirationWithLimit error: %v", err)
-		
+
 		// 检查是否是使用量限制错误
 		if strings.Contains(err.Error(), "limit exceeded") {
 			utils.BadRequestResponse(c, err.Error(), err)
 			return
 		}
-		
+
 		// AI服务不可用时，返回预设的写作灵感
 		log.Printf("⚠️ [AIHandler] Falling back to preset inspiration due to error: %v", err)
 		fallbackResponse := h.getFallbackInspiration(&req)
@@ -246,7 +246,7 @@ func (h *AIHandler) GetUsageStats(c *gin.Context) {
 		utils.UnauthorizedResponse(c, "User not authenticated")
 		return
 	}
-	
+
 	// Skip userID validation for now since we're not using it
 	// _, ok := userID.(string)
 	// if !ok {
@@ -263,9 +263,9 @@ func (h *AIHandler) GetUsageStats(c *gin.Context) {
 
 	// Return mock stats for now
 	mockStats := map[string]interface{}{
-		"daily_usage": 0,
+		"daily_usage":   0,
 		"monthly_usage": 0,
-		"total_usage": 0,
+		"total_usage":   0,
 	}
 	utils.SuccessResponse(c, http.StatusOK, "Usage stats retrieved successfully", mockStats)
 }
@@ -306,7 +306,7 @@ func (h *AIHandler) CurateLetters(c *gin.Context) {
 }
 
 // GetPersonas 获取云中锦书人设列表
-// @Summary 获取云中锦书人设列表  
+// @Summary 获取云中锦书人设列表
 // @Description 获取所有可用的长期AI笔友人设，用于建立持续的书信往来关系
 // @Tags AI
 // @Produce json
@@ -380,7 +380,7 @@ func (h *AIHandler) GetPersonas(c *gin.Context) {
 func (h *AIHandler) GetAIStats(c *gin.Context) {
 	// 从JWT中获取用户ID（可选，支持匿名访问）
 	userIDStr, exists := middleware.GetUserID(c)
-	
+
 	// 如果是匿名用户，返回默认统计
 	if !exists {
 		// 匿名用户的默认统计
@@ -393,7 +393,7 @@ func (h *AIHandler) GetAIStats(c *gin.Context) {
 				"letters_curated":   0,
 			},
 			"limits": gin.H{
-				"daily_matches":      3,  // 匿名用户限制
+				"daily_matches":      3, // 匿名用户限制
 				"daily_replies":      2,
 				"daily_inspirations": 5,
 				"daily_curations":    1,
@@ -406,7 +406,7 @@ func (h *AIHandler) GetAIStats(c *gin.Context) {
 			},
 			"message": "登录后可获得更高使用限额",
 		}
-		
+
 		utils.SuccessResponse(c, http.StatusOK, "AI stats retrieved successfully", stats)
 		return
 	}
@@ -450,7 +450,7 @@ func (h *AIHandler) GetAIStats(c *gin.Context) {
 func (h *AIHandler) GetDailyInspiration(c *gin.Context) {
 	// 生成当日的写作主题和灵感
 	currentDate := time.Now().Format("2006-01-02")
-	
+
 	// 基于日期生成不同的主题和灵感
 	themes := []gin.H{
 		{
@@ -479,11 +479,11 @@ func (h *AIHandler) GetDailyInspiration(c *gin.Context) {
 			"quote":  "梦想不是遥不可及，而是一步一步走出来的路。",
 		},
 	}
-	
+
 	// 根据日期选择主题（简单的轮换机制）
 	dayOfYear := time.Now().YearDay()
 	selectedTheme := themes[dayOfYear%len(themes)]
-	
+
 	inspiration := gin.H{
 		"date":   currentDate,
 		"theme":  selectedTheme["theme"],
@@ -623,7 +623,7 @@ func (h *AIHandler) GetAIConfig(c *gin.Context) {
 	// 获取AI提供商配置
 	providers := gin.H{}
 	providerTypes := []string{"openai", "claude", "siliconflow", "moonshot"}
-	
+
 	for _, providerType := range providerTypes {
 		if providerConfig, err := h.configService.GetConfig("provider", providerType); err == nil {
 			var config map[string]interface{}
@@ -642,7 +642,7 @@ func (h *AIHandler) GetAIConfig(c *gin.Context) {
 	// 获取系统提示词配置
 	systemPrompts := gin.H{}
 	promptTypes := []string{"default", "inspiration", "matching", "reply"}
-	
+
 	for _, promptType := range promptTypes {
 		if promptConfig, err := h.configService.GetSystemPrompt(promptType); err == nil {
 			systemPrompts[promptType] = gin.H{
@@ -658,7 +658,7 @@ func (h *AIHandler) GetAIConfig(c *gin.Context) {
 	// 获取人设配置列表
 	personas := gin.H{}
 	personaTypes := []string{"friend", "mentor", "poet", "philosopher", "artist", "scientist", "traveler", "historian"}
-	
+
 	for _, personaType := range personaTypes {
 		if personaConfig, err := h.configService.GetPersonaConfig(personaType); err == nil {
 			personas[personaType] = gin.H{
@@ -751,10 +751,10 @@ func (h *AIHandler) UpdateAIConfig(c *gin.Context) {
 	}
 
 	result := gin.H{
-		"config_type":  req.ConfigType,
-		"config_key":   req.ConfigKey,
-		"updated_at":   time.Now().Format(time.RFC3339),
-		"updated_by":   userID,
+		"config_type":     req.ConfigType,
+		"config_key":      req.ConfigKey,
+		"updated_at":      time.Now().Format(time.RFC3339),
+		"updated_by":      userID,
 		"cache_refreshed": true,
 	}
 
@@ -772,7 +772,7 @@ func (h *AIHandler) UpdateAIConfig(c *gin.Context) {
 // @Router /api/v1/admin/ai/templates [get]
 func (h *AIHandler) GetContentTemplates(c *gin.Context) {
 	templateType := c.DefaultQuery("template_type", "inspiration")
-	
+
 	log.Printf("🔧 [AIHandler] 获取内容模板，类型: %s", templateType)
 
 	templates, err := h.configService.GetTemplates(templateType)
@@ -803,11 +803,11 @@ func (h *AIHandler) GetContentTemplates(c *gin.Context) {
 // @Router /api/v1/admin/ai/templates [post]
 func (h *AIHandler) CreateContentTemplate(c *gin.Context) {
 	var req struct {
-		TemplateType string   `json:"template_type" binding:"required"`
-		Category     string   `json:"category" binding:"required"`
-		Title        string   `json:"title" binding:"required"`
-		Content      string   `json:"content" binding:"required"`
-		Tags         []string `json:"tags"`
+		TemplateType string                 `json:"template_type" binding:"required"`
+		Category     string                 `json:"category" binding:"required"`
+		Title        string                 `json:"title" binding:"required"`
+		Content      string                 `json:"content" binding:"required"`
+		Tags         []string               `json:"tags"`
 		Metadata     map[string]interface{} `json:"metadata"`
 	}
 
@@ -853,41 +853,41 @@ func (h *AIHandler) GetAIMonitoring(c *gin.Context) {
 			"overall_status": "healthy",
 			"providers": gin.H{
 				"openai": gin.H{
-					"status":      "healthy",
-					"latency_ms":  156,
+					"status":       "healthy",
+					"latency_ms":   156,
 					"success_rate": 98.5,
-					"last_check":  "2024-01-20T10:29:00Z",
+					"last_check":   "2024-01-20T10:29:00Z",
 				},
 				"claude": gin.H{
-					"status":      "healthy",
-					"latency_ms":  203,
+					"status":       "healthy",
+					"latency_ms":   203,
 					"success_rate": 97.8,
-					"last_check":  "2024-01-20T10:29:00Z",
+					"last_check":   "2024-01-20T10:29:00Z",
 				},
 				"siliconflow": gin.H{
-					"status":      "healthy",
-					"latency_ms":  124,
+					"status":       "healthy",
+					"latency_ms":   124,
 					"success_rate": 99.1,
-					"last_check":  "2024-01-20T10:29:00Z",
+					"last_check":   "2024-01-20T10:29:00Z",
 				},
 			},
 		},
 		"performance": gin.H{
 			"requests_per_minute": 25,
 			"avg_response_time":   178,
-			"error_rate":         1.2,
-			"cache_hit_rate":     85.3,
+			"error_rate":          1.2,
+			"cache_hit_rate":      85.3,
 		},
 		"resource_usage": gin.H{
 			"cpu_usage":    12.5,
 			"memory_usage": 248.7,
 			"disk_usage":   15.2,
 			"api_quota": gin.H{
-				"openai_used":      1250,
-				"openai_limit":     10000,
-				"claude_used":      890,
-				"claude_limit":     5000,
-				"siliconflow_used": 2100,
+				"openai_used":       1250,
+				"openai_limit":      10000,
+				"claude_used":       890,
+				"claude_limit":      5000,
+				"siliconflow_used":  2100,
 				"siliconflow_limit": 20000,
 			},
 		},
@@ -926,7 +926,7 @@ func (h *AIHandler) GetAIAnalytics(c *gin.Context) {
 			},
 		},
 		"user_engagement": gin.H{
-			"active_users":        234,
+			"active_users": 234,
 			"feature_adoption": gin.H{
 				"match":       78.5,
 				"reply":       65.2,
@@ -967,7 +967,7 @@ func (h *AIHandler) GetAIAnalytics(c *gin.Context) {
 			},
 			{
 				"type":        "cost",
-				"priority":    "medium", 
+				"priority":    "medium",
 				"title":       "调整API提供商配比",
 				"description": "SiliconFlow成本效益最高，建议增加其使用比例",
 				"impact":      "预计可降低30%的API调用成本",
@@ -1009,7 +1009,7 @@ func (h *AIHandler) GetAILogs(c *gin.Context) {
 				"message": "AI笔友匹配请求成功处理",
 			},
 			{
-				"id":        "log_002", 
+				"id":        "log_002",
 				"timestamp": "2024-01-20T10:27:32Z",
 				"level":     "warning",
 				"feature":   "reply",
@@ -1087,36 +1087,36 @@ func (h *AIHandler) TestAIProvider(c *gin.Context) {
 	switch req.Provider {
 	case "openai":
 		testResult = gin.H{
-			"provider":     "openai",
-			"test_type":    req.TestType,
-			"status":       "success",
-			"latency_ms":   145,
+			"provider":         "openai",
+			"test_type":        req.TestType,
+			"status":           "success",
+			"latency_ms":       145,
 			"response_quality": 4.5,
-			"test_prompt":  "测试连接",
-			"test_response": "连接测试成功，OpenAI服务正常运行。",
-			"timestamp":    "2024-01-20T10:30:15Z",
+			"test_prompt":      "测试连接",
+			"test_response":    "连接测试成功，OpenAI服务正常运行。",
+			"timestamp":        "2024-01-20T10:30:15Z",
 		}
 	case "claude":
 		testResult = gin.H{
-			"provider":     "claude",
-			"test_type":    req.TestType,
-			"status":       "success",
-			"latency_ms":   198,
+			"provider":         "claude",
+			"test_type":        req.TestType,
+			"status":           "success",
+			"latency_ms":       198,
 			"response_quality": 4.7,
-			"test_prompt":  "测试连接",
-			"test_response": "Claude API连接正常，服务运行稳定。",
-			"timestamp":    "2024-01-20T10:30:15Z",
+			"test_prompt":      "测试连接",
+			"test_response":    "Claude API连接正常，服务运行稳定。",
+			"timestamp":        "2024-01-20T10:30:15Z",
 		}
 	case "siliconflow":
 		testResult = gin.H{
-			"provider":     "siliconflow",
-			"test_type":    req.TestType,
-			"status":       "success",
-			"latency_ms":   112,
+			"provider":         "siliconflow",
+			"test_type":        req.TestType,
+			"status":           "success",
+			"latency_ms":       112,
 			"response_quality": 4.3,
-			"test_prompt":  "测试连接",
-			"test_response": "SiliconFlow服务连接成功，响应迅速。",
-			"timestamp":    "2024-01-20T10:30:15Z",
+			"test_prompt":      "测试连接",
+			"test_response":    "SiliconFlow服务连接成功，响应迅速。",
+			"timestamp":        "2024-01-20T10:30:15Z",
 		}
 	}
 

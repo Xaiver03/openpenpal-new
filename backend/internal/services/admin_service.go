@@ -527,7 +527,7 @@ func (s *AdminService) GetSystemSettings() (*models.AdminSystemSettings, error) 
 // UpdateUser 更新用户信息（管理员功能）
 func (s *AdminService) UpdateUser(userID string, req *models.AdminUpdateUserRequest) (*models.User, error) {
 	var user models.User
-	
+
 	// 查找用户
 	if err := s.db.First(&user, "id = ?", userID).Error; err != nil {
 		return nil, fmt.Errorf("用户不存在: %w", err)
@@ -535,11 +535,11 @@ func (s *AdminService) UpdateUser(userID string, req *models.AdminUpdateUserRequ
 
 	// 更新用户信息
 	updates := make(map[string]interface{})
-	
+
 	if req.Nickname != "" {
 		updates["nickname"] = req.Nickname
 	}
-	
+
 	if req.Email != "" {
 		// 检查邮箱是否已被其他用户使用
 		var count int64
@@ -551,7 +551,7 @@ func (s *AdminService) UpdateUser(userID string, req *models.AdminUpdateUserRequ
 		}
 		updates["email"] = req.Email
 	}
-	
+
 	if req.Role != "" {
 		// 验证角色是否有效
 		validRoles := []string{"user", "courier", "courier_level1", "courier_level2", "courier_level3", "courier_level4", "school_admin", "admin", "super_admin"}
@@ -567,11 +567,11 @@ func (s *AdminService) UpdateUser(userID string, req *models.AdminUpdateUserRequ
 		}
 		updates["role"] = req.Role
 	}
-	
+
 	if req.SchoolCode != "" {
 		updates["school_code"] = req.SchoolCode
 	}
-	
+
 	// 更新激活状态
 	updates["is_active"] = req.IsActive
 	updates["updated_at"] = time.Now()

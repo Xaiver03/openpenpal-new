@@ -88,10 +88,10 @@ func (h *RefreshTokenHandler) CheckTokenExpiry(c *gin.Context) {
 	now := time.Now()
 	expiresAt := claims.ExpiresAt.Time
 	expiresIn := expiresAt.Sub(now)
-	
+
 	// 判断是否已过期
 	isExpired := expiresIn <= 0
-	
+
 	// 判断是否应该刷新（剩余时间少于2小时）
 	shouldRefresh := expiresIn > 0 && expiresIn <= 2*time.Hour
 

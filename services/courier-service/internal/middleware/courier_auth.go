@@ -182,7 +182,7 @@ func (cam *CourierAuthMiddleware) checkPermission(courierID string, permission m
 func (cam *CourierAuthMiddleware) checkContextualPermission(courierID string, level models.CourierLevel, permission models.CourierPermission, c *gin.Context) (bool, string) {
 	// 从请求路径或参数中获取区域信息
 	zoneInfo := cam.extractZoneInfoFromRequest(c)
-	
+
 	if zoneInfo == nil {
 		// 如果没有区域信息，按等级给予基础权限
 		return true, ""
@@ -301,7 +301,7 @@ func (cam *CourierAuthMiddleware) isZoneTypeCompatible(courierZoneType, requestZ
 func (cam *CourierAuthMiddleware) isParentZone(parentZoneType models.CourierZoneType, parentZoneID string, childZoneType models.CourierZoneType, childZoneID string) bool {
 	// 这里需要实现区域层级关系的具体逻辑
 	// 例如：城市包含校区，校区包含片区，片区包含楼栋
-	
+
 	zoneHierarchy := map[models.CourierZoneType]int{
 		models.ZoneBuilding: 1,
 		models.ZoneArea:     2,

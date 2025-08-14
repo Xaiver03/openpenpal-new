@@ -244,12 +244,12 @@ func (s *TaskService) pushTaskToQueue(task *models.Task) {
 // ConsumeTaskQueue 消费任务队列
 func (s *TaskService) ConsumeTaskQueue() {
 	ctx := context.Background()
-	
+
 	for {
 		// 按优先级处理队列：express > urgent > normal
-		result, err := s.redis.BRPop(ctx, 1*time.Second, 
+		result, err := s.redis.BRPop(ctx, 1*time.Second,
 			"tasks:express", "tasks:urgent", "tasks:normal").Result()
-		
+
 		if err != nil {
 			if err != redis.Nil {
 				log.Printf("Redis BRPop error: %v", err)
@@ -272,13 +272,13 @@ func (s *TaskService) ConsumeTaskQueue() {
 func (s *TaskService) processTask(task *models.Task) {
 	// 这里可以实现自动任务分配逻辑
 	log.Printf("Processing task: %s for letter: %s", task.TaskID, task.LetterID)
-	
+
 	// FSD条码系统增强处理
 	// 1. 根据OP Code查找合适的区域信使
 	// 2. 根据信使级别进行任务分配
 	// 3. 发送推送通知给适格的信使
 	// 4. 设置适当的任务优先级和奖励
-	
+
 	// TODO: 实现基于OP Code的智能任务分配算法
 	// - 解析取件地和送达地的OP Code
 	// - 查找具有对应权限的信使
@@ -293,13 +293,13 @@ func (s *TaskService) validateOPCodePermission(recipientOPCode, operatorOPCode s
 	if len(recipientOPCode) != 6 || len(operatorOPCode) != 6 {
 		return false
 	}
-	
+
 	// 提取学校代码（前2位）和区域代码（中2位）
 	recipientSchool := recipientOPCode[:2]
 	recipientArea := recipientOPCode[2:4]
 	operatorSchool := operatorOPCode[:2]
 	operatorArea := operatorOPCode[2:4]
-	
+
 	// 根据扫码员级别验证权限
 	switch scannerLevel {
 	case 4: // 城市总代 - 可以操作任意区域
@@ -324,7 +324,7 @@ func (s *TaskService) getNextAction(currentStatus string) string {
 		models.TaskStatusDelivered: "任务已完成，感谢您的服务！",
 		models.TaskStatusFailed:    "请联系客服处理失败情况",
 	}
-	
+
 	if action, exists := nextActions[currentStatus]; exists {
 		return action
 	}
@@ -332,9 +332,9 @@ func (s *TaskService) getNextAction(currentStatus string) string {
 }
 
 // calculateEstimatedDelivery 计算预计送达时间
-func (s *TaskService) calculateEstimatedDelivery(currentStatus string, taskCreatedAt time.Time) *time.Time {
+func (s *TaskService) calculateEstimatedDelivery(currentStatus string, _ time.Time) *time.Time {
 	now := time.Now()
-	
+
 	switch currentStatus {
 	case models.TaskStatusAccepted:
 		// 已接取，预计4小时内完成
@@ -357,7 +357,7 @@ func (s *TaskService) calculateEstimatedDelivery(currentStatus string, taskCreat
 }
 
 // getCourierPermissions 获取信使权限
-func (s *TaskService) getCourierPermissions(courierID string, scannerLevel int) map[string]bool {
+func (s *TaskService) getCourierPermissions(_ string, scannerLevel int) map[string]bool {
 	permissions := map[string]bool{
 		"can_scan":           true,
 		"can_collect":        scannerLevel >= 1,
@@ -368,7 +368,7 @@ func (s *TaskService) getCourierPermissions(courierID string, scannerLevel int) 
 		"can_manage_tasks":   scannerLevel >= 3,
 		"can_assign_tasks":   scannerLevel >= 4,
 	}
-	
+
 	return permissions
 }
 
@@ -378,21 +378,21 @@ func (s *TaskService) ScanBarcode(barcodeCode, courierID string, scanRequest *mo
 	if scanRequest.BarcodeCode == "" {
 		scanRequest.BarcodeCode = barcodeCode
 	}
-	
+
 	return s.UpdateTaskStatus(barcodeCode, courierID, scanRequest)
 }
 
 // GetScanHistory 获取扫码历史
 func (s *TaskService) GetScanHistory(letterID string, limit int) ([]models.ScanRecord, error) {
 	var records []models.ScanRecord
-	
+
 	query := s.db.Where("letter_id = ? OR barcode_code = ?", letterID, letterID).
 		Order("timestamp DESC")
-		
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	err := query.Find(&records).Error
 	return records, err
 }
@@ -404,21 +404,21 @@ func (s *TaskService) ValidateBarcodeAccess(barcodeCode, courierID string, actio
 	if err := s.db.Where("letter_id = ?", barcodeCode).First(&task).Error; err != nil {
 		return fmt.Errorf("任务不存在: %w", err)
 	}
-	
+
 	// 检查是否已分配给当前信使
 	if task.CourierID == nil || *task.CourierID != courierID {
 		return fmt.Errorf("任务未分配给当前信使")
 	}
-	
+
 	// 检查状态转换是否合法
 	targetStatus, exists := models.ActionToStatus[action]
 	if !exists {
 		return fmt.Errorf("无效的操作: %s", action)
 	}
-	
+
 	if !task.CanTransitionTo(targetStatus) {
 		return fmt.Errorf("无效的状态转换: %s -> %s", task.Status, targetStatus)
 	}
-	
+
 	return nil
 }

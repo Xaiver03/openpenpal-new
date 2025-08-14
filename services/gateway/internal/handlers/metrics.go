@@ -38,7 +38,7 @@ func NewMetricsHandler(metricsService *services.MetricsService, logger *zap.Logg
 // @Router /api/metrics/performance [post]
 func (h *MetricsHandler) SubmitPerformanceMetrics(c *gin.Context) {
 	var req models.PerformanceRequest
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error("Invalid performance metrics request", zap.Error(err))
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -71,7 +71,7 @@ func (h *MetricsHandler) SubmitPerformanceMetrics(c *gin.Context) {
 	// 保存性能指标
 	err := h.metricsService.SavePerformanceMetric(userID, &req)
 	if err != nil {
-		h.logger.Error("Failed to save performance metrics", 
+		h.logger.Error("Failed to save performance metrics",
 			zap.Error(err),
 			zap.String("session_id", req.SessionID),
 			zap.String("user_id", userID),
@@ -112,7 +112,7 @@ func (h *MetricsHandler) SubmitPerformanceMetrics(c *gin.Context) {
 // @Router /api/metrics/dashboard [get]
 func (h *MetricsHandler) GetDashboardMetrics(c *gin.Context) {
 	timeRange := c.DefaultQuery("time_range", "24h")
-	
+
 	// 验证时间范围参数
 	validRanges := map[string]bool{
 		"1h":  true,
@@ -120,7 +120,7 @@ func (h *MetricsHandler) GetDashboardMetrics(c *gin.Context) {
 		"7d":  true,
 		"30d": true,
 	}
-	
+
 	if !validRanges[timeRange] {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Code:      http.StatusBadRequest,
@@ -135,7 +135,7 @@ func (h *MetricsHandler) GetDashboardMetrics(c *gin.Context) {
 	// 获取仪表板指标
 	dashboard, err := h.metricsService.GetDashboardMetrics(timeRange)
 	if err != nil {
-		h.logger.Error("Failed to get dashboard metrics", 
+		h.logger.Error("Failed to get dashboard metrics",
 			zap.Error(err),
 			zap.String("time_range", timeRange),
 		)
@@ -184,7 +184,7 @@ func (h *MetricsHandler) GetPerformanceAlerts(c *gin.Context) {
 	// 获取活跃告警
 	alerts, err := h.metricsService.GetActiveAlerts(limit)
 	if err != nil {
-		h.logger.Error("Failed to get performance alerts", 
+		h.logger.Error("Failed to get performance alerts",
 			zap.Error(err),
 			zap.Int("limit", limit),
 		)
@@ -222,7 +222,7 @@ func (h *MetricsHandler) GetPerformanceAlerts(c *gin.Context) {
 // @Router /api/metrics/alerts [post]
 func (h *MetricsHandler) CreatePerformanceAlert(c *gin.Context) {
 	var req models.AlertRequest
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error("Invalid alert request", zap.Error(err))
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -248,7 +248,7 @@ func (h *MetricsHandler) CreatePerformanceAlert(c *gin.Context) {
 		"high":     true,
 		"critical": true,
 	}
-	
+
 	if req.Severity == "" {
 		req.Severity = "medium"
 	} else if !validSeverities[req.Severity] {
@@ -265,7 +265,7 @@ func (h *MetricsHandler) CreatePerformanceAlert(c *gin.Context) {
 	// 创建告警
 	err := h.metricsService.CreateAlert(userID, &req)
 	if err != nil {
-		h.logger.Error("Failed to create performance alert", 
+		h.logger.Error("Failed to create performance alert",
 			zap.Error(err),
 			zap.String("metric_type", req.MetricType),
 			zap.String("user_id", userID),
@@ -320,9 +320,9 @@ func (h *MetricsHandler) GetHealthStatus(c *gin.Context) {
 			"ocr-service":     gin.H{"status": "unknown", "response_time": "timeout"},
 		},
 		"database": gin.H{
-			"status":         "healthy",
+			"status":          "healthy",
 			"connection_pool": "8/10",
-			"query_time":     "15ms",
+			"query_time":      "15ms",
 		},
 		"redis": gin.H{
 			"status":       "healthy",

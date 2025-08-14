@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"openpenpal-backend/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"openpenpal-backend/internal/models"
 )
 
 // ScanEventService 扫描事件服务 - PRD要求的完整扫描历史管理
@@ -108,7 +108,7 @@ func (s *ScanEventService) GetScanHistory(query *models.ScanEventQuery) ([]model
 	if orderBy == "" {
 		orderBy = "timestamp"
 	}
-	
+
 	if query.OrderDesc {
 		orderBy += " DESC"
 	}
@@ -246,40 +246,40 @@ func (s *ScanEventService) RecordBarcodeStatusChange(
 func (s *ScanEventService) GetUserScanActivity(userID string, days int) ([]models.ScanEvent, error) {
 	var events []models.ScanEvent
 	startTime := time.Now().AddDate(0, 0, -days)
-	
+
 	if err := s.db.Preload("LetterCode").
 		Where("scanned_by = ? AND timestamp >= ?", userID, startTime).
 		Order("timestamp DESC").
 		Find(&events).Error; err != nil {
 		return nil, fmt.Errorf("获取用户扫描活动失败: %w", err)
 	}
-	
+
 	return events, nil
 }
 
 // GetLocationScanStats 获取位置扫描统计
 func (s *ScanEventService) GetLocationScanStats(opCode string, days int) (map[string]interface{}, error) {
 	startTime := time.Now().AddDate(0, 0, -days)
-	
+
 	var total int64
 	var uniqueUsers int64
 	var recentEvents []models.ScanEvent
-	
+
 	baseQuery := s.db.Model(&models.ScanEvent{}).
 		Where("op_code = ? AND timestamp >= ?", opCode, startTime)
-	
+
 	// 总扫描次数
 	baseQuery.Count(&total)
-	
+
 	// 唯一用户数
 	baseQuery.Distinct("scanned_by").Count(&uniqueUsers)
-	
+
 	// 最近事件
 	baseQuery.Preload("Scanner").
 		Order("timestamp DESC").
 		Limit(5).
 		Find(&recentEvents)
-	
+
 	// 按天统计
 	var dailyStats []struct {
 		Date  string `json:"date"`
@@ -289,7 +289,7 @@ func (s *ScanEventService) GetLocationScanStats(opCode string, days int) (map[st
 		Group("date").
 		Order("date DESC").
 		Scan(&dailyStats)
-	
+
 	return map[string]interface{}{
 		"op_code":       opCode,
 		"total_scans":   total,
@@ -302,12 +302,12 @@ func (s *ScanEventService) GetLocationScanStats(opCode string, days int) (map[st
 // CleanupOldScanEvents 清理旧的扫描事件（超过指定天数）
 func (s *ScanEventService) CleanupOldScanEvents(days int) (int64, error) {
 	cutoffTime := time.Now().AddDate(0, 0, -days)
-	
+
 	result := s.db.Where("timestamp < ?", cutoffTime).Delete(&models.ScanEvent{})
 	if result.Error != nil {
 		return 0, fmt.Errorf("清理旧扫描事件失败: %w", result.Error)
 	}
-	
+
 	return result.RowsAffected, nil
 }
 

@@ -46,11 +46,11 @@ func (suite *AuthHandlerTestSuite) SetupSuite() {
 
 	// 设置路由
 	suite.router = testutils.SetupTestRouter()
-	
+
 	// 公开路由（无需认证）
 	suite.router.POST("/api/v1/auth/login", suite.handler.Login)
 	suite.router.POST("/api/v1/auth/register", suite.handler.Register)
-	
+
 	// 受保护路由（需要认证）
 	authGroup := suite.router.Group("/api/v1/auth")
 	authGroup.Use(middleware.AuthMiddleware(suite.config, suite.db))
@@ -96,11 +96,11 @@ func (suite *AuthHandlerTestSuite) TestLogin_Success() {
 	// 检查返回的数据
 	assert.NotEmpty(suite.T(), response["data"])
 	data := response["data"].(map[string]interface{})
-	
+
 	assert.NotEmpty(suite.T(), data["token"])
 	assert.NotEmpty(suite.T(), data["user"])
 	assert.NotEmpty(suite.T(), data["expires_at"])
-	
+
 	userData := data["user"].(map[string]interface{})
 	assert.Equal(suite.T(), "testuser", userData["username"])
 	assert.Equal(suite.T(), "test@example.com", userData["email"])
@@ -162,7 +162,7 @@ func (suite *AuthHandlerTestSuite) TestLogin_InactiveUser() {
 		UpdatedAt:    time.Now(),
 	}
 	suite.db.Create(user)
-	
+
 	// 由于User模型有default:true约束，需要显式更新IsActive为false
 	suite.db.Model(user).Update("is_active", false)
 
@@ -241,15 +241,15 @@ func (suite *AuthHandlerTestSuite) TestRegister_Success() {
 func (suite *AuthHandlerTestSuite) TestRegister_DuplicateUsername() {
 	// 准备：创建已存在的用户
 	existingUser := &models.User{
-		ID:           "existing-user-id",
-		Username:     "existinguser",
-		Email:        "existing@example.com",
-		Nickname:     "Existing User",
-		Role:         models.RoleUser,
-		SchoolCode:   "BJDX01",
-		IsActive:     true,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:         "existing-user-id",
+		Username:   "existinguser",
+		Email:      "existing@example.com",
+		Nickname:   "Existing User",
+		Role:       models.RoleUser,
+		SchoolCode: "BJDX01",
+		IsActive:   true,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 	suite.db.Create(existingUser)
 
@@ -271,15 +271,15 @@ func (suite *AuthHandlerTestSuite) TestRegister_DuplicateUsername() {
 func (suite *AuthHandlerTestSuite) TestRegister_DuplicateEmail() {
 	// 准备：创建已存在的用户
 	existingUser := &models.User{
-		ID:           "existing-user-id",
-		Username:     "existinguser",
-		Email:        "existing@example.com",
-		Nickname:     "Existing User",
-		Role:         models.RoleUser,
-		SchoolCode:   "BJDX01",
-		IsActive:     true,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:         "existing-user-id",
+		Username:   "existinguser",
+		Email:      "existing@example.com",
+		Nickname:   "Existing User",
+		Role:       models.RoleUser,
+		SchoolCode: "BJDX01",
+		IsActive:   true,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 	suite.db.Create(existingUser)
 

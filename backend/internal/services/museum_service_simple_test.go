@@ -196,7 +196,7 @@ func (suite *MuseumServiceSimpleTestSuite) TestGetMuseumStats_Basic() {
 	// 创建一些测试数据
 	suite.createTestMuseumItem()
 	approved := suite.createTestMuseumItem()
-	
+
 	// 审批通过一个物品
 	err := suite.museumService.ApproveMuseumItem(context.Background(), approved.ID, suite.testAdmin.ID)
 	suite.NoError(err)

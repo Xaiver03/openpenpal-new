@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	CSRFTokenLength    = 32
-	CSRFCookieName     = "csrf-token"
-	CSRFHeaderName     = "X-CSRF-Token"
-	CSRFFormFieldName  = "_csrf_token"
-	CSRFTokenTTL       = 24 * time.Hour
+	CSRFTokenLength   = 32
+	CSRFCookieName    = "csrf-token"
+	CSRFHeaderName    = "X-CSRF-Token"
+	CSRFFormFieldName = "_csrf_token"
+	CSRFTokenTTL      = 24 * time.Hour
 )
 
 // CSRFToken represents a CSRF token with metadata
@@ -38,9 +38,9 @@ func generateCSRFToken() (string, error) {
 func CSRFMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Skip CSRF protection for safe methods (GET, HEAD, OPTIONS)
-		if c.Request.Method == http.MethodGet || 
-		   c.Request.Method == http.MethodHead || 
-		   c.Request.Method == http.MethodOptions {
+		if c.Request.Method == http.MethodGet ||
+			c.Request.Method == http.MethodHead ||
+			c.Request.Method == http.MethodOptions {
 			c.Next()
 			return
 		}
@@ -48,9 +48,9 @@ func CSRFMiddleware() gin.HandlerFunc {
 		// Skip for certain endpoints that don't need CSRF protection
 		path := c.Request.URL.Path
 		if strings.HasPrefix(path, "/api/v1/auth/csrf") ||
-		   strings.HasPrefix(path, "/api/v1/auth/login") ||  // 临时跳过登录接口用于测试
-		   strings.HasPrefix(path, "/health") ||
-		   strings.HasPrefix(path, "/ping") {
+			strings.HasPrefix(path, "/api/v1/auth/login") || // 临时跳过登录接口用于测试
+			strings.HasPrefix(path, "/health") ||
+			strings.HasPrefix(path, "/ping") {
 			c.Next()
 			return
 		}
@@ -60,9 +60,9 @@ func CSRFMiddleware() gin.HandlerFunc {
 		if token == "" {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
-				"error": "CSRF_TOKEN_MISSING",
+				"error":   "CSRF_TOKEN_MISSING",
 				"message": "CSRF token is required for this operation",
-				"code": http.StatusForbidden,
+				"code":    http.StatusForbidden,
 			})
 			c.Abort()
 			return
@@ -73,9 +73,9 @@ func CSRFMiddleware() gin.HandlerFunc {
 		if err != nil || cookieToken == "" {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
-				"error": "CSRF_COOKIE_MISSING", 
+				"error":   "CSRF_COOKIE_MISSING",
 				"message": "CSRF cookie is missing or expired",
-				"code": http.StatusForbidden,
+				"code":    http.StatusForbidden,
 			})
 			c.Abort()
 			return
@@ -85,9 +85,9 @@ func CSRFMiddleware() gin.HandlerFunc {
 		if !secureCompare(token, cookieToken) {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
-				"error": "CSRF_TOKEN_INVALID",
+				"error":   "CSRF_TOKEN_INVALID",
 				"message": "CSRF token validation failed",
-				"code": http.StatusForbidden,
+				"code":    http.StatusForbidden,
 			})
 			c.Abort()
 			return
@@ -124,12 +124,12 @@ func secureCompare(a, b string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	
+
 	result := byte(0)
 	for i := 0; i < len(a); i++ {
 		result |= a[i] ^ b[i]
 	}
-	
+
 	return result == 0
 }
 
@@ -147,7 +147,7 @@ func (h *CSRFHandler) GetCSRFToken(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"error": "TOKEN_GENERATION_FAILED",
+			"error":   "TOKEN_GENERATION_FAILED",
 			"message": "Failed to generate CSRF token",
 		})
 		return
@@ -155,7 +155,7 @@ func (h *CSRFHandler) GetCSRFToken(c *gin.Context) {
 
 	// Set secure cookie with proper settings for development
 	expiresAt := time.Now().Add(CSRFTokenTTL)
-	
+
 	// 开发环境使用更宽松的SameSite设置
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(
@@ -163,7 +163,7 @@ func (h *CSRFHandler) GetCSRFToken(c *gin.Context) {
 		token,
 		int(CSRFTokenTTL.Seconds()),
 		"/",
-		"", // Domain - let browser set automatically
+		"",    // Domain - let browser set automatically
 		false, // Secure - set to true in production with HTTPS
 		false, // HttpOnly - 设为false让前端可以读取CSRF cookie
 	)

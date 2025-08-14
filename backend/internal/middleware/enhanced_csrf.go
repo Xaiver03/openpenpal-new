@@ -78,14 +78,14 @@ func (c *EnhancedCSRF) isHighRiskPath(path string) bool {
 func (c *EnhancedCSRF) validateOrigin(ctx *gin.Context) bool {
 	origin := ctx.GetHeader("Origin")
 	referer := ctx.GetHeader("Referer")
-	
+
 	allowedOrigins := []string{
 		"http://localhost:3000",
 		"https://localhost:3000",
 		"http://127.0.0.1:3000",
 		"https://127.0.0.1:3000",
 	}
-	
+
 	// 检查Origin header
 	if origin != "" {
 		for _, allowed := range allowedOrigins {
@@ -94,7 +94,7 @@ func (c *EnhancedCSRF) validateOrigin(ctx *gin.Context) bool {
 			}
 		}
 	}
-	
+
 	// 检查Referer header
 	if referer != "" {
 		for _, allowed := range allowedOrigins {
@@ -103,7 +103,7 @@ func (c *EnhancedCSRF) validateOrigin(ctx *gin.Context) bool {
 			}
 		}
 	}
-	
+
 	return false
 }
 
@@ -112,26 +112,26 @@ func (c *EnhancedCSRF) Middleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		method := ctx.Request.Method
-		
+
 		// 跳过GET请求和指定路径
 		if method == "GET" || c.isPathSkipped(path) {
 			ctx.Next()
 			return
 		}
-		
+
 		// 检查自定义安全header（简单防护）
 		customHeader := ctx.GetHeader("X-Requested-With")
 		openpenpalHeader := ctx.GetHeader("X-OpenPenPal-Auth")
-		
+
 		hasCustomHeader := customHeader == "XMLHttpRequest" || openpenpalHeader == "frontend-client"
-		
+
 		// Origin验证
 		originValid := c.validateOrigin(ctx)
-		
+
 		// 对于JWT认证的API，如果有自定义header且Origin验证通过，可以放行
 		authHeader := ctx.GetHeader("Authorization")
 		hasJWT := strings.HasPrefix(authHeader, "Bearer ")
-		
+
 		if hasJWT && hasCustomHeader && originValid {
 			// JWT + 自定义Header + Origin验证 = 基础安全级别
 			if !c.isHighRiskPath(path) {
@@ -139,7 +139,7 @@ func (c *EnhancedCSRF) Middleware() gin.HandlerFunc {
 				return
 			}
 		}
-		
+
 		// 高风险操作需要完整CSRF验证
 		if c.isHighRiskPath(path) || (!hasCustomHeader && !originValid) {
 			// 获取Cookie中的token
@@ -149,7 +149,7 @@ func (c *EnhancedCSRF) Middleware() gin.HandlerFunc {
 				ctx.Abort()
 				return
 			}
-			
+
 			// 获取Header中的token
 			headerToken := ctx.GetHeader(c.HeaderName)
 			if headerToken == "" {
@@ -157,7 +157,7 @@ func (c *EnhancedCSRF) Middleware() gin.HandlerFunc {
 				ctx.Abort()
 				return
 			}
-			
+
 			// 使用constant-time比较防止时序攻击
 			if subtle.ConstantTimeCompare([]byte(cookie), []byte(headerToken)) != 1 {
 				utils.UnauthorizedResponse(ctx, "CSRF token mismatch")
@@ -165,7 +165,7 @@ func (c *EnhancedCSRF) Middleware() gin.HandlerFunc {
 				return
 			}
 		}
-		
+
 		ctx.Next()
 	}
 }
@@ -178,7 +178,7 @@ func (c *EnhancedCSRF) GenerateToken() gin.HandlerFunc {
 			utils.InternalServerErrorResponse(ctx, "Failed to generate CSRF token", err)
 			return
 		}
-		
+
 		// 在Cookie中设置token
 		ctx.SetSameSite(c.CookieSameSite)
 		ctx.SetCookie(
@@ -190,7 +190,7 @@ func (c *EnhancedCSRF) GenerateToken() gin.HandlerFunc {
 			c.CookieSecure,
 			true, // HttpOnly
 		)
-		
+
 		// 在响应中也返回token供客户端使用
 		utils.SuccessResponse(ctx, http.StatusOK, "CSRF token generated", gin.H{
 			"token": token,
@@ -201,35 +201,35 @@ func (c *EnhancedCSRF) GenerateToken() gin.HandlerFunc {
 // SmartCSRF 智能CSRF中间件 - 根据风险级别选择验证策略
 func SmartCSRF() gin.HandlerFunc {
 	enhanced := NewEnhancedCSRF()
-	
+
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		method := ctx.Request.Method
-		
+
 		// GET请求和公开API跳过
 		if method == "GET" || enhanced.isPathSkipped(path) {
 			ctx.Next()
 			return
 		}
-		
+
 		// 检查是否有JWT认证
-		authHeader := ctx.GetHeader("Authorization") 
+		authHeader := ctx.GetHeader("Authorization")
 		hasJWT := strings.HasPrefix(authHeader, "Bearer ")
-		
+
 		// 检查Origin/Referer
 		originValid := enhanced.validateOrigin(ctx)
-		
+
 		// 检查自定义安全header
 		customHeader := ctx.GetHeader("X-OpenPenPal-Auth")
 		hasCustomHeader := customHeader == "frontend-client"
-		
+
 		// 低风险操作：JWT + Origin + 自定义Header 即可
 		if hasJWT && originValid && hasCustomHeader && !enhanced.isHighRiskPath(path) {
 			ctx.Header("X-CSRF-Protection", "jwt-origin-header")
 			ctx.Next()
 			return
 		}
-		
+
 		// 高风险操作：需要完整CSRF验证
 		if enhanced.isHighRiskPath(path) {
 			ctx.Header("X-CSRF-Protection", "full-token")
@@ -237,7 +237,7 @@ func SmartCSRF() gin.HandlerFunc {
 			enhanced.Middleware()(ctx)
 			return
 		}
-		
+
 		// 默认：如果没有足够的安全措施，拒绝请求
 		utils.UnauthorizedResponse(ctx, "Insufficient security headers for this operation")
 		ctx.Abort()

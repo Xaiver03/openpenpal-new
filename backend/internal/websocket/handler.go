@@ -96,28 +96,28 @@ func (h *WebSocketHandler) HandleGetStats(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// 安全地转换map类型，确保不会返回nil
 	messagesByType := make(map[string]int64)
 	if stats.MessagesByType != nil {
 		messagesByType = stats.MessagesByType
 	}
-	
+
 	roomStats := make(map[string]int)
 	if stats.RoomStats != nil {
 		roomStats = stats.RoomStats
 	}
-	
+
 	connectionsByRole := make(map[string]int)
 	if stats.ConnectionsByRole != nil {
 		connectionsByRole = stats.ConnectionsByRole
 	}
-	
+
 	connectionsBySchool := make(map[string]int)
 	if stats.ConnectionsBySchool != nil {
 		connectionsBySchool = stats.ConnectionsBySchool
 	}
-	
+
 	// 确保时间字段正确序列化
 	c.JSON(http.StatusOK, gin.H{
 		"total_connections":     stats.TotalConnections,

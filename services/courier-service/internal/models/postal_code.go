@@ -6,72 +6,72 @@ import (
 
 // PostalCodeApplication 编号申请模型
 type PostalCodeApplication struct {
-	ID            uint                    `json:"id" gorm:"primaryKey"`
-	UserID        string                  `json:"user_id" gorm:"not null;index"`
-	SchoolID      string                  `json:"school_id" gorm:"not null"`
-	SchoolName    string                  `json:"school_name" gorm:"not null"`
-	AreaID        string                  `json:"area_id" gorm:"not null"`
-	AreaName      string                  `json:"area_name" gorm:"not null"`
-	RequestedCode string                  `json:"requested_code"`
-	AssignedCode  string                  `json:"assigned_code"`
-	Status        PostalCodeStatus        `json:"status" gorm:"default:pending"`
-	ApplicantInfo string                  `json:"applicant_info" gorm:"type:json"` // 申请人信息JSON
-	Reason        string                  `json:"reason"`                          // 申请理由
-	Evidence      string                  `json:"evidence" gorm:"type:json"`       // 证明材料JSON
-	ReviewerID    *string                 `json:"reviewer_id,omitempty"`
-	ReviewedAt    *time.Time              `json:"reviewed_at,omitempty"`
-	ReviewComment string                  `json:"review_comment"`
-	CreatedAt     time.Time               `json:"created_at"`
-	UpdatedAt     time.Time               `json:"updated_at"`
+	ID            uint             `json:"id" gorm:"primaryKey"`
+	UserID        string           `json:"user_id" gorm:"not null;index"`
+	SchoolID      string           `json:"school_id" gorm:"not null"`
+	SchoolName    string           `json:"school_name" gorm:"not null"`
+	AreaID        string           `json:"area_id" gorm:"not null"`
+	AreaName      string           `json:"area_name" gorm:"not null"`
+	RequestedCode string           `json:"requested_code"`
+	AssignedCode  string           `json:"assigned_code"`
+	Status        PostalCodeStatus `json:"status" gorm:"default:pending"`
+	ApplicantInfo string           `json:"applicant_info" gorm:"type:json"` // 申请人信息JSON
+	Reason        string           `json:"reason"`                          // 申请理由
+	Evidence      string           `json:"evidence" gorm:"type:json"`       // 证明材料JSON
+	ReviewerID    *string          `json:"reviewer_id,omitempty"`
+	ReviewedAt    *time.Time       `json:"reviewed_at,omitempty"`
+	ReviewComment string           `json:"review_comment"`
+	CreatedAt     time.Time        `json:"created_at"`
+	UpdatedAt     time.Time        `json:"updated_at"`
 }
 
 // PostalCodeAssignment 编号分配记录模型
 type PostalCodeAssignment struct {
-	ID           uint      `json:"id" gorm:"primaryKey"`
-	UserID       string    `json:"user_id" gorm:"not null;index"`
-	PostalCode   string    `json:"postal_code" gorm:"not null;unique"`
-	SchoolID     string    `json:"school_id" gorm:"not null"`
-	AreaID       string    `json:"area_id" gorm:"not null"`
-	BuildingID   *string   `json:"building_id,omitempty"`
-	RoomNumber   *string   `json:"room_number,omitempty"`
-	IsActive     bool      `json:"is_active" gorm:"default:true"`
-	AssignedBy   string    `json:"assigned_by" gorm:"not null"`        // 分配者ID
-	AssignedAt   time.Time `json:"assigned_at"`
-	DeactivatedBy *string  `json:"deactivated_by,omitempty"`
+	ID            uint       `json:"id" gorm:"primaryKey"`
+	UserID        string     `json:"user_id" gorm:"not null;index"`
+	PostalCode    string     `json:"postal_code" gorm:"not null;unique"`
+	SchoolID      string     `json:"school_id" gorm:"not null"`
+	AreaID        string     `json:"area_id" gorm:"not null"`
+	BuildingID    *string    `json:"building_id,omitempty"`
+	RoomNumber    *string    `json:"room_number,omitempty"`
+	IsActive      bool       `json:"is_active" gorm:"default:true"`
+	AssignedBy    string     `json:"assigned_by" gorm:"not null"` // 分配者ID
+	AssignedAt    time.Time  `json:"assigned_at"`
+	DeactivatedBy *string    `json:"deactivated_by,omitempty"`
 	DeactivatedAt *time.Time `json:"deactivated_at,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 // PostalCodeRule 编号规则模型
 type PostalCodeRule struct {
-	ID          uint      `json:"id" gorm:"primaryKey"`
-	SchoolID    string    `json:"school_id" gorm:"not null;unique"`
-	SchoolName  string    `json:"school_name" gorm:"not null"`
-	Prefix      string    `json:"prefix" gorm:"not null"`      // 学校前缀
-	AreaRules   string    `json:"area_rules" gorm:"type:json"` // 片区规则JSON
-	TotalCodes  int       `json:"total_codes" gorm:"default:0"`
-	UsedCodes   int       `json:"used_codes" gorm:"default:0"`
-	IsActive    bool      `json:"is_active" gorm:"default:true"`
-	CreatedBy   string    `json:"created_by"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID         uint      `json:"id" gorm:"primaryKey"`
+	SchoolID   string    `json:"school_id" gorm:"not null;unique"`
+	SchoolName string    `json:"school_name" gorm:"not null"`
+	Prefix     string    `json:"prefix" gorm:"not null"`      // 学校前缀
+	AreaRules  string    `json:"area_rules" gorm:"type:json"` // 片区规则JSON
+	TotalCodes int       `json:"total_codes" gorm:"default:0"`
+	UsedCodes  int       `json:"used_codes" gorm:"default:0"`
+	IsActive   bool      `json:"is_active" gorm:"default:true"`
+	CreatedBy  string    `json:"created_by"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // PostalCodeZone 编号管理区域模型
 type PostalCodeZone struct {
-	ID          uint                `json:"id" gorm:"primaryKey"`
-	ZoneID      string              `json:"zone_id" gorm:"not null;unique"`
-	ZoneName    string              `json:"zone_name" gorm:"not null"`
-	ZoneType    CourierZoneType     `json:"zone_type" gorm:"not null"`
-	SchoolID    string              `json:"school_id" gorm:"not null"`
-	ParentZone  *string             `json:"parent_zone,omitempty"`
-	ManagerID   *string             `json:"manager_id,omitempty"`        // 负责管理的信使ID
-	ManagerLevel *CourierLevel      `json:"manager_level,omitempty"`     // 管理者等级
-	CodeRange   string              `json:"code_range" gorm:"type:json"` // 编号范围JSON
-	IsActive    bool                `json:"is_active" gorm:"default:true"`
-	CreatedAt   time.Time           `json:"created_at"`
-	UpdatedAt   time.Time           `json:"updated_at"`
+	ID           uint            `json:"id" gorm:"primaryKey"`
+	ZoneID       string          `json:"zone_id" gorm:"not null;unique"`
+	ZoneName     string          `json:"zone_name" gorm:"not null"`
+	ZoneType     CourierZoneType `json:"zone_type" gorm:"not null"`
+	SchoolID     string          `json:"school_id" gorm:"not null"`
+	ParentZone   *string         `json:"parent_zone,omitempty"`
+	ManagerID    *string         `json:"manager_id,omitempty"`        // 负责管理的信使ID
+	ManagerLevel *CourierLevel   `json:"manager_level,omitempty"`     // 管理者等级
+	CodeRange    string          `json:"code_range" gorm:"type:json"` // 编号范围JSON
+	IsActive     bool            `json:"is_active" gorm:"default:true"`
+	CreatedAt    time.Time       `json:"created_at"`
+	UpdatedAt    time.Time       `json:"updated_at"`
 }
 
 // PostalCodeStatus 编号申请状态
@@ -82,7 +82,7 @@ const (
 	PostalCodeStatusApproved  PostalCodeStatus = "approved"  // 已批准
 	PostalCodeStatusRejected  PostalCodeStatus = "rejected"  // 已拒绝
 	PostalCodeStatusAssigned  PostalCodeStatus = "assigned"  // 已分配
-	PostalCodeStatusCancelled PostalCodeStatus = "cancelled" // 已取消
+	PostalCodeStatusCanceled PostalCodeStatus = "canceled" // 已取消
 )
 
 // PostalCodeApplicationRequest 编号申请请求
@@ -104,8 +104,8 @@ type PostalCodeReviewRequest struct {
 
 // PostalCodeBatchAssignRequest 批量分配编号请求
 type PostalCodeBatchAssignRequest struct {
-	SchoolID    string                   `json:"school_id" binding:"required"`
-	AreaID      string                   `json:"area_id" binding:"required"`
+	SchoolID    string                     `json:"school_id" binding:"required"`
+	AreaID      string                     `json:"area_id" binding:"required"`
 	Assignments []PostalCodeAssignmentItem `json:"assignments" binding:"required"`
 }
 
@@ -119,23 +119,23 @@ type PostalCodeAssignmentItem struct {
 
 // PostalCodeStatistics 编号统计信息
 type PostalCodeStatistics struct {
-	SchoolID        string `json:"school_id"`
-	SchoolName      string `json:"school_name"`
-	TotalCodes      int    `json:"total_codes"`
-	AssignedCodes   int    `json:"assigned_codes"`
-	UnassignedCodes int    `json:"unassigned_codes"`
-	PendingApps     int    `json:"pending_applications"`
+	SchoolID        string  `json:"school_id"`
+	SchoolName      string  `json:"school_name"`
+	TotalCodes      int     `json:"total_codes"`
+	AssignedCodes   int     `json:"assigned_codes"`
+	UnassignedCodes int     `json:"unassigned_codes"`
+	PendingApps     int     `json:"pending_applications"`
 	UtilizationRate float64 `json:"utilization_rate"`
 }
 
 // PostalCodePermissionScope 编号权限范围
 type PostalCodePermissionScope struct {
-	CourierID    string            `json:"courier_id"`
-	Level        CourierLevel      `json:"level"`
-	CanManage    []string          `json:"can_manage"`    // 可以管理的区域ID列表
-	CanAssign    []string          `json:"can_assign"`    // 可以分配编号的区域ID列表
-	CanApprove   []string          `json:"can_approve"`   // 可以审核申请的区域ID列表
-	Schools      []SchoolInfo      `json:"schools"`       // 可管理的学校列表
+	CourierID  string       `json:"courier_id"`
+	Level      CourierLevel `json:"level"`
+	CanManage  []string     `json:"can_manage"`  // 可以管理的区域ID列表
+	CanAssign  []string     `json:"can_assign"`  // 可以分配编号的区域ID列表
+	CanApprove []string     `json:"can_approve"` // 可以审核申请的区域ID列表
+	Schools    []SchoolInfo `json:"schools"`     // 可管理的学校列表
 }
 
 // SchoolInfo 学校信息
@@ -147,11 +147,11 @@ type SchoolInfo struct {
 
 // AreaInfo 片区信息
 type AreaInfo struct {
-	AreaID     string         `json:"area_id"`
-	AreaName   string         `json:"area_name"`
-	Buildings  []BuildingInfo `json:"buildings"`
-	ManagerID  string         `json:"manager_id"`
-	CodeRange  string         `json:"code_range"`
+	AreaID    string         `json:"area_id"`
+	AreaName  string         `json:"area_name"`
+	Buildings []BuildingInfo `json:"buildings"`
+	ManagerID string         `json:"manager_id"`
+	CodeRange string         `json:"code_range"`
 }
 
 // BuildingInfo 楼栋信息
@@ -173,7 +173,7 @@ func (s PostalCodeStatus) GetName() string {
 		return "已拒绝"
 	case PostalCodeStatusAssigned:
 		return "已分配"
-	case PostalCodeStatusCancelled:
+	case PostalCodeStatusCanceled:
 		return "已取消"
 	default:
 		return "未知状态"
@@ -186,11 +186,11 @@ func (s PostalCodeStatus) CanTransitionTo(target PostalCodeStatus) bool {
 		PostalCodeStatusPending: {
 			PostalCodeStatusApproved,
 			PostalCodeStatusRejected,
-			PostalCodeStatusCancelled,
+			PostalCodeStatusCanceled,
 		},
 		PostalCodeStatusApproved: {
 			PostalCodeStatusAssigned,
-			PostalCodeStatusCancelled,
+			PostalCodeStatusCanceled,
 		},
 		PostalCodeStatusRejected: {
 			PostalCodeStatusPending, // 可以重新申请
@@ -198,7 +198,7 @@ func (s PostalCodeStatus) CanTransitionTo(target PostalCodeStatus) bool {
 		PostalCodeStatusAssigned: {
 			// 已分配的编号一般不能改变状态，除非特殊情况
 		},
-		PostalCodeStatusCancelled: {
+		PostalCodeStatusCanceled: {
 			PostalCodeStatusPending, // 可以重新申请
 		},
 	}
@@ -262,26 +262,26 @@ var PostalCodePermissionMatrix = map[CourierLevel][]string{
 	LevelThree: {
 		"view_own_building",
 		"view_area",
-		"view_campus",      // 查看全校编号分配
+		"view_campus", // 查看全校编号分配
 		"approve_building",
-		"approve_area",     // 审核片区级编号申请
+		"approve_area", // 审核片区级编号申请
 		"assign_building",
-		"assign_area",      // 分配片区级编号
-		"manage_rules",     // 管理编号规则
+		"assign_area",  // 分配片区级编号
+		"manage_rules", // 管理编号规则
 	},
 	LevelFour: {
 		"view_own_building",
 		"view_area",
 		"view_campus",
-		"view_city",        // 查看全域编号分配
+		"view_city", // 查看全域编号分配
 		"approve_building",
 		"approve_area",
-		"approve_campus",   // 审核校级编号申请
+		"approve_campus", // 审核校级编号申请
 		"assign_building",
 		"assign_area",
-		"assign_campus",    // 分配校级编号
+		"assign_campus", // 分配校级编号
 		"manage_rules",
-		"manage_schools",   // 管理学校编号规则
-		"batch_assign",     // 批量分配编号
+		"manage_schools", // 管理学校编号规则
+		"batch_assign",   // 批量分配编号
 	},
 }

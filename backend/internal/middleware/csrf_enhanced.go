@@ -12,9 +12,9 @@ import (
 func EnhancedCSRFMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Skip CSRF for safe methods
-		if c.Request.Method == http.MethodGet || 
-		   c.Request.Method == http.MethodHead || 
-		   c.Request.Method == http.MethodOptions {
+		if c.Request.Method == http.MethodGet ||
+			c.Request.Method == http.MethodHead ||
+			c.Request.Method == http.MethodOptions {
 			c.Next()
 			return
 		}
@@ -23,10 +23,10 @@ func EnhancedCSRFMiddleware() gin.HandlerFunc {
 		csrfExemptPaths := []string{
 			"/health",
 			"/ping",
-			"/api/v1/auth/csrf",      // Getting CSRF token
-			"/api/v1/auth/register",  // Initial registration needs special handling
+			"/api/v1/auth/csrf",     // Getting CSRF token
+			"/api/v1/auth/register", // Initial registration needs special handling
 		}
-		
+
 		// Check if current path is exempt
 		path := c.Request.URL.Path
 		isExempt := false
@@ -36,7 +36,7 @@ func EnhancedCSRFMiddleware() gin.HandlerFunc {
 				break
 			}
 		}
-		
+
 		if isExempt {
 			c.Next()
 			return
@@ -71,7 +71,7 @@ func EnhancedCSRFMiddleware() gin.HandlerFunc {
 		if token == "" {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
-				"error": "CSRF_TOKEN_MISSING",
+				"error":   "CSRF_TOKEN_MISSING",
 				"message": "CSRF token is required for this operation",
 			})
 			c.Abort()
@@ -83,7 +83,7 @@ func EnhancedCSRFMiddleware() gin.HandlerFunc {
 		if err != nil || cookieToken == "" {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
-				"error": "CSRF_COOKIE_MISSING", 
+				"error":   "CSRF_COOKIE_MISSING",
 				"message": "CSRF cookie is missing. Please refresh and try again.",
 			})
 			c.Abort()
@@ -94,7 +94,7 @@ func EnhancedCSRFMiddleware() gin.HandlerFunc {
 		if !secureCompare(token, cookieToken) {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
-				"error": "CSRF_TOKEN_INVALID",
+				"error":   "CSRF_TOKEN_INVALID",
 				"message": "CSRF token validation failed",
 			})
 			c.Abort()
@@ -107,9 +107,9 @@ func EnhancedCSRFMiddleware() gin.HandlerFunc {
 
 // setCSRFCookie sets the CSRF cookie with proper settings
 func setCSRFCookie(c *gin.Context, token string) {
-	isDev := strings.Contains(c.Request.Host, "localhost") || 
-	         strings.Contains(c.Request.Host, "127.0.0.1")
-	
+	isDev := strings.Contains(c.Request.Host, "localhost") ||
+		strings.Contains(c.Request.Host, "127.0.0.1")
+
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(
 		CSRFCookieName,
@@ -133,7 +133,7 @@ func NewSOTACSRFProtection() *SOTACSRFProtection {
 	return &SOTACSRFProtection{
 		exemptPaths: []string{
 			"/health",
-			"/ping", 
+			"/ping",
 			"/api/v1/auth/csrf",
 		},
 		tokenTTL: 24 * time.Hour,
@@ -151,7 +151,7 @@ func (csrf *SOTACSRFProtection) TokenHandler(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"error": "TOKEN_GENERATION_FAILED",
+			"error":   "TOKEN_GENERATION_FAILED",
 		})
 		return
 	}

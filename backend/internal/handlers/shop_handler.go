@@ -89,7 +89,7 @@ func (h *ShopHandler) GetProducts(c *gin.Context) {
 // GetProduct 获取商品详情
 func (h *ShopHandler) GetProduct(c *gin.Context) {
 	resp := response.NewGinResponse()
-	
+
 	productID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		resp.BadRequest(c, "无效的商品ID")
@@ -108,7 +108,7 @@ func (h *ShopHandler) GetProduct(c *gin.Context) {
 // CreateProduct 创建商品（管理员）
 func (h *ShopHandler) CreateProduct(c *gin.Context) {
 	resp := response.NewGinResponse()
-	
+
 	var product models.Product
 	if err := c.ShouldBindJSON(&product); err != nil {
 		resp.BadRequest(c, err.Error())

@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"time"
-	
+
 	"openpenpal-backend/internal/config"
 	"openpenpal-backend/internal/middleware"
 	"openpenpal-backend/internal/models"
@@ -34,7 +34,7 @@ var mockUsers = map[string]*MockUser{
 	"user": {
 		ID:       "test-user",
 		Username: "user",
-		Email:    "user@example.com", 
+		Email:    "user@example.com",
 		Role:     "user",
 		IsActive: true,
 	},
@@ -227,17 +227,17 @@ func main() {
 
 			// Echo back the transformed data
 			c.JSON(200, gin.H{
-				"success": true,
+				"success":       true,
 				"received_data": body,
-				"server_time": time.Now().Format(time.RFC3339),
+				"server_time":   time.Now().Format(time.RFC3339),
 			})
 		})
 
 		// Test rate limiting
 		testGroup.GET("/rate-limit", func(c *gin.Context) {
 			c.JSON(200, gin.H{
-				"success": true,
-				"message": "Rate limit test successful",
+				"success":   true,
+				"message":   "Rate limit test successful",
 				"timestamp": time.Now().Unix(),
 			})
 		})
@@ -248,7 +248,7 @@ func main() {
 	log.Printf("Starting middleware test server on %s", addr)
 	log.Printf("Environment: %s", cfg.Environment)
 	log.Printf("All middleware layers active")
-	
+
 	if err := router.Run(addr); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
@@ -315,7 +315,7 @@ func mockAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		c.Set("user_role", claims.Role)
 		c.Set("user", user)
 		c.Set("role", claims.Role) // Compatibility
-		
+
 		c.Next()
 	}
 }
@@ -332,7 +332,7 @@ func mockAdminMiddleware() gin.HandlerFunc {
 
 		allowedRoles := []string{"admin", "super_admin", "platform_admin"}
 		roleStr := role.(string)
-		
+
 		allowed := false
 		for _, r := range allowedRoles {
 			if roleStr == r {
@@ -343,9 +343,9 @@ func mockAdminMiddleware() gin.HandlerFunc {
 
 		if !allowed {
 			c.JSON(403, gin.H{
-				"error": "Insufficient permissions",
+				"error":    "Insufficient permissions",
 				"required": "admin",
-				"current": roleStr,
+				"current":  roleStr,
 			})
 			c.Abort()
 			return

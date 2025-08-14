@@ -123,12 +123,12 @@ func main() {
 	}
 
 	fmt.Println("\n✨ Seed data created successfully!")
-	
+
 	// 显示统计
 	db.Model(&models.User{}).Count(&userCount)
 	var letterCount int64
 	db.Model(&models.Letter{}).Count(&letterCount)
-	
+
 	fmt.Printf("\nDatabase now contains:\n")
 	fmt.Printf("  - %d users\n", userCount)
 	fmt.Printf("  - %d letters\n", letterCount)

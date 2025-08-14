@@ -30,7 +30,7 @@ func NewCourierGrowthHandler(courierService *services.CourierService, userServic
 func (h *CourierGrowthHandler) GetGrowthPath(c *gin.Context) {
 	// Get user ID from context
 	userID, exists := c.Get("user_id")
-	
+
 	if !exists || userID == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -38,7 +38,7 @@ func (h *CourierGrowthHandler) GetGrowthPath(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	userIDStr, ok := userID.(string)
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -47,7 +47,7 @@ func (h *CourierGrowthHandler) GetGrowthPath(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// 获取当前信使信息
 	courier, err := h.courierService.GetCourierByUserID(userIDStr)
 	if err != nil {
@@ -69,13 +69,13 @@ func (h *CourierGrowthHandler) GetGrowthPath(c *gin.Context) {
 	// 添加可能的晋升路径
 	for level := courier.Level + 1; level <= 4; level++ {
 		path := map[string]interface{}{
-			"target_level":   level,
-			"target_name":    getLevelName(level),
-			"requirements":   getUpgradeRequirements(level),
-			"zone_type":      getZoneType(level),
-			"permissions":    getLevelPermissions(level),
+			"target_level": level,
+			"target_name":  getLevelName(level),
+			"requirements": getUpgradeRequirements(level),
+			"zone_type":    getZoneType(level),
+			"permissions":  getLevelPermissions(level),
 		}
-		
+
 		// 如果是下一级，检查是否满足条件
 		if level == courier.Level+1 {
 			canUpgrade, completionRate := h.checkUpgradeRequirements(courier, level)
@@ -83,7 +83,7 @@ func (h *CourierGrowthHandler) GetGrowthPath(c *gin.Context) {
 			path["completion_rate"] = completionRate
 			path["detailed_requirements"] = getDetailedRequirements(courier, level)
 		}
-		
+
 		growthPath["paths"] = append(growthPath["paths"].([]map[string]interface{}), path)
 	}
 
@@ -112,7 +112,7 @@ func (h *CourierGrowthHandler) GetGrowthProgress(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	courier, err := h.courierService.GetCourierByUserID(userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -135,7 +135,7 @@ func (h *CourierGrowthHandler) GetGrowthProgress(c *gin.Context) {
 	if courier.Level < 4 {
 		nextLevel := courier.Level + 1
 		canUpgrade, completionRate := h.checkUpgradeRequirements(courier, nextLevel)
-		
+
 		progress["next_level"] = nextLevel
 		progress["can_upgrade"] = canUpgrade
 		progress["completion_rate"] = completionRate
@@ -225,11 +225,11 @@ func (h *CourierGrowthHandler) CheckLevel(c *gin.Context) {
 	}
 
 	levelInfo := map[string]interface{}{
-		"id":         courier.ID,
-		"level":      courier.Level,
-		"zone_type":  getZoneType(courier.Level),
-		"zone_id":    courier.Zone,
-		"zone_name":  courier.Zone,
+		"id":          courier.ID,
+		"level":       courier.Level,
+		"zone_type":   getZoneType(courier.Level),
+		"zone_id":     courier.Zone,
+		"zone_name":   courier.Zone,
 		"permissions": getLevelPermissions(courier.Level),
 	}
 
@@ -253,7 +253,7 @@ func (h *CourierGrowthHandler) CheckLevel(c *gin.Context) {
 func (h *CourierGrowthHandler) SubmitUpgradeRequest(c *gin.Context) {
 	userIDInterface, _ := c.Get("user_id")
 	userID, _ := userIDInterface.(string)
-	
+
 	var req struct {
 		RequestLevel int                    `json:"request_level" binding:"required"`
 		Reason       string                 `json:"reason" binding:"required"`
@@ -296,7 +296,7 @@ func (h *CourierGrowthHandler) SubmitUpgradeRequest(c *gin.Context) {
 		req.Reason,
 		req.Evidence,
 	)
-	
+
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -317,13 +317,13 @@ func (h *CourierGrowthHandler) GetUpgradeRequests(c *gin.Context) {
 	status := c.Query("status")
 	limit := 20
 	offset := 0
-	
+
 	if limitStr := c.Query("limit"); limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
 			limit = l
 		}
 	}
-	
+
 	if offsetStr := c.Query("offset"); offsetStr != "" {
 		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
 			offset = o
@@ -355,7 +355,7 @@ func (h *CourierGrowthHandler) GetUpgradeRequests(c *gin.Context) {
 // ProcessUpgradeRequest 处理晋升申请
 func (h *CourierGrowthHandler) ProcessUpgradeRequest(c *gin.Context) {
 	requestID := c.Param("request_id")
-	
+
 	var req struct {
 		Action  string `json:"action" binding:"required,oneof=approve reject"`
 		Comment string `json:"comment"`
@@ -452,7 +452,7 @@ func getUpgradeRequirements(level int) []map[string]interface{} {
 func getDetailedRequirements(courier *models.Courier, targetLevel int) []map[string]interface{} {
 	requirements := getUpgradeRequirements(targetLevel)
 	detailed := make([]map[string]interface{}, len(requirements))
-	
+
 	for i, req := range requirements {
 		detailed[i] = req
 		// 模拟当前进度
@@ -469,23 +469,23 @@ func getDetailedRequirements(courier *models.Courier, targetLevel int) []map[str
 			detailed[i]["completed"] = false
 		}
 	}
-	
+
 	return detailed
 }
 
 func (h *CourierGrowthHandler) checkUpgradeRequirements(courier *models.Courier, targetLevel int) (bool, float64) {
 	requirements := getDetailedRequirements(courier, targetLevel)
 	completedCount := 0
-	
+
 	for _, req := range requirements {
 		if req["completed"].(bool) {
 			completedCount++
 		}
 	}
-	
+
 	completionRate := float64(completedCount) / float64(len(requirements)) * 100
 	canUpgrade := completedCount == len(requirements)
-	
+
 	return canUpgrade, completionRate
 }
 

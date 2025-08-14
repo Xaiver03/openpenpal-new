@@ -18,14 +18,14 @@ const (
 type CourierPermission string
 
 const (
-	PermissionScan          CourierPermission = "scan"           // 扫码登记权限
-	PermissionStatusChange  CourierPermission = "status_change"  // 状态变更权限
-	PermissionHandover      CourierPermission = "handover"       // 向上转交权限
-	PermissionPackage       CourierPermission = "package"        // 打包分拣权限
-	PermissionDistribute    CourierPermission = "distribute"     // 信封分发权限
+	PermissionScan            CourierPermission = "scan"             // 扫码登记权限
+	PermissionStatusChange    CourierPermission = "status_change"    // 状态变更权限
+	PermissionHandover        CourierPermission = "handover"         // 向上转交权限
+	PermissionPackage         CourierPermission = "package"          // 打包分拣权限
+	PermissionDistribute      CourierPermission = "distribute"       // 信封分发权限
 	PermissionReceiveHandover CourierPermission = "receive_handover" // 接收转交权限
-	PermissionFeedback      CourierPermission = "feedback"       // 用户反馈处理权限
-	PermissionPerformance   CourierPermission = "performance"    // 绩效查看权限
+	PermissionFeedback        CourierPermission = "feedback"         // 用户反馈处理权限
+	PermissionPerformance     CourierPermission = "performance"      // 绩效查看权限
 )
 
 // CourierZoneType 管理区域类型
@@ -83,7 +83,7 @@ type LevelUpgradeRequest struct {
 	CurrentLevel  CourierLevel `json:"current_level" gorm:"not null"`
 	RequestLevel  CourierLevel `json:"request_level" gorm:"not null"`
 	Reason        string       `json:"reason"`
-	Evidence      string       `json:"evidence"` // JSON格式的证据数据
+	Evidence      string       `json:"evidence"`                      // JSON格式的证据数据
 	Status        string       `json:"status" gorm:"default:pending"` // pending,approved,rejected
 	ReviewedBy    *string      `json:"reviewed_by,omitempty"`
 	ReviewedAt    *time.Time   `json:"reviewed_at,omitempty"`
@@ -94,13 +94,13 @@ type LevelUpgradeRequest struct {
 
 // CourierPermissionCheck 权限检查结果
 type CourierPermissionCheck struct {
-	CourierID    string              `json:"courier_id"`
-	Level        CourierLevel        `json:"level"`
-	Permission   CourierPermission   `json:"permission"`
-	ZoneType     CourierZoneType     `json:"zone_type"`
-	ZoneID       string              `json:"zone_id"`
-	HasPermission bool               `json:"has_permission"`
-	Reason       string              `json:"reason,omitempty"`
+	CourierID     string            `json:"courier_id"`
+	Level         CourierLevel      `json:"level"`
+	Permission    CourierPermission `json:"permission"`
+	ZoneType      CourierZoneType   `json:"zone_type"`
+	ZoneID        string            `json:"zone_id"`
+	HasPermission bool              `json:"has_permission"`
+	Reason        string            `json:"reason,omitempty"`
 }
 
 // GetLevelName 获取等级名称
@@ -162,9 +162,9 @@ func (p CourierPermission) GetPermissionName() string {
 // DefaultPermissionMatrix 默认权限矩阵配置 (基于PRD权限矩阵)
 var DefaultPermissionMatrix = map[CourierLevel][]CourierPermission{
 	LevelOne: {
-		PermissionScan,        // 本楼栋扫码登记
+		PermissionScan,         // 本楼栋扫码登记
 		PermissionStatusChange, // 状态变更
-		PermissionHandover,    // 向上转交
+		PermissionHandover,     // 向上转交
 	},
 	LevelTwo: {
 		PermissionScan,            // 片区扫码登记

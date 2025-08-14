@@ -78,8 +78,8 @@ func (h *ScanHandler) GetScanHistory(c *gin.Context) {
 	// 这里可以添加获取扫码历史的逻辑
 	// 暂时返回空响应
 	response := map[string]interface{}{
-		"letter_code": letterCode,
-		"courier_id":  courierID,
+		"letter_code":  letterCode,
+		"courier_id":   courierID,
 		"scan_records": []interface{}{},
 	}
 

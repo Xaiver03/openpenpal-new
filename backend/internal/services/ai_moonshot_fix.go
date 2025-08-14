@@ -17,17 +17,17 @@ func (s *AIService) callMoonshotFixed(ctx context.Context, config *models.AIConf
 	log.Printf("🌙 [Moonshot] Starting fixed API call...")
 	log.Printf("🌙 [Moonshot] API Endpoint: %s", config.APIEndpoint)
 	log.Printf("🌙 [Moonshot] Model: %s", config.Model)
-	
+
 	// Ensure we have the correct endpoint
 	if config.APIEndpoint == "" {
 		config.APIEndpoint = "https://api.moonshot.cn/v1/chat/completions"
 	}
-	
+
 	// Validate API key
 	if config.APIKey == "" {
 		return "", fmt.Errorf("moonshot API key is empty")
 	}
-	
+
 	// Build request body - Moonshot API is OpenAI compatible
 	requestBody := map[string]interface{}{
 		"model": config.Model,
@@ -51,7 +51,7 @@ func (s *AIService) callMoonshotFixed(ctx context.Context, config *models.AIConf
 		log.Printf("❌ [Moonshot] Failed to marshal request body: %v", err)
 		return "", fmt.Errorf("failed to marshal request: %w", err)
 	}
-	
+
 	log.Printf("🌙 [Moonshot] Request body size: %d bytes", len(jsonData))
 	log.Printf("🌙 [Moonshot] Request body: %s", string(jsonData))
 
@@ -71,7 +71,7 @@ func (s *AIService) callMoonshotFixed(ctx context.Context, config *models.AIConf
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.APIKey))
 	req.Header.Set("Accept", "application/json")
-	
+
 	// 安全日志：不记录任何API密钥信息
 	if len(config.APIKey) > 0 {
 		log.Printf("🔑 [Moonshot] API Key configured")
@@ -82,14 +82,14 @@ func (s *AIService) callMoonshotFixed(ctx context.Context, config *models.AIConf
 	// Send request
 	log.Printf("🚀 [Moonshot] Sending request to %s", config.APIEndpoint)
 	startTime := time.Now()
-	
+
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("❌ [Moonshot] Request failed: %v", err)
 		return "", fmt.Errorf("moonshot API request failed: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	duration := time.Since(startTime)
 	log.Printf("⏱️ [Moonshot] Request took %v", duration)
 
@@ -99,11 +99,11 @@ func (s *AIService) callMoonshotFixed(ctx context.Context, config *models.AIConf
 		log.Printf("❌ [Moonshot] Failed to read response body: %v", err)
 		return "", fmt.Errorf("failed to read response: %w", err)
 	}
-	
+
 	log.Printf("📥 [Moonshot] Response status: %d", resp.StatusCode)
 	log.Printf("📥 [Moonshot] Response headers: %v", resp.Header)
 	log.Printf("📥 [Moonshot] Response body size: %d bytes", len(body))
-	
+
 	// Log first 500 chars of response for debugging
 	if len(body) > 0 {
 		preview := string(body)
@@ -116,7 +116,7 @@ func (s *AIService) callMoonshotFixed(ctx context.Context, config *models.AIConf
 	// Handle non-200 status codes
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("❌ [Moonshot] API error response: %s", string(body))
-		
+
 		// Try to parse error response
 		var errorResp struct {
 			Error struct {
@@ -125,11 +125,11 @@ func (s *AIService) callMoonshotFixed(ctx context.Context, config *models.AIConf
 				Code    string `json:"code"`
 			} `json:"error"`
 		}
-		
+
 		if err := json.Unmarshal(body, &errorResp); err == nil && errorResp.Error.Message != "" {
 			return "", fmt.Errorf("moonshot API error (status %d): %s", resp.StatusCode, errorResp.Error.Message)
 		}
-		
+
 		return "", fmt.Errorf("moonshot API error (status %d): %s", resp.StatusCode, string(body))
 	}
 
@@ -153,7 +153,7 @@ func (s *AIService) callMoonshotFixed(ctx context.Context, config *models.AIConf
 			TotalTokens      int `json:"total_tokens"`
 		} `json:"usage"`
 	}
-	
+
 	if err := json.Unmarshal(body, &result); err != nil {
 		log.Printf("❌ [Moonshot] Failed to parse response JSON: %v", err)
 		log.Printf("❌ [Moonshot] Raw response: %s", string(body))
@@ -175,7 +175,7 @@ func (s *AIService) callMoonshotFixed(ctx context.Context, config *models.AIConf
 	log.Printf("✅ [Moonshot] Successfully received response")
 	log.Printf("✅ [Moonshot] Response ID: %s", result.ID)
 	log.Printf("✅ [Moonshot] Model used: %s", result.Model)
-	log.Printf("✅ [Moonshot] Tokens used: prompt=%d, completion=%d, total=%d", 
+	log.Printf("✅ [Moonshot] Tokens used: prompt=%d, completion=%d, total=%d",
 		result.Usage.PromptTokens, result.Usage.CompletionTokens, result.Usage.TotalTokens)
 	log.Printf("✅ [Moonshot] Content length: %d characters", len(content))
 

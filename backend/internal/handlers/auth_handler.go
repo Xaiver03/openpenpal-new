@@ -129,8 +129,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			int(24*time.Hour.Seconds()), // 24小时
 			"/",
 			"",
-			true,  // Secure
-			true,  // HttpOnly
+			true, // Secure
+			true, // HttpOnly
 		)
 	}
 

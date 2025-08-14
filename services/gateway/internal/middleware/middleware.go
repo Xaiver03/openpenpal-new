@@ -48,7 +48,7 @@ func Logger(logger *zap.Logger) gin.HandlerFunc {
 
 		// 记录请求日志
 		duration := time.Since(startTime)
-		
+
 		if raw != "" {
 			path = path + "?" + raw
 		}
@@ -110,7 +110,7 @@ func getRateLimiter(requestsPerMinute int) *RateLimiter {
 		rateLimiterInstance = &RateLimiter{
 			limiters: make(map[string]*rate.Limiter),
 			rate:     rate.Limit(requestsPerMinute) / 60, // 转换为每秒
-			burst:    requestsPerMinute / 6,               // 突发流量为平均值的1/6
+			burst:    requestsPerMinute / 6,              // 突发流量为平均值的1/6
 		}
 	})
 	return rateLimiterInstance
@@ -123,7 +123,7 @@ func NewRateLimiter(requestsPerMinute int) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 使用客户端IP作为限流key
 		key := c.ClientIP()
-		
+
 		// 如果是已认证用户，使用用户ID
 		if userID := GetUserID(c); userID != "" {
 			key = "user:" + userID

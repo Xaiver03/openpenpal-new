@@ -104,7 +104,7 @@ func (a *AdminAdapter) AdaptErrorResponse(c *gin.Context, code int, msg string, 
 		Data:      nil,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}
-	
+
 	if err != nil {
 		response.Error = &ErrorInfo{
 			Type:    "service_error",
@@ -112,14 +112,14 @@ func (a *AdminAdapter) AdaptErrorResponse(c *gin.Context, code int, msg string, 
 			TraceID: c.Request.Header.Get("X-Trace-ID"),
 		}
 	}
-	
+
 	c.JSON(code, response)
 }
 
 // AdaptPageResponse 适配分页响应
 func (a *AdminAdapter) AdaptPageResponse(c *gin.Context, items interface{}, total int64, page, limit int, message string) {
 	pages := int((total + int64(limit) - 1) / int64(limit))
-	
+
 	response := JavaAPIResponse{
 		Code: 200,
 		Msg:  message,
@@ -136,7 +136,7 @@ func (a *AdminAdapter) AdaptPageResponse(c *gin.Context, items interface{}, tota
 		},
 		Timestamp: time.Now().Format(time.RFC3339),
 	}
-	
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -170,7 +170,7 @@ func (a *AdminAdapter) GetUsersCompat(c *gin.Context) {
 	// TODO: 增加搜索和过滤功能
 	// 当前先返回基础数据，后续增强
 	filteredUsers := response.Users
-	
+
 	// 简单的角色过滤
 	if role != "" {
 		var filtered []models.User
@@ -254,7 +254,7 @@ func (a *AdminAdapter) UnlockUserCompat(c *gin.Context) {
 	req := &models.AdminUpdateUserRequest{
 		IsActive: true,
 	}
-	
+
 	user, err := a.adminService.UpdateUser(userID, req)
 	if err != nil {
 		a.AdaptErrorResponse(c, http.StatusInternalServerError, "解锁用户失败", err)
@@ -276,7 +276,7 @@ func (a *AdminAdapter) ResetPasswordCompat(c *gin.Context) {
 	var req struct {
 		Password string `json:"password" binding:"required,min=8"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		a.AdaptErrorResponse(c, http.StatusBadRequest, "密码格式不正确", err)
 		return
@@ -310,8 +310,8 @@ func (a *AdminAdapter) GetUserStatsCompat(c *gin.Context) {
 
 	// 构建角色统计数据
 	roleStats := map[string]interface{}{
-		"totalUsers":    stats.TotalUsers,
-		"newUsersToday": stats.NewUsersToday,
+		"totalUsers":     stats.TotalUsers,
+		"newUsersToday":  stats.NewUsersToday,
 		"activeCouriers": stats.ActiveCouriers,
 		// TODO: 增加详细的角色分布统计
 	}
@@ -379,7 +379,7 @@ func (a *AdminAdapter) UpdateLetterStatusCompat(c *gin.Context) {
 		Status string `json:"status" binding:"required"`
 		Reason string `json:"reason,omitempty"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		a.AdaptErrorResponse(c, http.StatusBadRequest, "请求数据无效", err)
 		return
@@ -412,8 +412,8 @@ func (a *AdminAdapter) GetLetterStatsCompat(c *gin.Context) {
 	}
 
 	letterStats := map[string]interface{}{
-		"totalLetters":            stats.TotalLetters,
-		"lettersToday":            stats.LettersToday,
+		"totalLetters":             stats.TotalLetters,
+		"lettersToday":             stats.LettersToday,
 		"letterStatusDistribution": stats.LetterStatusDistribution,
 	}
 
@@ -444,11 +444,11 @@ func (a *AdminAdapter) GetSystemInfoCompat(c *gin.Context) {
 	}
 
 	systemInfo := map[string]interface{}{
-		"version":       "1.0.0",
-		"serverTime":    time.Now().Format(time.RFC3339),
-		"systemHealth":  stats.SystemHealth,
+		"version":        "1.0.0",
+		"serverTime":     time.Now().Format(time.RFC3339),
+		"systemHealth":   stats.SystemHealth,
 		"databaseStatus": "healthy",
-		"serviceStatus": "running",
+		"serviceStatus":  "running",
 	}
 
 	response := a.AdaptResponse(systemInfo, "获取成功")

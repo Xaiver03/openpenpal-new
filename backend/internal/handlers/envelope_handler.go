@@ -53,14 +53,14 @@ func (h *EnvelopeHandler) GetEnvelopeDesigns(c *gin.Context) {
 
 	// 获取当前用户ID - FSD增强：用于OP Code区域过滤
 	userID, _ := c.Get("user_id")
-	
+
 	// 获取查询参数
 	filters := map[string]interface{}{
 		"school_code": c.Query("school_code"),
 		"type":        c.Query("type"),
 		"status":      "approved", // 只显示已审核的设计
 	}
-	
+
 	// 添加用户ID用于OP Code过滤
 	if userID != nil {
 		filters["user_id"] = userID.(string)

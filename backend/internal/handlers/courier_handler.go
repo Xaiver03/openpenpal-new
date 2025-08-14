@@ -524,7 +524,7 @@ func (h *CourierHandler) GetCourierTasks(c *gin.Context) {
 	// 获取任务列表
 	tasks, total, err := h.courierService.GetCourierTasks(userID, status, priority, pageInt, limitInt)
 	if err != nil {
-		resp.InternalServerError(c, "获取任务列表失败: " + err.Error())
+		resp.InternalServerError(c, "获取任务列表失败: "+err.Error())
 		return
 	}
 

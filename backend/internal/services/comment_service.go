@@ -13,10 +13,10 @@ import (
 )
 
 type CommentService struct {
-	db           *gorm.DB
-	config       *config.Config
-	letterSvc    *LetterService
-	creditSvc    *CreditService
+	db            *gorm.DB
+	config        *config.Config
+	letterSvc     *LetterService
+	creditSvc     *CreditService
 	moderationSvc *ModerationService
 }
 

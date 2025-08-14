@@ -21,41 +21,41 @@ const (
 
 // AlertRule 告警规则
 type AlertRule struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Level       AlertLevel             `json:"level"`
-	Condition   func() bool            `json:"-"`
-	Threshold   float64                `json:"threshold"`
-	Duration    time.Duration          `json:"duration"`
-	Cooldown    time.Duration          `json:"cooldown"`
-	Labels      map[string]string      `json:"labels"`
-	Annotations map[string]string      `json:"annotations"`
-	Enabled     bool                   `json:"enabled"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Level       AlertLevel        `json:"level"`
+	Condition   func() bool       `json:"-"`
+	Threshold   float64           `json:"threshold"`
+	Duration    time.Duration     `json:"duration"`
+	Cooldown    time.Duration     `json:"cooldown"`
+	Labels      map[string]string `json:"labels"`
+	Annotations map[string]string `json:"annotations"`
+	Enabled     bool              `json:"enabled"`
 }
 
 // Alert 告警
 type Alert struct {
-	ID          string                 `json:"id"`
-	Rule        *AlertRule             `json:"rule"`
-	Level       AlertLevel             `json:"level"`
-	Status      AlertStatus            `json:"status"`
-	Message     string                 `json:"message"`
-	Labels      map[string]string      `json:"labels"`
-	Annotations map[string]string      `json:"annotations"`
-	StartTime   time.Time              `json:"start_time"`
-	EndTime     *time.Time             `json:"end_time,omitempty"`
-	Duration    time.Duration          `json:"duration"`
-	Count       int                    `json:"count"`
-	LastUpdate  time.Time              `json:"last_update"`
+	ID          string            `json:"id"`
+	Rule        *AlertRule        `json:"rule"`
+	Level       AlertLevel        `json:"level"`
+	Status      AlertStatus       `json:"status"`
+	Message     string            `json:"message"`
+	Labels      map[string]string `json:"labels"`
+	Annotations map[string]string `json:"annotations"`
+	StartTime   time.Time         `json:"start_time"`
+	EndTime     *time.Time        `json:"end_time,omitempty"`
+	Duration    time.Duration     `json:"duration"`
+	Count       int               `json:"count"`
+	LastUpdate  time.Time         `json:"last_update"`
 }
 
 // AlertStatus 告警状态
 type AlertStatus string
 
 const (
-	AlertStatusPending   AlertStatus = "PENDING"
-	AlertStatusFiring    AlertStatus = "FIRING"
-	AlertStatusResolved  AlertStatus = "RESOLVED"
+	AlertStatusPending    AlertStatus = "PENDING"
+	AlertStatusFiring     AlertStatus = "FIRING"
+	AlertStatusResolved   AlertStatus = "RESOLVED"
 	AlertStatusSuppressed AlertStatus = "SUPPRESSED"
 )
 
@@ -76,7 +76,7 @@ func NewLogAlertHandler(logger logging.Logger) *LogAlertHandler {
 	return &LogAlertHandler{logger: logger}
 }
 
-func (h *LogAlertHandler) Handle(ctx context.Context, alert *Alert) error {
+func (h *LogAlertHandler) Handle(_ context.Context, alert *Alert) error {
 	switch alert.Level {
 	case AlertLevelInfo:
 		h.logger.Info("Alert fired", "alert", alert)
@@ -88,7 +88,7 @@ func (h *LogAlertHandler) Handle(ctx context.Context, alert *Alert) error {
 	return nil
 }
 
-func (h *LogAlertHandler) CanHandle(alert *Alert) bool {
+func (h *LogAlertHandler) CanHandle(_ *Alert) bool {
 	return true
 }
 
@@ -102,7 +102,7 @@ type WebhookAlertHandler struct {
 	client interface{} // HTTP客户端接口
 }
 
-func (h *WebhookAlertHandler) Handle(ctx context.Context, alert *Alert) error {
+func (h *WebhookAlertHandler) Handle(_ context.Context, _ *Alert) error {
 	// 这里实现Webhook调用逻辑
 	// 发送HTTP POST请求到指定URL
 	return nil
@@ -157,7 +157,7 @@ func NewAlertManager(registry *MetricsRegistry, logger logging.Logger) *AlertMan
 func (am *AlertManager) RegisterRule(rule *AlertRule) {
 	am.mutex.Lock()
 	defer am.mutex.Unlock()
-	
+
 	am.rules[rule.Name] = rule
 	am.logger.Info("Alert rule registered", "rule_name", rule.Name, "level", rule.Level)
 }
@@ -166,9 +166,9 @@ func (am *AlertManager) RegisterRule(rule *AlertRule) {
 func (am *AlertManager) RegisterHandler(handler AlertHandler) {
 	am.mutex.Lock()
 	defer am.mutex.Unlock()
-	
+
 	am.handlers = append(am.handlers, handler)
-	
+
 	// 按优先级排序（优先级高的在前）
 	for i := len(am.handlers) - 1; i > 0; i-- {
 		if am.handlers[i].Priority() < am.handlers[i-1].Priority() {
@@ -184,10 +184,10 @@ func (am *AlertManager) Start(interval time.Duration) {
 		am.mutex.Unlock()
 		return // 已经启动
 	}
-	
+
 	am.ticker = time.NewTicker(interval)
 	am.mutex.Unlock()
-	
+
 	go am.run()
 	am.logger.Info("Alert manager started", "check_interval", interval)
 }
@@ -196,12 +196,12 @@ func (am *AlertManager) Start(interval time.Duration) {
 func (am *AlertManager) Stop() {
 	am.mutex.Lock()
 	defer am.mutex.Unlock()
-	
+
 	if am.ticker != nil {
 		am.ticker.Stop()
 		am.ticker = nil
 	}
-	
+
 	am.cancel()
 	am.logger.Info("Alert manager stopped")
 }
@@ -228,7 +228,7 @@ func (am *AlertManager) checkRules() {
 		}
 	}
 	am.mutex.RUnlock()
-	
+
 	for _, rule := range rules {
 		am.evaluateRule(rule)
 	}
@@ -241,19 +241,19 @@ func (am *AlertManager) evaluateRule(rule *AlertRule) {
 		am.resolveAlert(rule.Name)
 		return
 	}
-	
+
 	am.mutex.Lock()
 	defer am.mutex.Unlock()
-	
+
 	alertID := rule.Name
 	now := time.Now()
-	
+
 	if alert, exists := am.activeAlerts[alertID]; exists {
 		// 告警已存在，更新信息
 		alert.Count++
 		alert.LastUpdate = now
 		alert.Duration = now.Sub(alert.StartTime)
-		
+
 		// 如果状态是PENDING且超过了持续时间，转为FIRING
 		if alert.Status == AlertStatusPending && alert.Duration >= rule.Duration {
 			alert.Status = AlertStatusFiring
@@ -273,9 +273,9 @@ func (am *AlertManager) evaluateRule(rule *AlertRule) {
 			Count:       1,
 			LastUpdate:  now,
 		}
-		
+
 		am.activeAlerts[alertID] = alert
-		
+
 		// 如果持续时间为0，直接触发
 		if rule.Duration == 0 {
 			alert.Status = AlertStatusFiring
@@ -288,23 +288,23 @@ func (am *AlertManager) evaluateRule(rule *AlertRule) {
 func (am *AlertManager) resolveAlert(ruleNme string) {
 	am.mutex.Lock()
 	defer am.mutex.Unlock()
-	
+
 	if alert, exists := am.activeAlerts[ruleNme]; exists {
 		now := time.Now()
 		alert.Status = AlertStatusResolved
 		alert.EndTime = &now
 		alert.Duration = now.Sub(alert.StartTime)
 		alert.LastUpdate = now
-		
+
 		am.logger.Info("Alert resolved",
 			"alert_id", alert.ID,
 			"duration", alert.Duration,
 			"count", alert.Count,
 		)
-		
+
 		// 通知处理器
 		go am.notifyHandlers(alert)
-		
+
 		// 从活跃告警中移除
 		delete(am.activeAlerts, ruleNme)
 	}
@@ -318,7 +318,7 @@ func (am *AlertManager) fireAlert(alert *Alert) {
 		"message", alert.Message,
 		"count", alert.Count,
 	)
-	
+
 	// 异步通知处理器
 	go am.notifyHandlers(alert)
 }
@@ -347,17 +347,17 @@ func (am *AlertManager) generateAlertMessage(rule *AlertRule) string {
 func (am *AlertManager) GetActiveAlerts() map[string]*Alert {
 	am.mutex.RLock()
 	defer am.mutex.RUnlock()
-	
+
 	result := make(map[string]*Alert)
 	for k, v := range am.activeAlerts {
 		result[k] = v
 	}
-	
+
 	return result
 }
 
 // GetAlertHistory 获取告警历史（这里简化实现）
-func (am *AlertManager) GetAlertHistory(hours int) []*Alert {
+func (am *AlertManager) GetAlertHistory(_ int) []*Alert {
 	// 在实际实现中，应该从持久化存储中获取历史告警
 	return []*Alert{}
 }
@@ -374,15 +374,15 @@ func CreateErrorRateRule(registry *MetricsRegistry) *AlertRule {
 			// 获取错误计数指标
 			errorCounter := registry.GetCounter("courier_service_errors_total", nil)
 			totalRequests := registry.GetCounter("courier_service_requests_total", nil)
-			
+
 			errorCount := errorCounter.Value().(int64)
 			requestCount := totalRequests.Value().(int64)
-			
+
 			if requestCount > 100 { // 最小请求数阈值
 				errorRate := float64(errorCount) / float64(requestCount)
 				return errorRate > 0.05 // 5%错误率阈值
 			}
-			
+
 			return false
 		},
 		Duration: 5 * time.Minute,
@@ -403,16 +403,16 @@ func CreateResponseTimeRule(registry *MetricsRegistry) *AlertRule {
 				[]float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 				nil,
 			)
-			
+
 			value := histogram.Value().(map[string]interface{})
 			total := value["total"].(int64)
 			sum := value["sum"].(float64)
-			
+
 			if total > 0 {
 				avgResponseTime := sum / float64(total)
 				return avgResponseTime > 2.0 // 2秒阈值
 			}
-			
+
 			return false
 		},
 		Duration: 3 * time.Minute,
@@ -429,9 +429,9 @@ func CreateDatabaseConnectionRule(registry *MetricsRegistry) *AlertRule {
 		Level:       AlertLevelCritical,
 		Condition: func() bool {
 			// 检查数据库连接错误
-			dbErrorCounter := registry.GetCounter("courier_service_errors_by_code", 
+			dbErrorCounter := registry.GetCounter("courier_service_errors_by_code",
 				map[string]string{"error_code": string(errors.CodeDatabaseError)})
-			
+
 			// 检查最近是否有数据库错误
 			return dbErrorCounter.Value().(int64) > 0
 		},
@@ -467,13 +467,13 @@ var alertManagerOnce sync.Once
 func InitGlobalAlertManager(registry *MetricsRegistry, logger logging.Logger) {
 	alertManagerOnce.Do(func() {
 		globalAlertManager = NewAlertManager(registry, logger)
-		
+
 		// 注册预定义规则
 		globalAlertManager.RegisterRule(CreateErrorRateRule(registry))
 		globalAlertManager.RegisterRule(CreateResponseTimeRule(registry))
 		globalAlertManager.RegisterRule(CreateDatabaseConnectionRule(registry))
 		globalAlertManager.RegisterRule(CreateCircuitBreakerRule())
-		
+
 		// 启动告警管理器
 		globalAlertManager.Start(30 * time.Second)
 	})

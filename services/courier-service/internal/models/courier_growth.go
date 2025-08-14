@@ -6,63 +6,63 @@ import (
 
 // CourierGrowthPath 成长路径配置模型
 type CourierGrowthPath struct {
-	ID               uint                 `json:"id" gorm:"primaryKey"`
-	FromLevel        CourierLevel         `json:"from_level" gorm:"not null"`
-	ToLevel          CourierLevel         `json:"to_level" gorm:"not null"`
-	Name             string               `json:"name" gorm:"not null"`
-	Description      string               `json:"description"`
-	Requirements     string               `json:"requirements" gorm:"type:json"` // JSON格式的升级要求
-	IsActive         bool                 `json:"is_active" gorm:"default:true"`
-	CreatedAt        time.Time            `json:"created_at"`
-	UpdatedAt        time.Time            `json:"updated_at"`
+	ID           uint         `json:"id" gorm:"primaryKey"`
+	FromLevel    CourierLevel `json:"from_level" gorm:"not null"`
+	ToLevel      CourierLevel `json:"to_level" gorm:"not null"`
+	Name         string       `json:"name" gorm:"not null"`
+	Description  string       `json:"description"`
+	Requirements string       `json:"requirements" gorm:"type:json"` // JSON格式的升级要求
+	IsActive     bool         `json:"is_active" gorm:"default:true"`
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
 }
 
 // CourierIncentive 激励奖励模型
 type CourierIncentive struct {
-	ID           uint              `json:"id" gorm:"primaryKey"`
-	Type         IncentiveType     `json:"type" gorm:"not null"`
-	Name         string            `json:"name" gorm:"not null"`
-	Description  string            `json:"description"`
-	Value        float64           `json:"value"`                        // 奖励金额或积分
-	Conditions   string            `json:"conditions" gorm:"type:json"`  // JSON格式的获得条件
-	ValidFrom    time.Time         `json:"valid_from"`
-	ValidTo      *time.Time        `json:"valid_to,omitempty"`
-	IsActive     bool              `json:"is_active" gorm:"default:true"`
-	CreatedAt    time.Time         `json:"created_at"`
-	UpdatedAt    time.Time         `json:"updated_at"`
+	ID          uint          `json:"id" gorm:"primaryKey"`
+	Type        IncentiveType `json:"type" gorm:"not null"`
+	Name        string        `json:"name" gorm:"not null"`
+	Description string        `json:"description"`
+	Value       float64       `json:"value"`                       // 奖励金额或积分
+	Conditions  string        `json:"conditions" gorm:"type:json"` // JSON格式的获得条件
+	ValidFrom   time.Time     `json:"valid_from"`
+	ValidTo     *time.Time    `json:"valid_to,omitempty"`
+	IsActive    bool          `json:"is_active" gorm:"default:true"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
 }
 
 // CourierStatistics 信使任务统计模型
 type CourierStatistics struct {
-	ID                 uint      `json:"id" gorm:"primaryKey"`
-	CourierID          string    `json:"courier_id" gorm:"not null;uniqueIndex:idx_courier_date"`
-	Date               time.Time `json:"date" gorm:"not null;uniqueIndex:idx_courier_date"`
-	TasksAccepted      int       `json:"tasks_accepted" gorm:"default:0"`
-	TasksCompleted     int       `json:"tasks_completed" gorm:"default:0"`
-	TasksFailed        int       `json:"tasks_failed" gorm:"default:0"`
-	TotalDeliveryTime  int       `json:"total_delivery_time" gorm:"default:0"` // 总投递时间(分钟)
-	CompletionRate     float64   `json:"completion_rate" gorm:"default:0"`
-	AverageRating      float64   `json:"average_rating" gorm:"default:0"`
-	DistanceTraveled   float64   `json:"distance_traveled" gorm:"default:0"`   // 总里程(km)
-	EarningsAmount     float64   `json:"earnings_amount" gorm:"default:0"`     // 收入金额
-	PointsEarned       int       `json:"points_earned" gorm:"default:0"`       // 获得积分
-	CreatedAt          time.Time `json:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at"`
+	ID                uint      `json:"id" gorm:"primaryKey"`
+	CourierID         string    `json:"courier_id" gorm:"not null;uniqueIndex:idx_courier_date"`
+	Date              time.Time `json:"date" gorm:"not null;uniqueIndex:idx_courier_date"`
+	TasksAccepted     int       `json:"tasks_accepted" gorm:"default:0"`
+	TasksCompleted    int       `json:"tasks_completed" gorm:"default:0"`
+	TasksFailed       int       `json:"tasks_failed" gorm:"default:0"`
+	TotalDeliveryTime int       `json:"total_delivery_time" gorm:"default:0"` // 总投递时间(分钟)
+	CompletionRate    float64   `json:"completion_rate" gorm:"default:0"`
+	AverageRating     float64   `json:"average_rating" gorm:"default:0"`
+	DistanceTraveled  float64   `json:"distance_traveled" gorm:"default:0"` // 总里程(km)
+	EarningsAmount    float64   `json:"earnings_amount" gorm:"default:0"`   // 收入金额
+	PointsEarned      int       `json:"points_earned" gorm:"default:0"`     // 获得积分
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 // CourierBadge 徽章系统模型
 type CourierBadge struct {
-	ID          uint       `json:"id" gorm:"primaryKey"`
-	Code        string     `json:"code" gorm:"not null;unique"`
-	Name        string     `json:"name" gorm:"not null"`
-	Description string     `json:"description"`
-	IconURL     string     `json:"icon_url"`
-	Conditions  string     `json:"conditions" gorm:"type:json"` // JSON格式的获得条件
+	ID          uint        `json:"id" gorm:"primaryKey"`
+	Code        string      `json:"code" gorm:"not null;unique"`
+	Name        string      `json:"name" gorm:"not null"`
+	Description string      `json:"description"`
+	IconURL     string      `json:"icon_url"`
+	Conditions  string      `json:"conditions" gorm:"type:json"` // JSON格式的获得条件
 	Rarity      BadgeRarity `json:"rarity" gorm:"default:common"`
-	Points      int        `json:"points" gorm:"default:0"`     // 徽章价值积分
-	IsActive    bool       `json:"is_active" gorm:"default:true"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	Points      int         `json:"points" gorm:"default:0"` // 徽章价值积分
+	IsActive    bool        `json:"is_active" gorm:"default:true"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
 // CourierPoints 积分系统模型
@@ -78,36 +78,36 @@ type CourierPoints struct {
 
 // CourierPointsTransaction 积分交易记录
 type CourierPointsTransaction struct {
-	ID          uint                `json:"id" gorm:"primaryKey"`
-	CourierID   string              `json:"courier_id" gorm:"not null;index"`
+	ID          uint                  `json:"id" gorm:"primaryKey"`
+	CourierID   string                `json:"courier_id" gorm:"not null;index"`
 	Type        PointsTransactionType `json:"type" gorm:"not null"`
-	Amount      int                 `json:"amount" gorm:"not null"`
-	Description string              `json:"description"`
-	Reference   string              `json:"reference"` // 关联的任务或活动ID
-	CreatedAt   time.Time           `json:"created_at"`
+	Amount      int                   `json:"amount" gorm:"not null"`
+	Description string                `json:"description"`
+	Reference   string                `json:"reference"` // 关联的任务或活动ID
+	CreatedAt   time.Time             `json:"created_at"`
 }
 
 // CourierBadgeEarned 信使获得的徽章记录
 type CourierBadgeEarned struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	CourierID string    `json:"courier_id" gorm:"not null;index"`
-	BadgeID   uint      `json:"badge_id" gorm:"not null"`
+	ID        uint         `json:"id" gorm:"primaryKey"`
+	CourierID string       `json:"courier_id" gorm:"not null;index"`
+	BadgeID   uint         `json:"badge_id" gorm:"not null"`
 	Badge     CourierBadge `json:"badge" gorm:"foreignKey:BadgeID"`
-	EarnedAt  time.Time `json:"earned_at"`
-	Reason    string    `json:"reason"`    // 获得原因
-	Reference string    `json:"reference"` // 关联的任务或活动
-	CreatedAt time.Time `json:"created_at"`
+	EarnedAt  time.Time    `json:"earned_at"`
+	Reason    string       `json:"reason"`    // 获得原因
+	Reference string       `json:"reference"` // 关联的任务或活动
+	CreatedAt time.Time    `json:"created_at"`
 }
 
 // IncentiveType 激励类型
 type IncentiveType string
 
 const (
-	IncentiveTypeSubsidy     IncentiveType = "subsidy"     // 投递补贴
-	IncentiveTypePoints      IncentiveType = "points"      // 积分奖励
-	IncentiveTypeCommission  IncentiveType = "commission"  // 返佣
-	IncentiveTypeBadge       IncentiveType = "badge"       // 徽章奖励
-	IncentiveTypeBonus       IncentiveType = "bonus"       // 特殊奖金
+	IncentiveTypeSubsidy    IncentiveType = "subsidy"    // 投递补贴
+	IncentiveTypePoints     IncentiveType = "points"     // 积分奖励
+	IncentiveTypeCommission IncentiveType = "commission" // 返佣
+	IncentiveTypeBadge      IncentiveType = "badge"      // 徽章奖励
+	IncentiveTypeBonus      IncentiveType = "bonus"      // 特殊奖金
 )
 
 // BadgeRarity 徽章稀有度
@@ -125,10 +125,10 @@ const (
 type PointsTransactionType string
 
 const (
-	PointsEarn    PointsTransactionType = "earn"    // 获得积分
-	PointsSpend   PointsTransactionType = "spend"   // 消费积分
-	PointsRefund  PointsTransactionType = "refund"  // 退还积分
-	PointsExpire  PointsTransactionType = "expire"  // 积分过期
+	PointsEarn   PointsTransactionType = "earn"   // 获得积分
+	PointsSpend  PointsTransactionType = "spend"  // 消费积分
+	PointsRefund PointsTransactionType = "refund" // 退还积分
+	PointsExpire PointsTransactionType = "expire" // 积分过期
 )
 
 // GrowthRequirement 成长要求结构

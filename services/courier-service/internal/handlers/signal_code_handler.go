@@ -306,17 +306,17 @@ func RegisterSignalCodeRoutes(router *gin.Engine, handler *SignalCodeHandler) {
 	{
 		// 批次管理
 		api.POST("/batch", handler.GenerateCodeBatch)
-		
+
 		// 编码申请和分配
 		api.POST("/request", handler.RequestSignalCode)
 		api.POST("/assign", handler.AssignSignalCode)
 		api.POST("/:code/release", handler.ReleaseSignalCode)
-		
+
 		// 查询和统计
 		api.GET("/search", handler.SearchSignalCodes)
 		api.GET("/stats/:school_id", handler.GetSignalCodeStats)
 		api.GET("/:code/logs", handler.GetUsageLogs)
-		
+
 		// 开发测试
 		api.POST("/mock-data", handler.CreateMockData)
 	}

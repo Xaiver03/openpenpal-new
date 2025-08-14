@@ -34,7 +34,7 @@ func (s *SecureSeedManager) generateSecurePassword(length int) (string, error) {
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
-	
+
 	// 使用base64编码生成可读密码
 	password := base64.URLEncoding.EncodeToString(bytes)[:length]
 	return password, nil
@@ -111,13 +111,13 @@ func (s *SecureSeedManager) SecureSeedData() error {
 	}{
 		// 超级管理员 - 在开发环境中使用固定密码，生产环境使用强密码
 		{"admin-super", "admin", "admin@openpenpal.com", adminPassword, "系统管理员", models.RoleSuperAdmin, "SYSTEM"},
-		
+
 		// 四级信使系统 - 使用环境变量或生成的密码
 		{"courier-l1", "courier_level1", "courier1@openpenpal.com", testPassword, "一级信使", models.RoleCourierLevel1, "PKU001"},
 		{"courier-l2", "courier_level2", "courier2@openpenpal.com", testPassword, "二级信使", models.RoleCourierLevel2, "PKU001"},
 		{"courier-l3", "courier_level3", "courier3@openpenpal.com", testPassword, "三级信使", models.RoleCourierLevel3, "PKU001"},
 		{"courier-l4", "courier_level4", "courier4@openpenpal.com", testPassword, "四级信使", models.RoleCourierLevel4, "PKU001"},
-		
+
 		// 测试用户
 		{"user-alice", "alice", "alice@openpenpal.com", testPassword, "Alice", models.RoleUser, "PKU001"},
 		{"user-bob", "bob", "bob@openpenpal.com", testPassword, "Bob", models.RoleUser, "PKU001"},
@@ -205,10 +205,10 @@ func (s *SecureSeedManager) ValidatePasswordStrength(password string) error {
 	if len(password) < 8 {
 		return fmt.Errorf("password must be at least 8 characters long")
 	}
-	
+
 	// 可以添加更多密码强度检查
 	// 例如：包含大小写字母、数字、特殊字符等
-	
+
 	return nil
 }
 

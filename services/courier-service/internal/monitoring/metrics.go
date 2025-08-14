@@ -45,10 +45,10 @@ func NewCounter(name string, labels map[string]string) *Counter {
 	}
 }
 
-func (c *Counter) Name() string { return c.name }
-func (c *Counter) Type() MetricType { return CounterType }
+func (c *Counter) Name() string              { return c.name }
+func (c *Counter) Type() MetricType          { return CounterType }
 func (c *Counter) Labels() map[string]string { return c.labels }
-func (c *Counter) Timestamp() time.Time { return c.timestamp }
+func (c *Counter) Timestamp() time.Time      { return c.timestamp }
 
 func (c *Counter) Value() interface{} {
 	c.mutex.RLock()
@@ -86,10 +86,10 @@ func NewGauge(name string, labels map[string]string) *Gauge {
 	}
 }
 
-func (g *Gauge) Name() string { return g.name }
-func (g *Gauge) Type() MetricType { return GaugeType }
+func (g *Gauge) Name() string              { return g.name }
+func (g *Gauge) Type() MetricType          { return GaugeType }
 func (g *Gauge) Labels() map[string]string { return g.labels }
-func (g *Gauge) Timestamp() time.Time { return g.timestamp }
+func (g *Gauge) Timestamp() time.Time      { return g.timestamp }
 
 func (g *Gauge) Value() interface{} {
 	g.mutex.RLock()
@@ -142,15 +142,15 @@ func NewHistogram(name string, buckets []float64, labels map[string]string) *His
 	}
 }
 
-func (h *Histogram) Name() string { return h.name }
-func (h *Histogram) Type() MetricType { return HistogramType }
+func (h *Histogram) Name() string              { return h.name }
+func (h *Histogram) Type() MetricType          { return HistogramType }
 func (h *Histogram) Labels() map[string]string { return h.labels }
-func (h *Histogram) Timestamp() time.Time { return h.timestamp }
+func (h *Histogram) Timestamp() time.Time      { return h.timestamp }
 
 func (h *Histogram) Value() interface{} {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
-	
+
 	return map[string]interface{}{
 		"buckets": h.buckets,
 		"counts":  h.counts,
@@ -162,11 +162,11 @@ func (h *Histogram) Value() interface{} {
 func (h *Histogram) Observe(value float64) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
-	
+
 	h.sum += value
 	h.total++
 	h.timestamp = time.Now()
-	
+
 	// 找到对应的桶
 	for i, bucket := range h.buckets {
 		if value <= bucket {
@@ -192,7 +192,7 @@ func NewMetricsRegistry(logger logging.Logger) *MetricsRegistry {
 	if logger == nil {
 		logger = logging.GetDefaultLogger()
 	}
-	
+
 	return &MetricsRegistry{
 		metrics: make(map[string]Metric),
 		logger:  logger,
@@ -203,7 +203,7 @@ func NewMetricsRegistry(logger logging.Logger) *MetricsRegistry {
 func (mr *MetricsRegistry) Register(metric Metric) {
 	mr.mutex.Lock()
 	defer mr.mutex.Unlock()
-	
+
 	key := mr.generateKey(metric.Name(), metric.Labels())
 	mr.metrics[key] = metric
 }
@@ -211,7 +211,7 @@ func (mr *MetricsRegistry) Register(metric Metric) {
 // GetCounter 获取或创建计数器
 func (mr *MetricsRegistry) GetCounter(name string, labels map[string]string) *Counter {
 	key := mr.generateKey(name, labels)
-	
+
 	mr.mutex.RLock()
 	if metric, exists := mr.metrics[key]; exists {
 		mr.mutex.RUnlock()
@@ -220,7 +220,7 @@ func (mr *MetricsRegistry) GetCounter(name string, labels map[string]string) *Co
 		}
 	}
 	mr.mutex.RUnlock()
-	
+
 	counter := NewCounter(name, labels)
 	mr.Register(counter)
 	return counter
@@ -229,7 +229,7 @@ func (mr *MetricsRegistry) GetCounter(name string, labels map[string]string) *Co
 // GetGauge 获取或创建仪表
 func (mr *MetricsRegistry) GetGauge(name string, labels map[string]string) *Gauge {
 	key := mr.generateKey(name, labels)
-	
+
 	mr.mutex.RLock()
 	if metric, exists := mr.metrics[key]; exists {
 		mr.mutex.RUnlock()
@@ -238,7 +238,7 @@ func (mr *MetricsRegistry) GetGauge(name string, labels map[string]string) *Gaug
 		}
 	}
 	mr.mutex.RUnlock()
-	
+
 	gauge := NewGauge(name, labels)
 	mr.Register(gauge)
 	return gauge
@@ -247,7 +247,7 @@ func (mr *MetricsRegistry) GetGauge(name string, labels map[string]string) *Gaug
 // GetHistogram 获取或创建直方图
 func (mr *MetricsRegistry) GetHistogram(name string, buckets []float64, labels map[string]string) *Histogram {
 	key := mr.generateKey(name, labels)
-	
+
 	mr.mutex.RLock()
 	if metric, exists := mr.metrics[key]; exists {
 		mr.mutex.RUnlock()
@@ -256,7 +256,7 @@ func (mr *MetricsRegistry) GetHistogram(name string, buckets []float64, labels m
 		}
 	}
 	mr.mutex.RUnlock()
-	
+
 	histogram := NewHistogram(name, buckets, labels)
 	mr.Register(histogram)
 	return histogram
@@ -266,12 +266,12 @@ func (mr *MetricsRegistry) GetHistogram(name string, buckets []float64, labels m
 func (mr *MetricsRegistry) GetAllMetrics() map[string]Metric {
 	mr.mutex.RLock()
 	defer mr.mutex.RUnlock()
-	
+
 	result := make(map[string]Metric)
 	for k, v := range mr.metrics {
 		result[k] = v
 	}
-	
+
 	return result
 }
 
@@ -286,13 +286,13 @@ func (mr *MetricsRegistry) generateKey(name string, labels map[string]string) st
 
 // ErrorMetrics 错误指标收集器
 type ErrorMetrics struct {
-	registry         *MetricsRegistry
-	errorCounter     *Counter
-	errorByCode      map[errors.ErrorCode]*Counter
-	errorByType      map[errors.ErrorType]*Counter
-	responseTime     *Histogram
-	logger           logging.Logger
-	mutex            sync.RWMutex
+	registry     *MetricsRegistry
+	errorCounter *Counter
+	errorByCode  map[errors.ErrorCode]*Counter
+	errorByType  map[errors.ErrorType]*Counter
+	responseTime *Histogram
+	logger       logging.Logger
+	mutex        sync.RWMutex
 }
 
 // NewErrorMetrics 创建错误指标收集器
@@ -300,7 +300,7 @@ func NewErrorMetrics(registry *MetricsRegistry, logger logging.Logger) *ErrorMet
 	if logger == nil {
 		logger = logging.GetDefaultLogger()
 	}
-	
+
 	return &ErrorMetrics{
 		registry:     registry,
 		errorCounter: registry.GetCounter("courier_service_errors_total", nil),
@@ -318,7 +318,7 @@ func NewErrorMetrics(registry *MetricsRegistry, logger logging.Logger) *ErrorMet
 // RecordError 记录错误
 func (em *ErrorMetrics) RecordError(err error, labels map[string]string) {
 	em.errorCounter.Inc()
-	
+
 	var courierErr *errors.CourierServiceError
 	if errors.As(err, &courierErr) {
 		// 按错误代码统计
@@ -334,7 +334,7 @@ func (em *ErrorMetrics) RecordError(err error, labels map[string]string) {
 			em.errorByCode[courierErr.Code] = counter
 			counter.Inc()
 		}
-		
+
 		// 按错误类型统计
 		if counter, exists := em.errorByType[courierErr.Type]; exists {
 			counter.Inc()
@@ -348,7 +348,7 @@ func (em *ErrorMetrics) RecordError(err error, labels map[string]string) {
 			counter.Inc()
 		}
 		em.mutex.Unlock()
-		
+
 		em.logger.Debug("Error metric recorded",
 			"error_code", courierErr.Code,
 			"error_type", courierErr.Type,
@@ -364,23 +364,23 @@ func (em *ErrorMetrics) RecordResponseTime(duration time.Duration) {
 
 // BusinessMetrics 业务指标收集器
 type BusinessMetrics struct {
-	registry           *MetricsRegistry
-	taskAssignments    *Counter
-	taskCompletions    *Counter
+	registry             *MetricsRegistry
+	taskAssignments      *Counter
+	taskCompletions      *Counter
 	courierRegistrations *Counter
-	activeConnections  *Gauge
-	queueSize          *Gauge
+	activeConnections    *Gauge
+	queueSize            *Gauge
 }
 
 // NewBusinessMetrics 创建业务指标收集器
 func NewBusinessMetrics(registry *MetricsRegistry) *BusinessMetrics {
 	return &BusinessMetrics{
-		registry:           registry,
-		taskAssignments:    registry.GetCounter("courier_service_task_assignments_total", nil),
-		taskCompletions:    registry.GetCounter("courier_service_task_completions_total", nil),
+		registry:             registry,
+		taskAssignments:      registry.GetCounter("courier_service_task_assignments_total", nil),
+		taskCompletions:      registry.GetCounter("courier_service_task_completions_total", nil),
 		courierRegistrations: registry.GetCounter("courier_service_courier_registrations_total", nil),
-		activeConnections:  registry.GetGauge("courier_service_active_connections", nil),
-		queueSize:          registry.GetGauge("courier_service_queue_size", nil),
+		activeConnections:    registry.GetGauge("courier_service_active_connections", nil),
+		queueSize:            registry.GetGauge("courier_service_queue_size", nil),
 	}
 }
 
@@ -420,10 +420,10 @@ func (bm *BusinessMetrics) SetQueueSize(size int) {
 
 // 全局指标管理
 var (
-	globalRegistry     *MetricsRegistry
-	globalErrorMetrics *ErrorMetrics
+	globalRegistry        *MetricsRegistry
+	globalErrorMetrics    *ErrorMetrics
 	globalBusinessMetrics *BusinessMetrics
-	globalOnce         sync.Once
+	globalOnce            sync.Once
 )
 
 // InitGlobalMetrics 初始化全局指标

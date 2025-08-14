@@ -40,7 +40,9 @@ import type {
   ProfileVisibility,
   SocialPrivacy,
   NotificationPrivacy,
-  BlockingSettings,
+  BlockingSettings
+} from '../../types/privacy'
+import {
   PRIVACY_LEVEL_LABELS,
   PRIVACY_LEVEL_DESCRIPTIONS,
   PROFILE_FIELD_LABELS
@@ -259,7 +261,7 @@ export function PrivacySettings({ className }: PrivacySettingsProps) {
                       {PROFILE_FIELD_LABELS[field as keyof ProfileVisibility]}
                     </Label>
                     <p className="text-sm text-gray-500 mt-1">
-                      {PRIVACY_LEVEL_DESCRIPTIONS[currentLevel]}
+                      {PRIVACY_LEVEL_DESCRIPTIONS[currentLevel as PrivacyLevel]}
                     </p>
                   </div>
                   <Select

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"go.uber.org/zap"
 )
 
 // InitDB 初始化数据库连接

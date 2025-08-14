@@ -32,16 +32,16 @@ func (s CircuitState) String() string {
 
 // CircuitBreakerConfig 熔断器配置
 type CircuitBreakerConfig struct {
-	Name               string        `json:"name"`
-	MaxRequests        uint32        `json:"max_requests"`         // 半开状态最大请求数
-	Interval           time.Duration `json:"interval"`             // 统计间隔
-	Timeout            time.Duration `json:"timeout"`              // 开启状态超时时间
-	FailureThreshold   uint32        `json:"failure_threshold"`    // 失败阈值
-	SuccessThreshold   uint32        `json:"success_threshold"`    // 恢复阈值
-	FailureRate        float64       `json:"failure_rate"`         // 失败率阈值
-	MinRequestCount    uint32        `json:"min_request_count"`    // 最小请求数
-	OnStateChange      func(name string, from CircuitState, to CircuitState)
-	IsFailure          func(err error) bool
+	Name             string        `json:"name"`
+	MaxRequests      uint32        `json:"max_requests"`      // 半开状态最大请求数
+	Interval         time.Duration `json:"interval"`          // 统计间隔
+	Timeout          time.Duration `json:"timeout"`           // 开启状态超时时间
+	FailureThreshold uint32        `json:"failure_threshold"` // 失败阈值
+	SuccessThreshold uint32        `json:"success_threshold"` // 恢复阈值
+	FailureRate      float64       `json:"failure_rate"`      // 失败率阈值
+	MinRequestCount  uint32        `json:"min_request_count"` // 最小请求数
+	OnStateChange    func(name string, from CircuitState, to CircuitState)
+	IsFailure        func(err error) bool
 }
 
 // DefaultCircuitBreakerConfig 默认熔断器配置
@@ -101,17 +101,17 @@ func ExternalServiceCircuitBreakerConfig(serviceName string) CircuitBreakerConfi
 
 // CircuitBreakerStats 熔断器统计信息
 type CircuitBreakerStats struct {
-	State               CircuitState  `json:"state"`
-	TotalRequests       uint64        `json:"total_requests"`
-	FailureCount        uint64        `json:"failure_count"`
-	SuccessCount        uint64        `json:"success_count"`
-	ConsecutiveFailures uint32        `json:"consecutive_failures"`
+	State                CircuitState `json:"state"`
+	TotalRequests        uint64       `json:"total_requests"`
+	FailureCount         uint64       `json:"failure_count"`
+	SuccessCount         uint64       `json:"success_count"`
+	ConsecutiveFailures  uint32       `json:"consecutive_failures"`
 	ConsecutiveSuccesses uint32       `json:"consecutive_successes"`
-	FailureRate         float64       `json:"failure_rate"`
-	LastFailureTime     *time.Time    `json:"last_failure_time,omitempty"`
-	LastSuccessTime     *time.Time    `json:"last_success_time,omitempty"`
-	StateChangeTime     time.Time     `json:"state_change_time"`
-	NextRetryTime       *time.Time    `json:"next_retry_time,omitempty"`
+	FailureRate          float64      `json:"failure_rate"`
+	LastFailureTime      *time.Time   `json:"last_failure_time,omitempty"`
+	LastSuccessTime      *time.Time   `json:"last_success_time,omitempty"`
+	StateChangeTime      time.Time    `json:"state_change_time"`
+	NextRetryTime        *time.Time   `json:"next_retry_time,omitempty"`
 }
 
 // CircuitBreaker 熔断器实现
@@ -121,9 +121,9 @@ type CircuitBreaker struct {
 	mutex  sync.RWMutex
 
 	// 状态
-	state        CircuitState
-	stateExpiry  time.Time
-	generation   uint64
+	state       CircuitState
+	stateExpiry time.Time
+	generation  uint64
 
 	// 统计
 	stats         CircuitBreakerStats
@@ -158,7 +158,7 @@ func NewCircuitBreaker(config CircuitBreakerConfig, logger logging.Logger) *Circ
 }
 
 // Execute 执行操作
-func (cb *CircuitBreaker) Execute(ctx context.Context, operation func() error) error {
+func (cb *CircuitBreaker) Execute(_ context.Context, operation func() error) error {
 	generation, err := cb.beforeRequest()
 	if err != nil {
 		return err
@@ -180,7 +180,7 @@ func (cb *CircuitBreaker) ExecuteWithFallback(
 	fallback func() error,
 ) error {
 	err := cb.Execute(ctx, operation)
-	
+
 	// 如果熔断器开启，执行降级操作
 	if errors.IsError(err, errors.CodeCircuitBreakerOpen) && fallback != nil {
 		cb.logger.Info("Circuit breaker open, executing fallback",
@@ -188,7 +188,7 @@ func (cb *CircuitBreaker) ExecuteWithFallback(
 		)
 		return fallback()
 	}
-	
+
 	return err
 }
 
@@ -198,31 +198,31 @@ func (cb *CircuitBreaker) beforeRequest() (uint64, error) {
 	defer cb.mutex.Unlock()
 
 	now := time.Now()
-	
+
 	switch cb.state {
 	case StateClosed:
 		// 关闭状态，允许所有请求
 		return cb.generation, nil
-		
+
 	case StateOpen:
 		// 开启状态，检查是否可以转为半开状态
 		if cb.stateExpiry.Before(now) {
 			cb.setState(StateHalfOpen, now)
 			return cb.generation, nil
 		}
-		
+
 		// 仍在开启状态，拒绝请求
 		return cb.generation, errors.NewCircuitBreakerError(cb.config.Name)
-		
+
 	case StateHalfOpen:
 		// 半开状态，限制请求数
 		if cb.halfOpenCount >= cb.config.MaxRequests {
 			return cb.generation, errors.NewCircuitBreakerError(cb.config.Name)
 		}
-		
+
 		cb.halfOpenCount++
 		return cb.generation, nil
-		
+
 	default:
 		return cb.generation, errors.NewCircuitBreakerError(cb.config.Name)
 	}
@@ -234,7 +234,7 @@ func (cb *CircuitBreaker) afterRequest(generation uint64, err error) {
 	defer cb.mutex.Unlock()
 
 	now := time.Now()
-	
+
 	// 检查是否是同一代的请求
 	if generation != cb.generation {
 		return
@@ -242,13 +242,13 @@ func (cb *CircuitBreaker) afterRequest(generation uint64, err error) {
 
 	// 判断请求是否失败
 	isFailure := cb.config.IsFailure(err)
-	
+
 	// 记录请求
 	cb.recordRequest(now, !isFailure)
-	
+
 	// 更新统计
 	cb.updateStats(now, !isFailure)
-	
+
 	// 根据状态和结果决定状态转换
 	switch cb.state {
 	case StateClosed:
@@ -257,7 +257,7 @@ func (cb *CircuitBreaker) afterRequest(generation uint64, err error) {
 		} else {
 			cb.onSuccess()
 		}
-		
+
 	case StateHalfOpen:
 		if isFailure {
 			cb.setState(StateOpen, now)
@@ -279,7 +279,7 @@ func (cb *CircuitBreaker) recordRequest(timestamp time.Time, success bool) {
 		i++
 	}
 	cb.requests = cb.requests[i:]
-	
+
 	// 添加新记录
 	cb.requests = append(cb.requests, requestRecord{
 		timestamp: timestamp,
@@ -290,7 +290,7 @@ func (cb *CircuitBreaker) recordRequest(timestamp time.Time, success bool) {
 // updateStats 更新统计信息
 func (cb *CircuitBreaker) updateStats(timestamp time.Time, success bool) {
 	cb.stats.TotalRequests++
-	
+
 	if success {
 		cb.stats.SuccessCount++
 		cb.stats.ConsecutiveSuccesses++
@@ -304,7 +304,7 @@ func (cb *CircuitBreaker) updateStats(timestamp time.Time, success bool) {
 		now := timestamp
 		cb.stats.LastFailureTime = &now
 	}
-	
+
 	// 计算失败率
 	if len(cb.requests) > 0 {
 		failures := 0
@@ -335,17 +335,17 @@ func (cb *CircuitBreaker) shouldTrip() bool {
 	if uint32(len(cb.requests)) < cb.config.MinRequestCount {
 		return false
 	}
-	
+
 	// 检查连续失败次数
 	if cb.stats.ConsecutiveFailures >= cb.config.FailureThreshold {
 		return true
 	}
-	
+
 	// 检查失败率
 	if cb.stats.FailureRate >= cb.config.FailureRate {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -354,29 +354,29 @@ func (cb *CircuitBreaker) setState(state CircuitState, timestamp time.Time) {
 	if cb.state == state {
 		return
 	}
-	
+
 	oldState := cb.state
 	cb.state = state
 	cb.generation++
 	cb.stats.State = state
 	cb.stats.StateChangeTime = timestamp
-	
+
 	// 设置状态过期时间
 	switch state {
 	case StateOpen:
 		cb.stateExpiry = timestamp.Add(cb.config.Timeout)
 		next := cb.stateExpiry
 		cb.stats.NextRetryTime = &next
-		
+
 	case StateHalfOpen:
 		cb.halfOpenCount = 0
 		cb.stats.NextRetryTime = nil
-		
+
 	case StateClosed:
 		cb.stateExpiry = time.Time{}
 		cb.stats.NextRetryTime = nil
 	}
-	
+
 	// 记录状态变化
 	cb.logger.Info("Circuit breaker state changed",
 		"circuit", cb.config.Name,
@@ -385,7 +385,7 @@ func (cb *CircuitBreaker) setState(state CircuitState, timestamp time.Time) {
 		"failure_rate", cb.stats.FailureRate,
 		"consecutive_failures", cb.stats.ConsecutiveFailures,
 	)
-	
+
 	// 调用状态变化回调
 	if cb.config.OnStateChange != nil {
 		go cb.config.OnStateChange(cb.config.Name, oldState, state)
@@ -396,7 +396,7 @@ func (cb *CircuitBreaker) setState(state CircuitState, timestamp time.Time) {
 func (cb *CircuitBreaker) GetStats() CircuitBreakerStats {
 	cb.mutex.RLock()
 	defer cb.mutex.RUnlock()
-	
+
 	// 创建副本
 	stats := cb.stats
 	return stats
@@ -418,14 +418,14 @@ func (cb *CircuitBreaker) GetState() CircuitState {
 func (cb *CircuitBreaker) Reset() {
 	cb.mutex.Lock()
 	defer cb.mutex.Unlock()
-	
+
 	cb.setState(StateClosed, time.Now())
 	cb.requests = make([]requestRecord, 0)
 	cb.stats = CircuitBreakerStats{
 		State:           StateClosed,
 		StateChangeTime: time.Now(),
 	}
-	
+
 	cb.logger.Info("Circuit breaker reset", "circuit", cb.config.Name)
 }
 
@@ -454,11 +454,11 @@ func GetGlobalManager() *CircuitBreakerManager {
 func (cbm *CircuitBreakerManager) GetOrCreate(name string, config CircuitBreakerConfig) *CircuitBreaker {
 	cbm.mutex.Lock()
 	defer cbm.mutex.Unlock()
-	
+
 	if cb, exists := cbm.breakers[name]; exists {
 		return cb
 	}
-	
+
 	cb := NewCircuitBreaker(config, cbm.logger)
 	cbm.breakers[name] = cb
 	return cb
@@ -468,7 +468,7 @@ func (cbm *CircuitBreakerManager) GetOrCreate(name string, config CircuitBreaker
 func (cbm *CircuitBreakerManager) GetBreaker(name string) *CircuitBreaker {
 	cbm.mutex.RLock()
 	defer cbm.mutex.RUnlock()
-	
+
 	return cbm.breakers[name]
 }
 
@@ -476,12 +476,12 @@ func (cbm *CircuitBreakerManager) GetBreaker(name string) *CircuitBreaker {
 func (cbm *CircuitBreakerManager) GetAllStats() map[string]CircuitBreakerStats {
 	cbm.mutex.RLock()
 	defer cbm.mutex.RUnlock()
-	
+
 	stats := make(map[string]CircuitBreakerStats)
 	for name, cb := range cbm.breakers {
 		stats[name] = cb.GetStats()
 	}
-	
+
 	return stats
 }
 

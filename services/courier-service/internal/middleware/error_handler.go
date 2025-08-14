@@ -32,11 +32,11 @@ func ErrorHandler(config ErrorHandlerConfig) gin.HandlerFunc {
 
 		// 处理最后一个错误
 		err := c.Errors.Last().Err
-		
+
 		// 获取请求上下文信息
 		requestID := c.GetString("request_id")
 		userID := c.GetString("user_id")
-		
+
 		// 转换为自定义错误类型
 		var courierErr *errors.CourierServiceError
 		if !errors.As(err, &courierErr) {
@@ -147,16 +147,16 @@ func TimeoutHandler(timeout time.Duration) gin.HandlerFunc {
 			c.Request = c.Request.WithContext(
 				c.Request.Context(),
 			)
-			
+
 			// 启动超时检查
 			timeoutChan := time.After(timeout)
 			doneChan := make(chan bool, 1)
-			
+
 			go func() {
 				c.Next()
 				doneChan <- true
 			}()
-			
+
 			select {
 			case <-timeoutChan:
 				err := errors.NewError(errors.CodeServiceUnavailable, "Request timeout", errors.TypeTemporary)
@@ -176,7 +176,7 @@ func RateLimitHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 这里可以集成具体的限流逻辑
 		// 例如使用Redis进行限流控制
-		
+
 		c.Next()
 	}
 }
@@ -185,7 +185,7 @@ func RateLimitHandler() gin.HandlerFunc {
 func ValidationErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
-		
+
 		// 特殊处理验证错误
 		if len(c.Errors) > 0 {
 			for _, ginErr := range c.Errors {
@@ -203,7 +203,7 @@ func ValidationErrorHandler() gin.HandlerFunc {
 func CORSErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
-		
+
 		// 检查CORS配置
 		if origin != "" && !isAllowedOrigin(origin) {
 			err := errors.NewError(errors.CodeForbidden, "CORS policy violation", errors.TypePermanent)
@@ -211,7 +211,7 @@ func CORSErrorHandler() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		c.Next()
 	}
 }
@@ -224,12 +224,12 @@ func isAllowedOrigin(origin string) bool {
 		"http://localhost:3000",
 		"https://openpenpal.com",
 	}
-	
+
 	for _, allowed := range allowedOrigins {
 		if origin == allowed {
 			return true
 		}
 	}
-	
+
 	return false
 }

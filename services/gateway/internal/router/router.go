@@ -15,10 +15,10 @@ import (
 
 // RouterManager 路由管理器
 type RouterManager struct {
-	config         *config.Config
-	proxyManager   *proxy.ProxyManager
-	logger         *zap.Logger
-	router         *gin.Engine
+	config             *config.Config
+	proxyManager       *proxy.ProxyManager
+	logger             *zap.Logger
+	router             *gin.Engine
 	performanceHandler *handlers.MetricsHandler
 }
 
@@ -123,22 +123,22 @@ func (rm *RouterManager) setupAPIRoutes() {
 
 	// 地址搜索路由（兼容性）
 	rm.setupAddressRoutes(authenticatedAPI)
-	
+
 	// 商店相关路由
 	rm.setupShopRoutes(authenticatedAPI)
-	
+
 	// AI相关路由
 	rm.setupAIRoutes(apiV1)
-	
+
 	// 博物馆相关路由
 	rm.setupMuseumRoutes(apiV1)
-	
+
 	// 性能监控路由（新增）
 	rm.setupMetricsRoutes(apiV1)
-	
+
 	// 健康检查路由（新增）
 	rm.setupHealthRoutes(apiV1)
-	
+
 	// WebSocket路由（新增）
 	rm.setupWebSocketRoutes(apiV1)
 }
@@ -183,7 +183,7 @@ func (rm *RouterManager) setupCourierRoutes(group *gin.RouterGroup) {
 	courierGroup.POST("/create", rm.proxyManager.ProxyHandler("main-backend"))
 	courierGroup.GET("/subordinates", rm.proxyManager.ProxyHandler("main-backend"))
 	courierGroup.GET("/candidates", rm.proxyManager.ProxyHandler("main-backend"))
-	
+
 	// 公共统计信息
 	courierGroup.GET("/stats", rm.proxyManager.ProxyHandler("main-backend"))
 	courierGroup.GET("/stats/*path", rm.proxyManager.ProxyHandler("main-backend"))
@@ -192,17 +192,17 @@ func (rm *RouterManager) setupCourierRoutes(group *gin.RouterGroup) {
 	courierGroup.GET("/tasks", rm.proxyManager.ProxyHandler("main-backend"))
 	courierGroup.PUT("/tasks/*path", rm.proxyManager.ProxyHandler("main-backend"))
 	courierGroup.POST("/tasks/*path", rm.proxyManager.ProxyHandler("main-backend"))
-	
+
 	// 扫码相关路由
 	courierGroup.POST("/scan/*path", rm.proxyManager.ProxyHandler("main-backend"))
 	courierGroup.GET("/scan/*path", rm.proxyManager.ProxyHandler("main-backend"))
-	
+
 	// 成长系统路由
 	courierGroup.Any("/growth/*path", rm.proxyManager.ProxyHandler("main-backend"))
-	
+
 	// 管理API
 	courierGroup.Any("/management/*path", rm.proxyManager.ProxyHandler("main-backend"))
-	
+
 	// 需要信使权限的路由 (转发到courier-service)
 	courierProtected := courierGroup.Group("")
 	courierProtected.Use(middleware.CourierAuth())
@@ -329,7 +329,7 @@ func (rm *RouterManager) servicesStatusHandler() gin.HandlerFunc {
 func (rm *RouterManager) setupWebSocketRoutes(group *gin.RouterGroup) {
 	wsGroup := group.Group("/ws")
 	// WebSocket连接不需要速率限制
-	
+
 	// 转发到主后端服务的WebSocket端点
 	wsGroup.Any("/*path", rm.proxyManager.ProxyHandler("main-backend"))
 }
@@ -364,23 +364,23 @@ func (rm *RouterManager) setupMetricsRoutes(group *gin.RouterGroup) {
 		rm.setupPlaceholderMetricsRoutes(group)
 		return
 	}
-	
+
 	metricsGroup := group.Group("/metrics")
 	metricsGroup.Use(middleware.NewRateLimiter(100)) // 每分钟100次
-	
+
 	// 性能指标上报 (无需认证，前端直接上报)
 	metricsGroup.POST("/performance", rm.performanceHandler.SubmitPerformanceMetrics)
-	
+
 	// 需要认证的监控API
 	authenticatedMetrics := metricsGroup.Group("")
 	authenticatedMetrics.Use(middleware.JWTAuth(rm.config.JWTSecret))
-	
+
 	// 获取仪表板数据
 	authenticatedMetrics.GET("/dashboard", rm.performanceHandler.GetDashboardMetrics)
-	
+
 	// 获取告警信息
 	authenticatedMetrics.GET("/alerts", rm.performanceHandler.GetPerformanceAlerts)
-	
+
 	// 创建告警
 	authenticatedMetrics.POST("/alerts", rm.performanceHandler.CreatePerformanceAlert)
 }
@@ -389,7 +389,7 @@ func (rm *RouterManager) setupMetricsRoutes(group *gin.RouterGroup) {
 func (rm *RouterManager) setupPlaceholderMetricsRoutes(group *gin.RouterGroup) {
 	metricsGroup := group.Group("/metrics")
 	metricsGroup.Use(middleware.NewRateLimiter(100))
-	
+
 	metricsGroup.POST("/performance", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    0,
@@ -397,10 +397,10 @@ func (rm *RouterManager) setupPlaceholderMetricsRoutes(group *gin.RouterGroup) {
 			"data":    nil,
 		})
 	})
-	
+
 	authenticatedMetrics := metricsGroup.Group("")
 	authenticatedMetrics.Use(middleware.JWTAuth(rm.config.JWTSecret))
-	
+
 	authenticatedMetrics.GET("/dashboard", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    0,
@@ -408,7 +408,7 @@ func (rm *RouterManager) setupPlaceholderMetricsRoutes(group *gin.RouterGroup) {
 			"data":    nil,
 		})
 	})
-	
+
 	authenticatedMetrics.GET("/alerts", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    0,
@@ -416,7 +416,7 @@ func (rm *RouterManager) setupPlaceholderMetricsRoutes(group *gin.RouterGroup) {
 			"data":    nil,
 		})
 	})
-	
+
 	authenticatedMetrics.POST("/alerts", func(c *gin.Context) {
 		c.JSON(http.StatusCreated, gin.H{
 			"code":    0,
@@ -430,7 +430,7 @@ func (rm *RouterManager) setupPlaceholderMetricsRoutes(group *gin.RouterGroup) {
 func (rm *RouterManager) setupHealthRoutes(group *gin.RouterGroup) {
 	healthGroup := group.Group("/health")
 	healthGroup.Use(middleware.NewRateLimiter(200)) // 每分钟200次
-	
+
 	// 服务状态检查 (无需认证)
 	if rm.performanceHandler != nil {
 		healthGroup.GET("/status", rm.performanceHandler.GetHealthStatus)
@@ -443,11 +443,11 @@ func (rm *RouterManager) setupHealthRoutes(group *gin.RouterGroup) {
 			})
 		})
 	}
-	
+
 	// 需要认证的健康检查API
 	authenticatedHealth := healthGroup.Group("")
 	authenticatedHealth.Use(middleware.JWTAuth(rm.config.JWTSecret))
-	
+
 	// 详细健康信息
 	authenticatedHealth.GET("/detailed", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -456,7 +456,7 @@ func (rm *RouterManager) setupHealthRoutes(group *gin.RouterGroup) {
 			"data":    nil,
 		})
 	})
-	
+
 	// 健康告警上报
 	authenticatedHealth.POST("/alert", func(c *gin.Context) {
 		c.JSON(http.StatusCreated, gin.H{
@@ -480,36 +480,36 @@ func (rm *RouterManager) setupPostcodeRoutes(group *gin.RouterGroup) {
 
 	// 学校管理
 	schoolGroup := postcodeGroup.Group("/schools")
-	schoolGroup.GET("", rm.proxyManager.ProxyHandler("write-service"))             // 获取学校列表
-	schoolGroup.POST("", rm.proxyManager.ProxyHandler("write-service"))            // 创建学校
-	schoolGroup.GET("/:code", rm.proxyManager.ProxyHandler("write-service"))       // 获取学校详情
-	schoolGroup.PUT("/:code", rm.proxyManager.ProxyHandler("write-service"))       // 更新学校
-	schoolGroup.DELETE("/:code", rm.proxyManager.ProxyHandler("write-service"))    // 删除学校
+	schoolGroup.GET("", rm.proxyManager.ProxyHandler("write-service"))          // 获取学校列表
+	schoolGroup.POST("", rm.proxyManager.ProxyHandler("write-service"))         // 创建学校
+	schoolGroup.GET("/:code", rm.proxyManager.ProxyHandler("write-service"))    // 获取学校详情
+	schoolGroup.PUT("/:code", rm.proxyManager.ProxyHandler("write-service"))    // 更新学校
+	schoolGroup.DELETE("/:code", rm.proxyManager.ProxyHandler("write-service")) // 删除学校
 
 	// 片区管理
-	schoolGroup.GET("/:code/areas", rm.proxyManager.ProxyHandler("write-service"))     // 获取学校的片区列表
-	schoolGroup.POST("/:code/areas", rm.proxyManager.ProxyHandler("write-service"))    // 创建片区
+	schoolGroup.GET("/:code/areas", rm.proxyManager.ProxyHandler("write-service"))  // 获取学校的片区列表
+	schoolGroup.POST("/:code/areas", rm.proxyManager.ProxyHandler("write-service")) // 创建片区
 
 	// 楼栋管理
-	schoolGroup.GET("/:code/areas/:area/buildings", rm.proxyManager.ProxyHandler("write-service"))     // 获取片区的楼栋列表
-	schoolGroup.POST("/:code/areas/:area/buildings", rm.proxyManager.ProxyHandler("write-service"))    // 创建楼栋
+	schoolGroup.GET("/:code/areas/:area/buildings", rm.proxyManager.ProxyHandler("write-service"))  // 获取片区的楼栋列表
+	schoolGroup.POST("/:code/areas/:area/buildings", rm.proxyManager.ProxyHandler("write-service")) // 创建楼栋
 
 	// 房间管理
-	schoolGroup.GET("/:code/areas/:area/buildings/:building/rooms", rm.proxyManager.ProxyHandler("write-service"))     // 获取楼栋的房间列表
-	schoolGroup.POST("/:code/areas/:area/buildings/:building/rooms", rm.proxyManager.ProxyHandler("write-service"))    // 创建房间
+	schoolGroup.GET("/:code/areas/:area/buildings/:building/rooms", rm.proxyManager.ProxyHandler("write-service"))  // 获取楼栋的房间列表
+	schoolGroup.POST("/:code/areas/:area/buildings/:building/rooms", rm.proxyManager.ProxyHandler("write-service")) // 创建房间
 
 	// 权限管理
 	permissionGroup := postcodeGroup.Group("/permissions")
-	permissionGroup.GET("/:courier_id", rm.proxyManager.ProxyHandler("write-service"))   // 获取信使权限
-	permissionGroup.POST("", rm.proxyManager.ProxyHandler("write-service"))              // 分配权限
-	permissionGroup.PUT("/:courier_id", rm.proxyManager.ProxyHandler("write-service"))   // 更新权限
+	permissionGroup.GET("/:courier_id", rm.proxyManager.ProxyHandler("write-service"))    // 获取信使权限
+	permissionGroup.POST("", rm.proxyManager.ProxyHandler("write-service"))               // 分配权限
+	permissionGroup.PUT("/:courier_id", rm.proxyManager.ProxyHandler("write-service"))    // 更新权限
 	permissionGroup.DELETE("/:courier_id", rm.proxyManager.ProxyHandler("write-service")) // 删除权限
 
 	// 反馈管理
 	feedbackGroup := postcodeGroup.Group("/feedback")
-	feedbackGroup.GET("", rm.proxyManager.ProxyHandler("write-service"))         // 获取反馈列表
-	feedbackGroup.POST("", rm.proxyManager.ProxyHandler("write-service"))        // 提交反馈
-	feedbackGroup.GET("/:id", rm.proxyManager.ProxyHandler("write-service"))     // 获取反馈详情
+	feedbackGroup.GET("", rm.proxyManager.ProxyHandler("write-service"))             // 获取反馈列表
+	feedbackGroup.POST("", rm.proxyManager.ProxyHandler("write-service"))            // 提交反馈
+	feedbackGroup.GET("/:id", rm.proxyManager.ProxyHandler("write-service"))         // 获取反馈详情
 	feedbackGroup.POST("/:id/review", rm.proxyManager.ProxyHandler("write-service")) // 审核反馈
 
 	// 统计分析
@@ -521,9 +521,9 @@ func (rm *RouterManager) setupPostcodeRoutes(group *gin.RouterGroup) {
 
 	// 管理工具
 	toolsGroup := postcodeGroup.Group("/tools")
-	toolsGroup.POST("/validate", rm.proxyManager.ProxyHandler("write-service"))   // 批量验证
-	toolsGroup.POST("/import", rm.proxyManager.ProxyHandler("write-service"))     // 批量导入
-	toolsGroup.GET("/export", rm.proxyManager.ProxyHandler("write-service"))      // 数据导出
+	toolsGroup.POST("/validate", rm.proxyManager.ProxyHandler("write-service")) // 批量验证
+	toolsGroup.POST("/import", rm.proxyManager.ProxyHandler("write-service"))   // 批量导入
+	toolsGroup.GET("/export", rm.proxyManager.ProxyHandler("write-service"))    // 数据导出
 }
 
 // setupAddressRoutes 设置地址相关路由 (兼容性路由)
@@ -549,7 +549,7 @@ func (rm *RouterManager) setupAIRoutes(group *gin.RouterGroup) {
 	aiGroup := group.Group("/ai")
 	// AI服务可以有更宽松的限制，因为它们通常比较耗时
 	aiGroup.Use(middleware.NewRateLimiter(60)) // 每分钟60次
-	
+
 	// 公开的AI路由（无需认证）
 	// 转发所有AI请求到主后端服务
 	aiGroup.Any("/*path", rm.proxyManager.ProxyHandler("main-backend"))
@@ -559,9 +559,8 @@ func (rm *RouterManager) setupAIRoutes(group *gin.RouterGroup) {
 func (rm *RouterManager) setupMuseumRoutes(group *gin.RouterGroup) {
 	museumGroup := group.Group("/museum")
 	museumGroup.Use(middleware.NewRateLimiter(100)) // 每分钟100次
-	
+
 	// 公开的博物馆路由（无需认证）
 	// 转发所有博物馆请求到主后端服务
 	museumGroup.Any("/*path", rm.proxyManager.ProxyHandler("main-backend"))
 }
-

@@ -8,13 +8,13 @@ import (
 type AIProvider string
 
 const (
-	ProviderOpenAI     AIProvider = "openai"
-	ProviderClaude     AIProvider = "claude"
+	ProviderOpenAI      AIProvider = "openai"
+	ProviderClaude      AIProvider = "claude"
 	ProviderSiliconFlow AIProvider = "siliconflow"
-	ProviderMoonshot   AIProvider = "moonshot"
-	ProviderGemini     AIProvider = "gemini"
-	ProviderLocal      AIProvider = "local"      // 本地生成（开发环境）
-	ProviderDefault    AIProvider = "moonshot"
+	ProviderMoonshot    AIProvider = "moonshot"
+	ProviderGemini      AIProvider = "gemini"
+	ProviderLocal       AIProvider = "local" // 本地生成（开发环境）
+	ProviderDefault     AIProvider = "moonshot"
 )
 
 // AIPersona AI笔友人设
@@ -123,22 +123,22 @@ type AICuration struct {
 
 // AIReplyAdvice AI回信角度建议
 type AIReplyAdvice struct {
-	ID               string     `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	LetterID         string     `json:"letter_id" gorm:"type:varchar(36);not null;index"`
-	UserID           string     `json:"user_id" gorm:"type:varchar(36);not null;index"`
-	PersonaType      string     `json:"persona_type" gorm:"type:varchar(50)"` // custom, predefined
-	PersonaName      string     `json:"persona_name" gorm:"type:varchar(100)"`
-	PersonaDesc      string     `json:"persona_desc" gorm:"type:text"`
-	Perspectives     string     `json:"perspectives" gorm:"type:text"` // JSON array of perspectives
-	EmotionalTone    string     `json:"emotional_tone" gorm:"type:varchar(50)"`
-	SuggestedTopics  string     `json:"suggested_topics" gorm:"type:text"`
-	WritingStyle     string     `json:"writing_style" gorm:"type:varchar(50)"`
-	KeyPoints        string     `json:"key_points" gorm:"type:text"`
-	DeliveryDelay    int        `json:"delivery_delay" gorm:"default:0"` // 延迟天数
-	ScheduledFor     *time.Time `json:"scheduled_for"`
-	Provider         AIProvider `json:"provider" gorm:"type:varchar(20)"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UsedAt           *time.Time `json:"used_at"`
+	ID              string     `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	LetterID        string     `json:"letter_id" gorm:"type:varchar(36);not null;index"`
+	UserID          string     `json:"user_id" gorm:"type:varchar(36);not null;index"`
+	PersonaType     string     `json:"persona_type" gorm:"type:varchar(50)"` // custom, predefined
+	PersonaName     string     `json:"persona_name" gorm:"type:varchar(100)"`
+	PersonaDesc     string     `json:"persona_desc" gorm:"type:text"`
+	Perspectives    string     `json:"perspectives" gorm:"type:text"` // JSON array of perspectives
+	EmotionalTone   string     `json:"emotional_tone" gorm:"type:varchar(50)"`
+	SuggestedTopics string     `json:"suggested_topics" gorm:"type:text"`
+	WritingStyle    string     `json:"writing_style" gorm:"type:varchar(50)"`
+	KeyPoints       string     `json:"key_points" gorm:"type:text"`
+	DeliveryDelay   int        `json:"delivery_delay" gorm:"default:0"` // 延迟天数
+	ScheduledFor    *time.Time `json:"scheduled_for"`
+	Provider        AIProvider `json:"provider" gorm:"type:varchar(20)"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UsedAt          *time.Time `json:"used_at"`
 }
 
 // AIConfig AI配置
@@ -180,42 +180,42 @@ type AIUsageLog struct {
 
 // DelayConfig 精确延迟配置
 type DelayConfig struct {
-	Type            string     `json:"type"`                      // "preset", "relative", "absolute"
-	PresetOption    string     `json:"preset_option,omitempty"`   // "1hour", "tomorrow", "nextweek", "weekend"
-	RelativeDays    int        `json:"relative_days,omitempty"`   // 相对天数
-	RelativeHours   int        `json:"relative_hours,omitempty"`  // 相对小时
+	Type            string     `json:"type"`                       // "preset", "relative", "absolute"
+	PresetOption    string     `json:"preset_option,omitempty"`    // "1hour", "tomorrow", "nextweek", "weekend"
+	RelativeDays    int        `json:"relative_days,omitempty"`    // 相对天数
+	RelativeHours   int        `json:"relative_hours,omitempty"`   // 相对小时
 	RelativeMinutes int        `json:"relative_minutes,omitempty"` // 相对分钟
-	AbsoluteTime    *time.Time `json:"absolute_time,omitempty"`   // 绝对时间
-	Timezone        string     `json:"timezone,omitempty"`        // 时区，默认用户本地时区
+	AbsoluteTime    *time.Time `json:"absolute_time,omitempty"`    // 绝对时间
+	Timezone        string     `json:"timezone,omitempty"`         // 时区，默认用户本地时区
 	UserDescription string     `json:"user_description,omitempty"` // 用户自定义描述
 }
 
 // AIMatchRequest AI匹配请求
 type AIMatchRequest struct {
-	LetterID     string       `json:"letter_id" binding:"required"`
-	MaxMatches   int          `json:"max_matches"` // 最大匹配数，默认3
-	DelayOption  string       `json:"delay_option,omitempty"`  // 兼容旧版：quick/normal/slow
-	DelayConfig  *DelayConfig `json:"delay_config,omitempty"`  // 新版精确配置
+	LetterID    string       `json:"letter_id" binding:"required"`
+	MaxMatches  int          `json:"max_matches"`            // 最大匹配数，默认3
+	DelayOption string       `json:"delay_option,omitempty"` // 兼容旧版：quick/normal/slow
+	DelayConfig *DelayConfig `json:"delay_config,omitempty"` // 新版精确配置
 }
 
 // AIReplyRequest AI回信请求
 type AIReplyRequest struct {
 	LetterID       string    `json:"letter_id" binding:"required"`
 	Persona        AIPersona `json:"persona" binding:"required"`
-	PersonaType    string    `json:"persona_type,omitempty"` // "custom" or "predefined"
-	PersonaDesc    string    `json:"persona_desc,omitempty"` // 自定义人设描述
-	DelayHours     int       `json:"delay_hours"` // 延迟小时数，默认24
-	DeliveryDays   int       `json:"delivery_days,omitempty"` // 延迟天数
+	PersonaType    string    `json:"persona_type,omitempty"`    // "custom" or "predefined"
+	PersonaDesc    string    `json:"persona_desc,omitempty"`    // 自定义人设描述
+	DelayHours     int       `json:"delay_hours"`               // 延迟小时数，默认24
+	DeliveryDays   int       `json:"delivery_days,omitempty"`   // 延迟天数
 	OriginalLetter *Letter   `json:"original_letter,omitempty"` // 原始信件信息
 }
 
 // AIReplyAdviceRequest AI回信建议请求
 type AIReplyAdviceRequest struct {
 	LetterID     string `json:"letter_id" binding:"required"`
-	PersonaType  string `json:"persona_type" binding:"required"` // "custom", "predefined", "deceased", "distant_friend", "unspoken_love" 
+	PersonaType  string `json:"persona_type" binding:"required"` // "custom", "predefined", "deceased", "distant_friend", "unspoken_love"
 	PersonaName  string `json:"persona_name" binding:"required"`
-	PersonaDesc  string `json:"persona_desc,omitempty"` // 详细人设描述
-	Relationship string `json:"relationship,omitempty"` // 关系描述：如"已故的奶奶"、"多年未见的好友"、"暗恋的人"
+	PersonaDesc  string `json:"persona_desc,omitempty"`  // 详细人设描述
+	Relationship string `json:"relationship,omitempty"`  // 关系描述：如"已故的奶奶"、"多年未见的好友"、"暗恋的人"
 	DeliveryDays int    `json:"delivery_days,omitempty"` // 延迟天数，0表示立即
 }
 
@@ -273,11 +273,11 @@ type DelayQueueRecord struct {
 
 // AIUsageStats AI使用统计
 type AIUsageStats struct {
-	UserID          string    `json:"user_id" gorm:"primaryKey;type:varchar(36)"`
-	RequestCount    int       `json:"request_count" gorm:"default:0"`
-	LastRequestAt   time.Time `json:"last_request_at"`
-	DailyLimit      int       `json:"daily_limit" gorm:"default:10"`
-	MonthlyLimit    int       `json:"monthly_limit" gorm:"default:100"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	UserID        string    `json:"user_id" gorm:"primaryKey;type:varchar(36)"`
+	RequestCount  int       `json:"request_count" gorm:"default:0"`
+	LastRequestAt time.Time `json:"last_request_at"`
+	DailyLimit    int       `json:"daily_limit" gorm:"default:10"`
+	MonthlyLimit  int       `json:"monthly_limit" gorm:"default:100"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }

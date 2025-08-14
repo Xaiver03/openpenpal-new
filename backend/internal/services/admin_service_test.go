@@ -138,7 +138,7 @@ func (suite *AdminServiceTestSuite) TestInjectSeedData_Success() {
 	// 创建一个独立的测试数据库连接
 	db, err := config.SetupTestDB()
 	suite.NoError(err)
-	
+
 	// 使用独立的service实例
 	adminService := NewAdminService(db, suite.config)
 
@@ -173,7 +173,7 @@ func (suite *AdminServiceTestSuite) TestInjectSeedData_AlreadyExists() {
 		extraUser := config.CreateTestUser(suite.db, "extra"+string(rune(i+'1')), models.RoleUser)
 		suite.NotNil(extraUser)
 	}
-	
+
 	// 验证用户数量超过5个
 	var userCount int64
 	suite.db.Model(&models.User{}).Count(&userCount)
@@ -194,10 +194,10 @@ func (suite *AdminServiceTestSuite) TestGetUserManagement_Success() {
 	suite.Equal(1, response.Page)
 	suite.Equal(10, response.Limit)
 	suite.NotEmpty(response.Users)
-	
+
 	// 验证用户按创建时间倒序排列
 	if len(response.Users) > 1 {
-		suite.True(response.Users[0].CreatedAt.After(response.Users[1].CreatedAt) || 
+		suite.True(response.Users[0].CreatedAt.After(response.Users[1].CreatedAt) ||
 			response.Users[0].CreatedAt.Equal(response.Users[1].CreatedAt))
 	}
 }
@@ -378,13 +378,13 @@ func (suite *AdminServiceTestSuite) TestDashboardStats_WithRealData() {
 // TestUpdateUser_ValidRoles 测试所有有效角色
 func (suite *AdminServiceTestSuite) TestUpdateUser_ValidRoles() {
 	validRoles := []string{
-		"user", "courier", "courier_level1", "courier_level2", 
+		"user", "courier", "courier_level1", "courier_level2",
 		"courier_level3", "courier_level4", "school_admin", "admin", "super_admin",
 	}
 
 	for _, role := range validRoles {
 		testUser := config.CreateTestUser(suite.db, "role-test-"+role, models.RoleUser)
-		
+
 		req := &models.AdminUpdateUserRequest{
 			Role: role,
 		}

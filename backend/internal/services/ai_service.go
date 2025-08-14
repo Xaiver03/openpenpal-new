@@ -30,17 +30,17 @@ type AIService struct {
 // NewAIService 创建AI服务实例
 func NewAIService(db *gorm.DB, config *config.Config) *AIService {
 	service := &AIService{
-		db:           db,
-		config:       config,
-		client:       &http.Client{
+		db:     db,
+		config: config,
+		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 		usageService: NewUserUsageService(db, config),
 	}
-	
+
 	// 延迟初始化安全服务（避免循环依赖）
 	service.securityService = NewContentSecurityService(db, config, service)
-	
+
 	return service
 }
 
@@ -72,7 +72,7 @@ func (s *AIService) GetActiveProvider() (*models.AIConfig, error) {
 // createDefaultConfig 创建默认AI配置
 func (s *AIService) createDefaultConfig() (*models.AIConfig, error) {
 	var config *models.AIConfig
-	
+
 	// 根据配置的Provider创建相应的默认配置
 	switch s.config.AIProvider {
 	case "moonshot":
@@ -82,7 +82,7 @@ func (s *AIService) createDefaultConfig() (*models.AIConfig, error) {
 			APIKey:       s.config.MoonshotAPIKey,
 			APIEndpoint:  "https://api.moonshot.cn/v1/chat/completions",
 			Model:        "moonshot-v1-8k",
-			Temperature:  0.9,  // 提高温度以增加创造性和多样性
+			Temperature:  0.9, // 提高温度以增加创造性和多样性
 			MaxTokens:    1000,
 			IsActive:     true,
 			Priority:     100,
@@ -165,7 +165,7 @@ func (s *AIService) MatchPenPal(ctx context.Context, req *models.AIMatchRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check usage limit: %w", err)
 	}
-	
+
 	if !canUse {
 		return nil, fmt.Errorf("daily penpal match limit exceeded (max %d per day)", DefaultUsageLimits.DailyMatches)
 	}
@@ -230,7 +230,7 @@ func (s *AIService) ScheduleDelayedReply(ctx context.Context, req *models.AIRepl
 	if err != nil {
 		return "", fmt.Errorf("failed to check usage limit: %w", err)
 	}
-	
+
 	if !canUse {
 		return "", fmt.Errorf("daily AI reply limit exceeded (max %d per day)", DefaultUsageLimits.DailyAIReplies)
 	}
@@ -318,7 +318,7 @@ func (s *AIService) GenerateReply(ctx context.Context, req *models.AIReplyReques
 
 	// 创建回信
 	replyContent := s.extractContentFromAIResponse(aiResponse)
-	
+
 	// 对生成的回信内容进行安全检查
 	if s.securityService != nil {
 		securityResult, err := s.securityService.CheckContent(ctx, "ai_"+string(req.Persona), "ai_reply", "", replyContent)
@@ -330,7 +330,7 @@ func (s *AIService) GenerateReply(ctx context.Context, req *models.AIReplyReques
 			log.Printf("AI reply content filtered due to security concerns")
 		}
 	}
-	
+
 	reply := &models.Letter{
 		ID:        uuid.New().String(),
 		UserID:    "ai_" + string(req.Persona), // AI用户ID
@@ -374,7 +374,7 @@ func (s *AIService) GetInspirationWithLimit(ctx context.Context, userID string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to check usage limit: %w", err)
 	}
-	
+
 	if !canUse {
 		return nil, fmt.Errorf("daily inspiration limit exceeded (max %d per day)", DefaultUsageLimits.DailyInspirations)
 	}
@@ -420,13 +420,13 @@ func (s *AIService) GetInspirationWithLimit(ctx context.Context, userID string, 
 // GetInspiration 获取写作灵感
 func (s *AIService) GetInspiration(ctx context.Context, req *models.AIInspirationRequest) (*models.AIInspirationResponse, error) {
 	log.Printf("🎯 [GetInspiration] Starting inspiration generation...")
-	
+
 	// 在开发环境中，如果没有API密钥，使用本地生成的灵感
 	if s.config.Environment == "development" && s.config.MoonshotAPIKey == "" {
 		log.Printf("⚠️ [GetInspiration] No AI API key in development, using local inspirations")
 		return s.generateLocalInspirations(req), nil
 	}
-	
+
 	// 获取AI配置
 	aiConfig, err := s.GetActiveProvider()
 	if err != nil {
@@ -437,7 +437,7 @@ func (s *AIService) GetInspiration(ctx context.Context, req *models.AIInspiratio
 		}
 		return nil, fmt.Errorf("failed to get AI provider: %w", err)
 	}
-	
+
 	log.Printf("🔧 [GetInspiration] Using provider: %s, Model: %s", aiConfig.Provider, aiConfig.Model)
 
 	// 构建灵感提示词
@@ -455,7 +455,7 @@ func (s *AIService) GetInspiration(ctx context.Context, req *models.AIInspiratio
 		}
 		return nil, fmt.Errorf("AI API call failed: %w", err)
 	}
-	
+
 	log.Printf("✅ [GetInspiration] AI API response received: %d characters", len(aiResponse))
 
 	// 解析灵感响应
@@ -490,7 +490,7 @@ func (s *AIService) GetInspiration(ctx context.Context, req *models.AIInspiratio
 
 	// 记录使用日志
 	s.logAIUsage("system", models.TaskTypeInspiration, "", aiConfig, 100, 200, "success", "")
-	
+
 	log.Printf("✅ [GetInspiration] Successfully generated %d inspirations", len(inspirations.Inspirations))
 
 	return inspirations, nil
@@ -692,7 +692,7 @@ func (s *AIService) callSiliconFlow(ctx context.Context, config *models.AIConfig
 	log.Printf("🤖 [SiliconFlow] Starting API call...")
 	log.Printf("🤖 [SiliconFlow] API Endpoint: %s", config.APIEndpoint)
 	log.Printf("🤖 [SiliconFlow] Model: %s", config.Model)
-	
+
 	// 构建请求体 - SiliconFlow API与OpenAI兼容
 	requestBody := map[string]interface{}{
 		"model": config.Model,
@@ -715,7 +715,7 @@ func (s *AIService) callSiliconFlow(ctx context.Context, config *models.AIConfig
 		log.Printf("❌ [SiliconFlow] Failed to marshal request body: %v", err)
 		return "", err
 	}
-	
+
 	log.Printf("🤖 [SiliconFlow] Request body size: %d bytes", len(jsonData))
 
 	// 创建请求
@@ -727,7 +727,7 @@ func (s *AIService) callSiliconFlow(ctx context.Context, config *models.AIConfig
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.APIKey))
-	
+
 	// 安全日志：不记录任何API密钥信息
 	if len(config.APIKey) > 0 {
 		log.Printf("🔑 [SiliconFlow] API Key configured")
@@ -750,7 +750,7 @@ func (s *AIService) callSiliconFlow(ctx context.Context, config *models.AIConfig
 		log.Printf("❌ [SiliconFlow] Failed to read response body: %v", err)
 		return "", err
 	}
-	
+
 	log.Printf("📥 [SiliconFlow] Response status: %d", resp.StatusCode)
 	log.Printf("📥 [SiliconFlow] Response body size: %d bytes", len(body))
 
@@ -780,19 +780,19 @@ func (s *AIService) callSiliconFlow(ctx context.Context, config *models.AIConfig
 		log.Printf("❌ [SiliconFlow] Invalid choice format")
 		return "", errors.New("invalid SiliconFlow AI response format: invalid choice format")
 	}
-	
+
 	message, ok := choice["message"].(map[string]interface{})
 	if !ok {
 		log.Printf("❌ [SiliconFlow] Invalid message format")
 		return "", errors.New("invalid SiliconFlow AI response format: invalid message format")
 	}
-	
+
 	content, ok := message["content"].(string)
 	if !ok {
 		log.Printf("❌ [SiliconFlow] Invalid content format")
 		return "", errors.New("invalid SiliconFlow AI response format: invalid content format")
 	}
-	
+
 	log.Printf("✅ [SiliconFlow] Successfully extracted content: %d characters", len(content))
 
 	// 更新配额使用
@@ -816,7 +816,7 @@ func (s *AIService) callMoonshot(ctx context.Context, config *models.AIConfig, p
 // generateLocalInspirations 生成本地灵感（开发环境备用方案）
 func (s *AIService) generateLocalInspirations(req *models.AIInspirationRequest) *models.AIInspirationResponse {
 	log.Printf("🎯 [generateLocalInspirations] Generating local inspirations...")
-	
+
 	// 预定义的主题灵感库
 	inspirationPool := []struct {
 		Theme  string
@@ -897,7 +897,7 @@ func (s *AIService) generateLocalInspirations(req *models.AIInspirationRequest) 
 			Tags:   []string{"旅行", "见闻", "感悟"},
 		},
 	}
-	
+
 	// 根据请求参数筛选灵感
 	var selectedInspirations []struct {
 		Theme  string
@@ -905,7 +905,7 @@ func (s *AIService) generateLocalInspirations(req *models.AIInspirationRequest) 
 		Style  string
 		Tags   []string
 	}
-	
+
 	// 如果指定了主题，优先选择匹配的主题
 	if req.Theme != "" {
 		for _, insp := range inspirationPool {
@@ -914,24 +914,24 @@ func (s *AIService) generateLocalInspirations(req *models.AIInspirationRequest) 
 			}
 		}
 	}
-	
+
 	// 如果没有找到匹配的，或者没有指定主题，随机选择
 	if len(selectedInspirations) == 0 {
 		// 使用时间戳作为随机种子，确保每次调用有不同结果
 		timestamp := time.Now().UnixNano()
 		startIdx := int(timestamp % int64(len(inspirationPool)))
-		
+
 		count := req.Count
 		if count == 0 || count > 5 {
 			count = 1
 		}
-		
+
 		for i := 0; i < count && i < len(inspirationPool); i++ {
 			idx := (startIdx + i) % len(inspirationPool)
 			selectedInspirations = append(selectedInspirations, inspirationPool[idx])
 		}
 	}
-	
+
 	// 构建响应
 	response := &models.AIInspirationResponse{
 		Inspirations: make([]struct {
@@ -942,13 +942,13 @@ func (s *AIService) generateLocalInspirations(req *models.AIInspirationRequest) 
 			Tags   []string `json:"tags"`
 		}, 0),
 	}
-	
+
 	// 限制返回数量
 	maxCount := req.Count
 	if maxCount == 0 || maxCount > 5 {
 		maxCount = 1
 	}
-	
+
 	for i := 0; i < len(selectedInspirations) && i < maxCount; i++ {
 		insp := selectedInspirations[i]
 		response.Inspirations = append(response.Inspirations, struct {
@@ -964,7 +964,7 @@ func (s *AIService) generateLocalInspirations(req *models.AIInspirationRequest) 
 			Style:  insp.Style,
 			Tags:   insp.Tags,
 		})
-		
+
 		// 保存到数据库
 		inspiration := &models.AIInspiration{
 			ID:        response.Inspirations[i].ID,
@@ -980,7 +980,7 @@ func (s *AIService) generateLocalInspirations(req *models.AIInspirationRequest) 
 			log.Printf("⚠️ [generateLocalInspirations] Failed to save inspiration: %v", err)
 		}
 	}
-	
+
 	log.Printf("✅ [generateLocalInspirations] Generated %d local inspirations", len(response.Inspirations))
 	return response
 }
@@ -1083,7 +1083,7 @@ func (s *AIService) buildInspirationPrompt(req *models.AIInspirationRequest) str
 
 // buildReplyAdvicePrompt 构建回信建议提示词
 func (s *AIService) buildReplyAdvicePrompt(letter models.Letter, req *models.AIReplyAdviceRequest) string {
-	
+
 	return fmt.Sprintf(`
 你是OpenPenPal的AI助手，现在需要以"%s"的身份为以下信件提供回信角度建议：
 
@@ -1118,8 +1118,8 @@ func (s *AIService) buildReplyAdvicePrompt(letter models.Letter, req *models.AIR
   "writing_style": "写作风格",
   "key_points": "关键要点"
 }
-`, req.PersonaName, req.PersonaName, req.Relationship, req.PersonaDesc, 
-   letter.Title, letter.Content, letter.User.Username)
+`, req.PersonaName, req.PersonaName, req.Relationship, req.PersonaDesc,
+		letter.Title, letter.Content, letter.User.Username)
 }
 
 // buildCuratePrompt 构建策展提示词
@@ -1210,7 +1210,7 @@ func (s *AIService) parseMatchResponse(aiResponse string, excludeUserID string) 
 // parseInspirationResponse 解析灵感响应
 func (s *AIService) parseInspirationResponse(aiResponse string) (*models.AIInspirationResponse, error) {
 	log.Printf("🎨 [AI Inspiration] Parsing response of length: %d", len(aiResponse))
-	
+
 	// 处理可能包含Markdown代码块的响应
 	cleanResponse := aiResponse
 	if strings.Contains(aiResponse, "```json") {
@@ -1223,7 +1223,7 @@ func (s *AIService) parseInspirationResponse(aiResponse string) (*models.AIInspi
 			for start < len(aiResponse) && (aiResponse[start] == '\n' || aiResponse[start] == '\r' || aiResponse[start] == ' ') {
 				start++
 			}
-			
+
 			end := strings.LastIndex(aiResponse, "```")
 			if end > start {
 				cleanResponse = strings.TrimSpace(aiResponse[start:end])
@@ -1237,18 +1237,18 @@ func (s *AIService) parseInspirationResponse(aiResponse string) (*models.AIInspi
 		for start < len(aiResponse) && (aiResponse[start] == '\n' || aiResponse[start] == '\r' || aiResponse[start] == ' ') {
 			start++
 		}
-		
+
 		end := strings.LastIndex(aiResponse, "```")
 		if end > start {
 			cleanResponse = strings.TrimSpace(aiResponse[start:end])
 		}
 	}
-	
+
 	var response models.AIInspirationResponse
 	if err := json.Unmarshal([]byte(cleanResponse), &response); err != nil {
 		log.Printf("❌ [AI Inspiration] Failed to parse JSON response: %v", err)
 		log.Printf("❌ [AI Inspiration] Raw AI response: %s", aiResponse)
-		
+
 		// 如果解析失败，返回默认灵感
 		log.Printf("⚠️ [AI Inspiration] Using fallback inspiration due to parse error")
 		return &models.AIInspirationResponse{
@@ -1268,7 +1268,7 @@ func (s *AIService) parseInspirationResponse(aiResponse string) (*models.AIInspi
 			},
 		}, nil
 	}
-	
+
 	log.Printf("✅ [AI Inspiration] Successfully parsed %d inspirations", len(response.Inspirations))
 	return &response, nil
 }
@@ -1276,11 +1276,11 @@ func (s *AIService) parseInspirationResponse(aiResponse string) (*models.AIInspi
 // parseReplyAdviceResponse 解析回信建议响应
 func (s *AIService) parseReplyAdviceResponse(aiResponse string, letter models.Letter, req *models.AIReplyAdviceRequest) (*models.AIReplyAdvice, error) {
 	var result struct {
-		Perspectives     []string `json:"perspectives"`
-		EmotionalTone    string   `json:"emotional_tone"`
-		SuggestedTopics  string   `json:"suggested_topics"`
-		WritingStyle     string   `json:"writing_style"`
-		KeyPoints        string   `json:"key_points"`
+		Perspectives    []string `json:"perspectives"`
+		EmotionalTone   string   `json:"emotional_tone"`
+		SuggestedTopics string   `json:"suggested_topics"`
+		WritingStyle    string   `json:"writing_style"`
+		KeyPoints       string   `json:"key_points"`
 	}
 
 	if err := json.Unmarshal([]byte(aiResponse), &result); err != nil {
@@ -1298,20 +1298,20 @@ func (s *AIService) parseReplyAdviceResponse(aiResponse string, letter models.Le
 
 	// 创建回信建议记录
 	advice := &models.AIReplyAdvice{
-		ID:               uuid.New().String(),
-		LetterID:         req.LetterID,
-		UserID:           letter.UserID,
-		PersonaType:      req.PersonaType,
-		PersonaName:      req.PersonaName,
-		PersonaDesc:      req.PersonaDesc,
-		Perspectives:     fmt.Sprintf("[\"%s\"]", strings.Join(result.Perspectives, "\", \"")),
-		EmotionalTone:    result.EmotionalTone,
-		SuggestedTopics:  result.SuggestedTopics,
-		WritingStyle:     result.WritingStyle,
-		KeyPoints:        result.KeyPoints,
-		DeliveryDelay:    req.DeliveryDays,
-		Provider:         models.ProviderSiliconFlow, // 使用当前配置的Provider
-		CreatedAt:        time.Now(),
+		ID:              uuid.New().String(),
+		LetterID:        req.LetterID,
+		UserID:          letter.UserID,
+		PersonaType:     req.PersonaType,
+		PersonaName:     req.PersonaName,
+		PersonaDesc:     req.PersonaDesc,
+		Perspectives:    fmt.Sprintf("[\"%s\"]", strings.Join(result.Perspectives, "\", \"")),
+		EmotionalTone:   result.EmotionalTone,
+		SuggestedTopics: result.SuggestedTopics,
+		WritingStyle:    result.WritingStyle,
+		KeyPoints:       result.KeyPoints,
+		DeliveryDelay:   req.DeliveryDays,
+		Provider:        models.ProviderSiliconFlow, // 使用当前配置的Provider
+		CreatedAt:       time.Now(),
 	}
 
 	return advice, nil
@@ -1358,17 +1358,17 @@ func (s *AIService) extractContentFromAIResponse(aiResponse string) string {
 // getPersonaContext 获取人设上下文信息
 func (s *AIService) getPersonaContext(personaType, personaName, personaDesc, relationship string) string {
 	var context strings.Builder
-	
+
 	context.WriteString(fmt.Sprintf("身份：%s\n", personaName))
-	
+
 	if relationship != "" {
 		context.WriteString(fmt.Sprintf("关系：%s\n", relationship))
 	}
-	
+
 	if personaDesc != "" {
 		context.WriteString(fmt.Sprintf("人设描述：%s\n", personaDesc))
 	}
-	
+
 	// 根据人设类型添加特定的上下文
 	switch personaType {
 	case "deceased":
@@ -1380,7 +1380,7 @@ func (s *AIService) getPersonaContext(personaType, personaName, personaDesc, rel
 	case "custom":
 		context.WriteString("特别提醒：根据自定义的人设特点，回信应该充分体现角色的独特性格和背景。\n")
 	}
-	
+
 	return context.String()
 }
 
@@ -1451,7 +1451,7 @@ func (s *AIService) GetAIUsageStats(userID string) (map[string]interface{}, erro
 			},
 		}, nil
 	}
-	
+
 	// TODO: 获取实际的用户使用统计
 	// 临时返回模拟数据
 	return map[string]interface{}{

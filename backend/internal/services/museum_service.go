@@ -496,7 +496,7 @@ func (s *MuseumService) GetPopularTags(ctx context.Context, category string, lim
 
 	// 从标签表中查询
 	query := s.db.Model(&models.MuseumTag{}).Order("usage_count DESC")
-	
+
 	if category != "" {
 		query = query.Where("category = ?", category)
 	}
@@ -525,7 +525,7 @@ func (s *MuseumService) GetPopularTags(ctx context.Context, category string, lim
 			ORDER BY count DESC 
 			LIMIT ?
 		`
-		
+
 		if err := s.db.Raw(sql, models.MuseumItemApproved, limit).
 			Scan(&tagCounts).Error; err != nil {
 			// 如果数据库不支持unnest，使用备用方案
@@ -552,7 +552,7 @@ func (s *MuseumService) getTagsAlternative(ctx context.Context, limit int) ([]mo
 	tagMap := make(map[string]int)
 
 	// 获取所有已发布的条目
-	if err := s.db.Where("status = ?", 
+	if err := s.db.Where("status = ?",
 		models.MuseumItemApproved).
 		Find(&items).Error; err != nil {
 		return nil, err
@@ -671,9 +671,9 @@ func (s *MuseumService) AddReaction(ctx context.Context, entryID, userID, reacti
 	// 发送通知给作者
 	if s.notificationSvc != nil && item.SubmittedBy != userID {
 		s.notificationSvc.NotifyUser(item.SubmittedBy, "museum_reaction", map[string]interface{}{
-			"entry_id": entryID,
+			"entry_id":      entryID,
 			"reaction_type": reactionType,
-			"title": item.Title,
+			"title":         item.Title,
 		})
 	}
 
@@ -783,19 +783,19 @@ func (s *MuseumService) ModerateEntry(ctx context.Context, entryID, moderatorID,
 	if s.notificationSvc != nil && item.SubmittedBy != "" {
 		var notifType string
 		var notifData map[string]interface{}
-		
+
 		if status == "approved" {
 			notifType = "museum_approved"
 			notifData = map[string]interface{}{
 				"entry_id": entryID,
-				"title": item.Title,
+				"title":    item.Title,
 			}
 		} else {
 			notifType = "museum_rejected"
 			notifData = map[string]interface{}{
 				"entry_id": entryID,
-				"title": item.Title,
-				"reason": reason,
+				"title":    item.Title,
+				"reason":   reason,
 			}
 		}
 
@@ -804,7 +804,7 @@ func (s *MuseumService) ModerateEntry(ctx context.Context, entryID, moderatorID,
 
 	// 如果审核通过，给用户加积分
 	if status == "approved" && s.creditSvc != nil && item.SubmittedBy != "" {
-		s.creditSvc.AddPoints(item.SubmittedBy, 50, "museum_approved", 
+		s.creditSvc.AddPoints(item.SubmittedBy, 50, "museum_approved",
 			fmt.Sprintf("信件《%s》被博物馆收录", item.Title))
 	}
 
@@ -904,7 +904,7 @@ func (s *MuseumService) RefreshStats(ctx context.Context) error {
 
 	// 统计所有已发布条目的标签
 	var items []models.MuseumItem
-	if err := s.db.Where("status = ?", 
+	if err := s.db.Where("status = ?",
 		models.MuseumItemApproved).Find(&items).Error; err != nil {
 		return err
 	}
@@ -1046,7 +1046,7 @@ func (s *MuseumService) SearchEntries(ctx context.Context, query string, tags []
 
 	// 文本搜索
 	if query != "" {
-		dbQuery = dbQuery.Where("title LIKE ? OR content LIKE ? OR author_name LIKE ?", 
+		dbQuery = dbQuery.Where("title LIKE ? OR content LIKE ? OR author_name LIKE ?",
 			"%"+query+"%", "%"+query+"%", "%"+query+"%")
 	}
 
@@ -1339,13 +1339,13 @@ func (s *MuseumService) GetMuseumStats(ctx context.Context) (map[string]interfac
 		TotalLikes    int64 `gorm:"column:total_likes"`
 		TotalComments int64 `gorm:"column:total_comments"`
 	}
-	
+
 	if err := s.db.Model(&models.MuseumItem{}).
 		Select("COALESCE(SUM(view_count), 0) as total_views, COALESCE(SUM(like_count), 0) as total_likes, COALESCE(SUM(comment_count), 0) as total_comments").
 		Scan(&aggregates).Error; err != nil {
 		return nil, err
 	}
-	
+
 	stats["total_views"] = aggregates.TotalViews
 	stats["total_likes"] = aggregates.TotalLikes
 	stats["total_comments"] = aggregates.TotalComments

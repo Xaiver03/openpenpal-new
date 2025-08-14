@@ -35,19 +35,19 @@ type Config struct {
 	MetricsPort    string
 
 	// 超时配置
-	ProxyTimeout    int // 秒
-	ConnectTimeout  int // 秒
+	ProxyTimeout     int // 秒
+	ConnectTimeout   int // 秒
 	KeepAliveTimeout int // 秒
 }
 
 // ServiceConfig 微服务配置
 type ServiceConfig struct {
 	Name        string   `json:"name"`
-	Hosts       []string `json:"hosts"`       // 支持多实例
+	Hosts       []string `json:"hosts"`        // 支持多实例
 	HealthCheck string   `json:"health_check"` // 健康检查路径
-	Timeout     int      `json:"timeout"`     // 超时时间(秒)
-	Retries     int      `json:"retries"`     // 重试次数
-	Weight      int      `json:"weight"`      // 权重(负载均衡)
+	Timeout     int      `json:"timeout"`      // 超时时间(秒)
+	Retries     int      `json:"retries"`      // 重试次数
+	Weight      int      `json:"weight"`       // 权重(负载均衡)
 }
 
 // RateLimitConfig 限流配置

@@ -150,7 +150,7 @@ func migrateTable(source, dest *gorm.DB, model interface{}, tableName string) er
 	batchSize := 100
 	for offset := 0; offset < int(totalCount); offset += batchSize {
 		var records []map[string]interface{}
-		
+
 		if err := source.Table(tableName).
 			Offset(offset).
 			Limit(batchSize).
@@ -182,7 +182,7 @@ func migrateTable(source, dest *gorm.DB, model interface{}, tableName string) er
 
 func processTimeFields(record map[string]interface{}) {
 	timeFields := []string{"created_at", "updated_at", "deleted_at", "last_login_at", "published_at"}
-	
+
 	for _, field := range timeFields {
 		if val, ok := record[field]; ok && val != nil {
 			switch v := val.(type) {
@@ -207,14 +207,14 @@ func processTimeFields(record map[string]interface{}) {
 
 func showStatistics(db *gorm.DB) {
 	fmt.Println("\n=== 迁移统计 ===")
-	
+
 	tables := map[string]string{
-		"users":           "用户",
-		"letters":         "信件",
-		"letter_codes":    "信件编码",
-		"couriers":        "信使",
-		"courier_tasks":   "信使任务",
-		"museum_entries":  "博物馆条目",
+		"users":          "用户",
+		"letters":        "信件",
+		"letter_codes":   "信件编码",
+		"couriers":       "信使",
+		"courier_tasks":  "信使任务",
+		"museum_entries": "博物馆条目",
 	}
 
 	for table, name := range tables {

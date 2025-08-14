@@ -38,7 +38,7 @@ func init() {
 			users: make(map[string]*CachedUser),
 			ttl:   5 * time.Minute, // 5分钟缓存TTL
 		}
-		
+
 		// 启动清理协程
 		go userCache.cleanupExpired()
 	})
@@ -48,11 +48,11 @@ func (uc *UserCache) Get(userID string) (*models.User, bool) {
 	uc.mu.RLock()
 	cached, exists := uc.users[userID]
 	uc.mu.RUnlock()
-	
+
 	if !exists || time.Now().After(cached.ExpiresAt) {
 		return nil, false
 	}
-	
+
 	return cached.User, true
 }
 
@@ -74,7 +74,7 @@ func (uc *UserCache) Delete(userID string) {
 func (uc *UserCache) cleanupExpired() {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		uc.mu.Lock()
 		now := time.Now()
@@ -128,11 +128,11 @@ func OptimizedAuthMiddleware(config *config.Config, db *gorm.DB) gin.HandlerFunc
 		if !cached {
 			// 缓存未命中，从数据库查询
 			var dbUser models.User
-			
+
 			// 使用上下文超时控制数据库查询
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
-			
+
 			if err := db.WithContext(ctx).Where("id = ?", claims.UserID).First(&dbUser).Error; err != nil {
 				if err == gorm.ErrRecordNotFound {
 					c.JSON(http.StatusUnauthorized, gin.H{
@@ -150,7 +150,7 @@ func OptimizedAuthMiddleware(config *config.Config, db *gorm.DB) gin.HandlerFunc
 				c.Abort()
 				return
 			}
-			
+
 			// 更新缓存
 			user = &dbUser
 			userCache.Set(claims.UserID, user)
@@ -171,10 +171,10 @@ func OptimizedAuthMiddleware(config *config.Config, db *gorm.DB) gin.HandlerFunc
 		c.Set("user_id", claims.UserID)
 		c.Set("user_role", claims.Role)
 		c.Set("user", user)
-		
+
 		// 添加性能指标
 		c.Header("X-Cache-Hit", fmt.Sprintf("%t", cached))
-		
+
 		c.Next()
 	}
 }
@@ -185,32 +185,32 @@ func CacheMiddleware() gin.HandlerFunc {
 		Data      interface{}
 		ExpiresAt time.Time
 	}
-	
+
 	cache := make(map[string]*CacheEntry)
 	var cacheMu sync.RWMutex
-	
+
 	return func(c *gin.Context) {
 		// 只对GET请求进行缓存
 		if c.Request.Method != "GET" {
 			c.Next()
 			return
 		}
-		
+
 		cacheKey := c.Request.URL.Path + "?" + c.Request.URL.RawQuery
-		
+
 		cacheMu.RLock()
 		entry, exists := cache[cacheKey]
 		cacheMu.RUnlock()
-		
+
 		if exists && time.Now().Before(entry.ExpiresAt) {
 			c.Header("X-Cache", "HIT")
 			c.JSON(http.StatusOK, entry.Data)
 			c.Abort()
 			return
 		}
-		
+
 		c.Next()
-		
+
 		// 缓存响应（仅对成功响应）
 		if c.Writer.Status() == http.StatusOK {
 			// 这里需要根据实际需要实现响应缓存逻辑
@@ -248,7 +248,7 @@ func InvalidateCacheForUser(userID string) {
 func GetCacheStats() map[string]interface{} {
 	userCache.mu.RLock()
 	defer userCache.mu.RUnlock()
-	
+
 	return map[string]interface{}{
 		"cached_users": len(userCache.users),
 		"ttl_minutes":  userCache.ttl.Minutes(),

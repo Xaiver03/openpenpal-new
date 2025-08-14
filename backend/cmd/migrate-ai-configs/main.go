@@ -40,7 +40,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("❌ 加载配置失败: %v", err)
 	}
-	
+
 	// 连接数据库
 	db, err := connectDatabase(cfg)
 	if err != nil {
@@ -259,9 +259,9 @@ func migratePersonas(db *gorm.DB) error {
 				"formality":  0.3,
 			},
 			"constraints": map[string]interface{}{
-				"max_length":    1000,
-				"tone":          "friendly",
-				"avoid_topics":  []string{"politics", "religion"},
+				"max_length":   1000,
+				"tone":         "friendly",
+				"avoid_topics": []string{"politics", "religion"},
 			},
 		})
 
@@ -304,17 +304,17 @@ func migrateSystemPrompts(db *gorm.DB) error {
 	log.Println("💬 迁移系统提示词配置...")
 
 	systemPrompts := map[string]string{
-		"default": "你是OpenPenPal的AI助手，在这个温暖的数字书信平台上，帮助用户进行笔友匹配、生成回信、提供写作灵感和策展信件。请用温暖、友好、富有人文情怀的语气回应。",
+		"default":     "你是OpenPenPal的AI助手，在这个温暖的数字书信平台上，帮助用户进行笔友匹配、生成回信、提供写作灵感和策展信件。请用温暖、友好、富有人文情怀的语气回应。",
 		"inspiration": "你是一位富有创造力的写作导师，专门为OpenPenPal用户提供深刻而富有诗意的写作灵感。你的建议应该温暖人心，激发用户的创作热情。",
-		"matching": "你是一位善解人意的笔友媒人，能够理解信件背后的情感需求，为用户匹配最合适的笔友。注重情感共鸣和兴趣契合。",
-		"reply": "你是一位温暖的回信助手，帮助用户写出真诚、感人的回信。保持人文关怀，避免生硬的模板化表达。",
+		"matching":    "你是一位善解人意的笔友媒人，能够理解信件背后的情感需求，为用户匹配最合适的笔友。注重情感共鸣和兴趣契合。",
+		"reply":       "你是一位温暖的回信助手，帮助用户写出真诚、感人的回信。保持人文关怀，避免生硬的模板化表达。",
 	}
 
 	for key, prompt := range systemPrompts {
 		configValue, _ := json.Marshal(map[string]interface{}{
-			"prompt": prompt,
-			"temperature": 0.9,
-			"max_tokens": 1000,
+			"prompt":         prompt,
+			"temperature":    0.9,
+			"max_tokens":     1000,
 			"context_window": 4000,
 			"guidelines": []string{
 				"保持温暖友好的语气",

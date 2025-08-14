@@ -2,8 +2,8 @@ package config
 
 import (
 	"log"
-	"strings"
 	"openpenpal-backend/internal/models"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -32,7 +32,7 @@ func MigrateExtendedModels(db *gorm.DB) error {
 
 	// 信件扩展模型
 	log.Println("Migrating letter extended models...")
-	
+
 	// 先迁移表结构
 	err = db.AutoMigrate(&models.LetterTemplate{})
 	if err != nil {
@@ -43,13 +43,13 @@ func MigrateExtendedModels(db *gorm.DB) error {
 			return err
 		}
 	}
-	
+
 	// 然后更新现有的 letter_templates 表的 content 字段
 	log.Println("Updating existing letter templates with content from content_template...")
 	if err := db.Exec("UPDATE letter_templates SET content = COALESCE(content_template, name) WHERE content IS NULL OR content = ''").Error; err != nil {
 		log.Printf("Warning: Could not update existing letter templates: %v", err)
 	}
-	
+
 	err = db.AutoMigrate(
 		&models.LetterLike{},
 		&models.LetterShare{},
@@ -122,10 +122,10 @@ func createDefaultTemplates(db *gorm.DB) {
 祝好！
 [你的名字]`,
 			StyleConfig: `{"fontFamily":"serif","fontSize":"16px","color":"#333"}`,
-			IsPremium:  false,
-			IsActive:   true,
-			UsageCount: 0,
-			Rating:     4.5,
+			IsPremium:   false,
+			IsActive:    true,
+			UsageCount:  0,
+			Rating:      4.5,
 		},
 		{
 			ID:          "template_thanks",
@@ -145,10 +145,10 @@ func createDefaultTemplates(db *gorm.DB) {
 
 [你的名字]`,
 			StyleConfig: `{"fontFamily":"serif","fontSize":"16px","color":"#333"}`,
-			IsPremium:  false,
-			IsActive:   true,
-			UsageCount: 0,
-			Rating:     4.8,
+			IsPremium:   false,
+			IsActive:    true,
+			UsageCount:  0,
+			Rating:      4.8,
 		},
 		{
 			ID:          "template_apology",
@@ -166,10 +166,10 @@ func createDefaultTemplates(db *gorm.DB) {
 真诚的
 [你的名字]`,
 			StyleConfig: `{"fontFamily":"serif","fontSize":"16px","color":"#333"}`,
-			IsPremium:  false,
-			IsActive:   true,
-			UsageCount: 0,
-			Rating:     4.6,
+			IsPremium:   false,
+			IsActive:    true,
+			UsageCount:  0,
+			Rating:      4.6,
 		},
 		{
 			ID:          "template_invitation",
@@ -188,10 +188,10 @@ func createDefaultTemplates(db *gorm.DB) {
 
 [你的名字]`,
 			StyleConfig: `{"fontFamily":"serif","fontSize":"16px","color":"#333"}`,
-			IsPremium:  false,
-			IsActive:   true,
-			UsageCount: 0,
-			Rating:     4.7,
+			IsPremium:   false,
+			IsActive:    true,
+			UsageCount:  0,
+			Rating:      4.7,
 		},
 		{
 			ID:          "template_love",
@@ -209,10 +209,10 @@ func createDefaultTemplates(db *gorm.DB) {
 爱你的
 [你的名字]`,
 			StyleConfig: `{"fontFamily":"serif","fontSize":"16px","color":"#d63384"}`,
-			IsPremium:  true,
-			IsActive:   true,
-			UsageCount: 0,
-			Rating:     4.9,
+			IsPremium:   true,
+			IsActive:    true,
+			UsageCount:  0,
+			Rating:      4.9,
 		},
 	}
 
@@ -227,7 +227,7 @@ func createDefaultTemplates(db *gorm.DB) {
 		// 设置创建者为管理员
 		template.CreatedBy = adminUser.ID
 		template.Content = template.ContentTemplate // 设置content字段
-		
+
 		// 检查是否已存在
 		var existing models.LetterTemplate
 		if err := db.Where("id = ?", template.ID).First(&existing).Error; err == gorm.ErrRecordNotFound {

@@ -23,7 +23,7 @@ import {
   AlertCircle, 
   Wand2,
   Send,
-  UserSearch,
+  Users,
   Sparkles,
   Clock
 } from 'lucide-react'
@@ -208,10 +208,10 @@ export default function BindBarcodePage() {
         setMatchResult(response.data)
         setMatchStatus('completed')
         
-        if (response.data.matched && response.data.recipient_op_code) {
+        if (response.data?.matched && response.data?.recipient_op_code) {
           setFormData(prev => ({
             ...prev,
-            recipientOPCode: response.data.recipient_op_code
+            recipientOPCode: response.data?.recipient_op_code || ''
           }))
         } else {
           setMatchStatus('failed')
@@ -704,7 +704,7 @@ export default function BindBarcodePage() {
                       {matchStatus === 'idle' && (
                         <div className="text-center py-6">
                           <div className="w-16 h-16 bg-purple-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <UserSearch className="w-8 h-8 text-purple-600" />
+                            <Users className="w-8 h-8 text-purple-600" />
                           </div>
                           <Button
                             onClick={handleAIMatching}

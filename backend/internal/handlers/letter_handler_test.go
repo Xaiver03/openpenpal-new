@@ -102,7 +102,7 @@ func (suite *LetterHandlerTestSuite) TestCreateDraft_Success() {
 
 	assert.True(suite.T(), response["success"].(bool))
 	assert.NotEmpty(suite.T(), response["message"])
-	
+
 	data := response["data"].(map[string]interface{})
 	assert.Equal(suite.T(), "Test Letter", data["title"])
 	assert.Equal(suite.T(), "This is a test letter content.", data["content"])
@@ -125,7 +125,7 @@ func (suite *LetterHandlerTestSuite) TestCreateDraft_EmptyTitle() {
 
 	// 断言：应该接受空标题（草稿状态）
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
-	
+
 	var response map[string]interface{}
 	testutils.ParseResponse(suite.T(), w, &response)
 	assert.True(suite.T(), response["success"].(bool))
@@ -164,7 +164,7 @@ func (suite *LetterHandlerTestSuite) TestGenerateCode_Success() {
 
 	assert.True(suite.T(), response["success"].(bool))
 	assert.NotEmpty(suite.T(), response["message"])
-	
+
 	data := response["data"].(map[string]interface{})
 	assert.NotEmpty(suite.T(), data["letter_code"])
 	assert.NotEmpty(suite.T(), data["qr_code_url"])
@@ -178,7 +178,7 @@ func (suite *LetterHandlerTestSuite) TestGenerateCode_LetterNotFound() {
 
 	// 断言：应该返回500（服务内部错误，因为信件不存在）
 	assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
-	
+
 	var response map[string]interface{}
 	testutils.ParseResponse(suite.T(), w, &response)
 	assert.False(suite.T(), response["success"].(bool))
@@ -377,7 +377,7 @@ func (suite *LetterHandlerTestSuite) createAuthHeader() http.Header {
 	expiresAt := time.Now().Add(24 * time.Hour)
 	token, err := auth.GenerateJWT(suite.testUser.ID, suite.testUser.Role, suite.config.JWTSecret, expiresAt)
 	suite.NoError(err)
-	
+
 	return testutils.CreateAuthHeader(token)
 }
 

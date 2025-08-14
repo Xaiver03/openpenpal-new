@@ -17,7 +17,7 @@ func SetupTestDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 自动迁移所有模型
 	err = db.AutoMigrate(
 		&models.User{},
@@ -55,7 +55,7 @@ func SetupTestDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return db, nil
 }
 
@@ -71,7 +71,7 @@ func GetTestConfig() *Config {
 		DatabaseType: "sqlite",
 		DatabaseURL:  ":memory:",
 		DatabaseName: "test",
-		
+
 		// App
 		AppName:    "OpenPenPal Test",
 		AppVersion: "1.0.0",
@@ -90,7 +90,7 @@ func GetTestConfig() *Config {
 		// AI
 		MoonshotAPIKey: "test-moonshot-key",
 		AIProvider:     "moonshot",
-		
+
 		// Email/SMTP (测试时禁用)
 		SMTPHost:         "",
 		SMTPPort:         0,
@@ -115,7 +115,7 @@ func CreateTestUser(db *gorm.DB, username string, role models.UserRole) *models.
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
-	
+
 	db.Create(user)
 	return user
 }
@@ -135,7 +135,7 @@ func CreateTestLetter(db *gorm.DB, userID string) *models.Letter {
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}
-	
+
 	db.Create(letter)
 	return letter
 }
@@ -158,7 +158,7 @@ func CreateTestCourier(db *gorm.DB, userID string, level int) *models.Courier {
 		CreatedAt:           time.Now(),
 		UpdatedAt:           time.Now(),
 	}
-	
+
 	db.Create(courier)
 	return courier
 }

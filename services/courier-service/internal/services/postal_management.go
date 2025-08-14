@@ -47,12 +47,12 @@ func (s *PostalManagementService) GetPendingApplications(courierID, schoolID, ar
 		if schoolID != "" && school.SchoolID != schoolID {
 			continue
 		}
-		
+
 		for _, area := range school.Areas {
 			if areaID != "" && area.AreaID != areaID {
 				continue
 			}
-			
+
 			condition := fmt.Sprintf("(school_id = '%s' AND area_id = '%s')", school.SchoolID, area.AreaID)
 			schoolConditions = append(schoolConditions, condition)
 		}
@@ -495,12 +495,12 @@ func (s *PostalManagementService) GetPermissionScope(courierID string) (*models.
 
 	// 构建权限范围
 	scope := &models.PostalCodePermissionScope{
-		CourierID: courierID,
-		Level:     level,
-		CanManage: make([]string, 0),
-		CanAssign: make([]string, 0),
+		CourierID:  courierID,
+		Level:      level,
+		CanManage:  make([]string, 0),
+		CanAssign:  make([]string, 0),
 		CanApprove: make([]string, 0),
-		Schools:   make([]models.SchoolInfo, 0),
+		Schools:    make([]models.SchoolInfo, 0),
 	}
 
 	// 根据等级和管理区域构建权限范围
@@ -782,12 +782,12 @@ func (s *PostalManagementService) ValidateCodeRange(schoolID, areaID string, cod
 	}
 
 	return map[string]interface{}{
-		"valid_codes":   validCodes,
-		"invalid_codes": invalidCodes,
-		"conflicts":     conflicts,
-		"total_checked": len(codeRange),
-		"valid_count":   len(validCodes),
-		"invalid_count": len(invalidCodes),
+		"valid_codes":    validCodes,
+		"invalid_codes":  invalidCodes,
+		"conflicts":      conflicts,
+		"total_checked":  len(codeRange),
+		"valid_count":    len(validCodes),
+		"invalid_count":  len(invalidCodes),
 		"conflict_count": len(conflicts),
 	}, nil
 }
@@ -924,11 +924,11 @@ func (s *PostalManagementService) notifyCodeDeactivated(assignment *models.Posta
 	event := utils.WebSocketEvent{
 		Type: "POSTAL_CODE_DEACTIVATED",
 		Data: map[string]interface{}{
-			"user_id":         assignment.UserID,
-			"postal_code":     assignment.PostalCode,
-			"deactivated_by":  operatorID,
-			"deactivated_at":  assignment.DeactivatedAt,
-			"reason":          reason,
+			"user_id":        assignment.UserID,
+			"postal_code":    assignment.PostalCode,
+			"deactivated_by": operatorID,
+			"deactivated_at": assignment.DeactivatedAt,
+			"reason":         reason,
 		},
 		Timestamp: time.Now(),
 	}
@@ -939,11 +939,11 @@ func (s *PostalManagementService) notifyBatchAssignment(assignerID, schoolID, ar
 	event := utils.WebSocketEvent{
 		Type: "POSTAL_BATCH_ASSIGNMENT",
 		Data: map[string]interface{}{
-			"assigned_by":    assignerID,
-			"school_id":      schoolID,
-			"area_id":        areaID,
-			"success_count":  successCount,
-			"failure_count":  failureCount,
+			"assigned_by":   assignerID,
+			"school_id":     schoolID,
+			"area_id":       areaID,
+			"success_count": successCount,
+			"failure_count": failureCount,
 		},
 		Timestamp: time.Now(),
 	}

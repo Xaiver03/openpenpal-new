@@ -18,27 +18,27 @@ import (
 // UnifiedAIService 统一的AI服务，整合了所有AI功能
 // 集成了配置管理、SOTA增强功能和原有的AI服务能力
 type UnifiedAIService struct {
-	*EnhancedAIService          // 继承SOTA增强功能
+	*EnhancedAIService                // 继承SOTA增强功能
 	configService      *ConfigService // 配置服务
 	templateCache      map[string][]models.AIContentTemplate
 	cacheLastUpdated   time.Time
-	cacheTTL          time.Duration
+	cacheTTL           time.Duration
 }
 
 // NewUnifiedAIService 创建统一AI服务实例
 func NewUnifiedAIService(db *gorm.DB, config *config.Config) *UnifiedAIService {
 	// 创建配置服务
 	configService := NewConfigService(db)
-	
+
 	// 创建增强AI服务
 	enhancedService := NewEnhancedAIService(db, config)
-	
+
 	// 创建统一服务
 	unifiedService := &UnifiedAIService{
 		EnhancedAIService: enhancedService,
 		configService:     configService,
 		templateCache:     make(map[string][]models.AIContentTemplate),
-		cacheTTL:         5 * time.Minute,
+		cacheTTL:          5 * time.Minute,
 	}
 
 	log.Println("✅ [UnifiedAIService] 统一AI服务初始化完成")
@@ -81,13 +81,13 @@ func (s *UnifiedAIService) GetInspiration(ctx context.Context, req *models.AIIns
 	}
 
 	s.metrics.IncrementSuccess()
-	
+
 	response := &models.AIInspirationResponse{
 		Inspirations: inspirations,
 		Metadata: map[string]interface{}{
-			"source":           "unified_config",
-			"template_count":   len(inspirations),
-			"generation_time":  time.Since(startTime).Milliseconds(),
+			"source":          "unified_config",
+			"template_count":  len(inspirations),
+			"generation_time": time.Since(startTime).Milliseconds(),
 			"cache_used":      s.isCacheValid(),
 		},
 	}
@@ -125,11 +125,11 @@ func (s *UnifiedAIService) GenerateReply(ctx context.Context, req *models.AIRepl
 
 	// 构建回信Letter对象
 	reply := &models.Letter{
-		ID:        uuid.New().String(),
-		Title:     s.generateReplyTitle(req.OriginalLetter.Title),
-		Content:   content,
-		Type:      models.LetterTypeReply,
-		Status:    models.LetterStatusDraft,
+		ID:      uuid.New().String(),
+		Title:   s.generateReplyTitle(req.OriginalLetter.Title),
+		Content: content,
+		Type:    models.LetterTypeReply,
+		Status:  models.LetterStatusDraft,
 		Metadata: map[string]interface{}{
 			"ai_generated":    true,
 			"persona":         string(req.Persona),
@@ -156,7 +156,7 @@ func (s *UnifiedAIService) MatchPenPal(ctx context.Context, req *models.AIMatchR
 		delayUntil = time.Now()
 		delayDescription = "立即匹配"
 	}
-	
+
 	// 获取匹配算法配置
 	matchConfig, err := s.configService.GetConfig("matching", "algorithm")
 	if err != nil {
@@ -167,7 +167,7 @@ func (s *UnifiedAIService) MatchPenPal(ctx context.Context, req *models.AIMatchR
 	if time.Until(delayUntil) > time.Minute {
 		delayDuration := time.Until(delayUntil)
 		log.Printf("🕐 [UnifiedAIService] 延迟执行匹配: %s (%s)", delayDescription, delayDuration.String())
-		
+
 		// 创建延迟任务
 		task := &models.DelayQueueRecord{
 			ID:           uuid.New().String(),
@@ -178,22 +178,22 @@ func (s *UnifiedAIService) MatchPenPal(ctx context.Context, req *models.AIMatchR
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
 		}
-		
+
 		// 调度延迟任务
 		if err := s.db.Create(task).Error; err != nil {
 			log.Printf("❌ [UnifiedAIService] 创建延迟匹配任务失败: %v", err)
 			// 降级：立即执行匹配
 			return s.performImmediateMatch(ctx, req, matchConfig)
 		}
-		
+
 		// 返回处理中状态
 		return &models.AIMatchResponse{
 			Status:  "processing",
 			Message: fmt.Sprintf("正在为您寻找最合适的笔友，%s", delayDescription),
 			Metadata: map[string]interface{}{
-				"delay_until":     delayUntil,
+				"delay_until":       delayUntil,
 				"delay_description": delayDescription,
-				"task_id":         task.ID,
+				"task_id":           task.ID,
 			},
 		}, nil
 	}
@@ -206,17 +206,17 @@ func (s *UnifiedAIService) MatchPenPal(ctx context.Context, req *models.AIMatchR
 // calculatePreciseDelay 计算精确的延迟时间
 func (s *UnifiedAIService) calculatePreciseDelay(req *models.AIMatchRequest) (time.Time, string, error) {
 	now := time.Now()
-	
+
 	// 如果使用新的DelayConfig
 	if req.DelayConfig != nil {
 		return s.calculateDelayFromConfig(req.DelayConfig, now)
 	}
-	
+
 	// 向后兼容旧的DelayOption
 	if req.DelayOption != "" {
 		return s.calculateDelayFromOption(req.DelayOption, now), "", nil
 	}
-	
+
 	// 默认立即执行
 	return now, "立即匹配", nil
 }
@@ -226,25 +226,25 @@ func (s *UnifiedAIService) calculateDelayFromConfig(config *models.DelayConfig, 
 	switch config.Type {
 	case "preset":
 		return s.calculatePresetDelay(config.PresetOption, baseTime)
-		
+
 	case "relative":
 		targetTime := baseTime.
 			Add(time.Duration(config.RelativeDays) * 24 * time.Hour).
 			Add(time.Duration(config.RelativeHours) * time.Hour).
 			Add(time.Duration(config.RelativeMinutes) * time.Minute)
-			
+
 		description := s.formatRelativeTimeDescription(config, targetTime, baseTime)
 		return targetTime, description, nil
-		
+
 	case "absolute":
 		if config.AbsoluteTime == nil {
 			return baseTime, "立即匹配", fmt.Errorf("绝对时间未指定")
 		}
-		
+
 		targetTime := *config.AbsoluteTime
 		description := s.formatAbsoluteTimeDescription(targetTime, baseTime)
 		return targetTime, description, nil
-		
+
 	default:
 		return baseTime, "立即匹配", fmt.Errorf("未知的延迟类型: %s", config.Type)
 	}
@@ -256,22 +256,22 @@ func (s *UnifiedAIService) calculatePresetDelay(preset string, baseTime time.Tim
 	case "1hour":
 		targetTime := baseTime.Add(1 * time.Hour)
 		return targetTime, "1小时后完成匹配", nil
-		
+
 	case "3hours":
 		targetTime := baseTime.Add(3 * time.Hour)
 		return targetTime, "3小时后完成匹配", nil
-		
+
 	case "tomorrow":
 		// 明天同一时间
 		targetTime := baseTime.Add(24 * time.Hour)
 		return targetTime, "明天此时完成匹配", nil
-		
+
 	case "tomorrow_morning":
 		// 明天早上8点
 		tomorrow := baseTime.Add(24 * time.Hour)
 		targetTime := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 8, 0, 0, 0, tomorrow.Location())
 		return targetTime, "明天早上8点完成匹配", nil
-		
+
 	case "weekend":
 		// 下个周末（周六上午10点）
 		daysUntilSaturday := (6 - int(baseTime.Weekday()) + 7) % 7
@@ -281,12 +281,12 @@ func (s *UnifiedAIService) calculatePresetDelay(preset string, baseTime time.Tim
 		saturday := baseTime.Add(time.Duration(daysUntilSaturday) * 24 * time.Hour)
 		targetTime := time.Date(saturday.Year(), saturday.Month(), saturday.Day(), 10, 0, 0, 0, saturday.Location())
 		return targetTime, "周末上午完成匹配", nil
-		
+
 	case "nextweek":
 		// 下周同一天同一时间
 		targetTime := baseTime.Add(7 * 24 * time.Hour)
 		return targetTime, "下周此时完成匹配", nil
-		
+
 	default:
 		// 未知预设，使用随机延迟
 		minutes := rand.Intn(30) + 10 // 10-40分钟随机
@@ -302,7 +302,7 @@ func (s *UnifiedAIService) calculateDelayFromOption(option string, baseTime time
 		minutes := rand.Intn(10) + 1 // 1-10分钟
 		return baseTime.Add(time.Duration(minutes) * time.Minute)
 	case "normal":
-		minutes := rand.Intn(21) + 10 // 10-30分钟  
+		minutes := rand.Intn(21) + 10 // 10-30分钟
 		return baseTime.Add(time.Duration(minutes) * time.Minute)
 	case "slow":
 		minutes := rand.Intn(31) + 30 // 30-60分钟
@@ -319,10 +319,10 @@ func (s *UnifiedAIService) formatRelativeTimeDescription(config *models.DelayCon
 		duration := targetTime.Sub(baseTime)
 		return fmt.Sprintf("%s（%s后）", config.UserDescription, s.formatDuration(duration))
 	}
-	
+
 	// 生成默认描述
 	_ = int(targetTime.Sub(baseTime).Minutes()) // 未使用，保留以备将来扩展
-	
+
 	if config.RelativeDays > 0 {
 		if config.RelativeHours == 0 && config.RelativeMinutes == 0 {
 			if config.RelativeDays == 1 {
@@ -332,38 +332,38 @@ func (s *UnifiedAIService) formatRelativeTimeDescription(config *models.DelayCon
 		}
 		return fmt.Sprintf("%d天%d小时后完成匹配", config.RelativeDays, config.RelativeHours)
 	}
-	
+
 	if config.RelativeHours > 0 {
 		if config.RelativeMinutes == 0 {
 			return fmt.Sprintf("%d小时后完成匹配", config.RelativeHours)
 		}
 		return fmt.Sprintf("%d小时%d分钟后完成匹配", config.RelativeHours, config.RelativeMinutes)
 	}
-	
+
 	return fmt.Sprintf("%d分钟后完成匹配", config.RelativeMinutes)
 }
 
 // formatAbsoluteTimeDescription 格式化绝对时间的人性化描述
 func (s *UnifiedAIService) formatAbsoluteTimeDescription(targetTime, baseTime time.Time) string {
 	duration := targetTime.Sub(baseTime)
-	
+
 	if duration < 0 {
 		return "指定时间已过，将立即执行匹配"
 	}
-	
+
 	// 判断是今天、明天还是其他日期
 	targetDate := targetTime.Format("2006-01-02")
 	baseDate := baseTime.Format("2006-01-02")
-	
+
 	if targetDate == baseDate {
 		return fmt.Sprintf("今天%s完成匹配", targetTime.Format("15:04"))
 	}
-	
+
 	tomorrow := baseTime.Add(24 * time.Hour)
 	if targetDate == tomorrow.Format("2006-01-02") {
 		return fmt.Sprintf("明天%s完成匹配", targetTime.Format("15:04"))
 	}
-	
+
 	// 其他日期
 	return fmt.Sprintf("%s完成匹配", targetTime.Format("1月2日 15:04"))
 }
@@ -372,7 +372,7 @@ func (s *UnifiedAIService) formatAbsoluteTimeDescription(targetTime, baseTime ti
 func (s *UnifiedAIService) formatDuration(d time.Duration) string {
 	hours := int(d.Hours())
 	minutes := int(d.Minutes()) % 60
-	
+
 	if hours > 24 {
 		days := hours / 24
 		remainingHours := hours % 24
@@ -381,14 +381,14 @@ func (s *UnifiedAIService) formatDuration(d time.Duration) string {
 		}
 		return fmt.Sprintf("%d天%d小时", days, remainingHours)
 	}
-	
+
 	if hours > 0 {
 		if minutes == 0 {
 			return fmt.Sprintf("%d小时", hours)
 		}
 		return fmt.Sprintf("%d小时%d分钟", hours, minutes)
 	}
-	
+
 	return fmt.Sprintf("%d分钟", minutes)
 }
 
@@ -563,7 +563,7 @@ func (s *UnifiedAIService) generateAIInspirations(ctx context.Context, req *mode
 	}
 
 	// 构建AI生成提示
-	prompt := fmt.Sprintf("%s\n\n请为主题'%s'生成一条写作灵感。要求：温暖人文、激发创作、具体可操作。", 
+	prompt := fmt.Sprintf("%s\n\n请为主题'%s'生成一条写作灵感。要求：温暖人文、激发创作、具体可操作。",
 		systemPrompt.Prompt, req.Theme)
 
 	// 调用AI生成

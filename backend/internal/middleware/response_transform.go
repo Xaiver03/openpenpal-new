@@ -14,7 +14,7 @@ func ResponseTransformMiddleware() gin.HandlerFunc {
 		// Create a custom writer
 		w := &responseWriter{
 			ResponseWriter: c.Writer,
-			body:          &bytes.Buffer{},
+			body:           &bytes.Buffer{},
 		}
 		c.Writer = w
 
@@ -22,14 +22,14 @@ func ResponseTransformMiddleware() gin.HandlerFunc {
 		c.Next()
 
 		// Transform the response if it's JSON
-		if w.Header().Get("Content-Type") == "application/json" || 
-		   strings.Contains(w.Header().Get("Content-Type"), "application/json") {
+		if w.Header().Get("Content-Type") == "application/json" ||
+			strings.Contains(w.Header().Get("Content-Type"), "application/json") {
 			// Parse the response
 			var data interface{}
 			if err := json.Unmarshal(w.body.Bytes(), &data); err == nil {
 				// Transform to camelCase
 				transformed := transformToCamelCase(data)
-				
+
 				// Write transformed response
 				transformedBytes, _ := json.Marshal(transformed)
 				// Content-Length will be set automatically by Gin
@@ -87,13 +87,13 @@ func snakeToCamelCase(s string) string {
 	if s == "id" || s == "ok" {
 		return s
 	}
-	
+
 	// Split by underscore
 	parts := strings.Split(s, "_")
 	if len(parts) == 1 {
 		return s
 	}
-	
+
 	// Convert to camelCase
 	result := parts[0]
 	for i := 1; i < len(parts); i++ {
@@ -101,6 +101,6 @@ func snakeToCamelCase(s string) string {
 			result += strings.ToUpper(parts[i][:1]) + parts[i][1:]
 		}
 	}
-	
+
 	return result
 }

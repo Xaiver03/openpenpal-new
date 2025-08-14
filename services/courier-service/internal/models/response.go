@@ -33,10 +33,10 @@ func ErrorResponse(code int, message string, err interface{}) APIResponse {
 
 // 状态码常量
 const (
-	CodeSuccess           = 0   // 成功
-	CodeParamError       = 1   // 参数错误
-	CodeUnauthorized     = 2   // 无权限
-	CodeNotFound         = 3   // 资源不存在
-	CodeConflict         = 4   // 冲突
-	CodeInternalError    = 500 // 服务器内部错误
+	CodeSuccess       = 0   // 成功
+	CodeParamError    = 1   // 参数错误
+	CodeUnauthorized  = 2   // 无权限
+	CodeNotFound      = 3   // 资源不存在
+	CodeConflict      = 4   // 冲突
+	CodeInternalError = 500 // 服务器内部错误
 )

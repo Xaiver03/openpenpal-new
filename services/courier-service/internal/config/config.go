@@ -11,11 +11,11 @@ import (
 )
 
 type Config struct {
-	Port        string
-	DatabaseURL string
-	RedisURL    string
-	JWTSecret   string
-	Environment string
+	Port         string
+	DatabaseURL  string
+	RedisURL     string
+	JWTSecret    string
+	Environment  string
 	WebSocketURL string
 }
 
@@ -24,11 +24,11 @@ func Load() *Config {
 	godotenv.Load()
 
 	return &Config{
-		Port:        getEnv("PORT", "8002"),
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://rocalight:password@localhost:5432/openpenpal?sslmode=disable"),
-		RedisURL:    getEnv("REDIS_URL", "redis://localhost:6379/0"),
-		JWTSecret:   getEnv("JWT_SECRET", "your-super-secret-jwt-key"),
-		Environment: getEnv("ENVIRONMENT", "development"),
+		Port:         getEnv("PORT", "8002"),
+		DatabaseURL:  getEnv("DATABASE_URL", "postgres://rocalight:password@localhost:5432/openpenpal?sslmode=disable"),
+		RedisURL:     getEnv("REDIS_URL", "redis://localhost:6379/0"),
+		JWTSecret:    getEnv("JWT_SECRET", "your-super-secret-jwt-key"),
+		Environment:  getEnv("ENVIRONMENT", "development"),
 		WebSocketURL: getEnv("WEBSOCKET_URL", "ws://localhost:8080/ws"),
 	}
 }
@@ -70,10 +70,10 @@ func autoMigrate(db *gorm.DB) error {
 			Name string
 			Type string
 		}
-		
+
 		// 需要检查的新列
 		newColumns := []string{"zone_code", "zone_type", "parent_id", "created_by_id", "points"}
-		
+
 		for _, col := range newColumns {
 			if !db.Migrator().HasColumn(&models.Courier{}, col) {
 				// 使用原生SQL添加列，避免GORM尝试修改其他列
@@ -86,7 +86,7 @@ func autoMigrate(db *gorm.DB) error {
 				case "points":
 					addColumnSQL = `ALTER TABLE couriers ADD COLUMN IF NOT EXISTS ` + col + ` INTEGER DEFAULT 0`
 				}
-				
+
 				if addColumnSQL != "" {
 					if err := db.Exec(addColumnSQL).Error; err != nil {
 						// 忽略列已存在的错误
@@ -104,7 +104,7 @@ func autoMigrate(db *gorm.DB) error {
 			return err
 		}
 	}
-	
+
 	// 迁移其他模型
 	err := db.AutoMigrate(
 		&models.CourierLevelModel{},
@@ -135,6 +135,6 @@ func autoMigrate(db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }

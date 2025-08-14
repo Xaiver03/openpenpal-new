@@ -43,9 +43,9 @@ const nextConfig = {
   // PWA支持
   generateEtags: false,
   
-  // 临时禁用TypeScript检查以解决构建问题
+  // TypeScript严格检查已启用
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   
   // Webpack优化

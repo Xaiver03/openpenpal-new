@@ -67,7 +67,7 @@ func (suite *CourierServiceSimpleTestSuite) TestApplyCourier_Success() {
 	suite.Equal("test@example.com", courier.Contact)
 	suite.Equal("北京大学", courier.School)
 	suite.Equal("approved", courier.Status) // Auto-approved based on criteria
-	suite.Equal(1, courier.Level) // Default level 1
+	suite.Equal(1, courier.Level)           // Default level 1
 }
 
 // TestApplyCourier_DuplicateApplication 测试重复申请
@@ -197,7 +197,7 @@ func (suite *CourierServiceSimpleTestSuite) TestGetCouriersByZone_Success() {
 	zones := []string{"BJDX", "QH", "BJDX"}
 	for i, zone := range zones {
 		user := config.CreateTestUser(suite.db, "zone_user_"+string(rune('A'+i)), models.RoleUser)
-		
+
 		// 直接创建已审批的信使记录
 		courier := &models.Courier{
 			ID:      "courier-" + string(rune('A'+i)),
@@ -228,7 +228,7 @@ func (suite *CourierServiceSimpleTestSuite) TestGetCouriersByZone_Success() {
 func (suite *CourierServiceSimpleTestSuite) TestValidateOPCodeAccess_Basic() {
 	// 创建信使用户
 	courierUser := config.CreateTestUser(suite.db, "courier_opcode", models.RoleCourierLevel2)
-	
+
 	// 直接创建已审批的信使记录
 	courier := &models.Courier{
 		ID:                  "courier-opcode",

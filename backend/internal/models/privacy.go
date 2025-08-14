@@ -27,12 +27,12 @@ type ProfileVisibility struct {
 
 // SocialPrivacy 社交隐私设置
 type SocialPrivacy struct {
-	AllowFollowRequests   bool `json:"allow_follow_requests" gorm:"default:true"`
-	AllowComments         bool `json:"allow_comments" gorm:"default:true"`
-	AllowDirectMessages   bool `json:"allow_direct_messages" gorm:"default:true"`
-	ShowInDiscovery       bool `json:"show_in_discovery" gorm:"default:true"`
-	ShowInSuggestions     bool `json:"show_in_suggestions" gorm:"default:true"`
-	AllowSchoolSearch     bool `json:"allow_school_search" gorm:"default:true"`
+	AllowFollowRequests bool `json:"allow_follow_requests" gorm:"default:true"`
+	AllowComments       bool `json:"allow_comments" gorm:"default:true"`
+	AllowDirectMessages bool `json:"allow_direct_messages" gorm:"default:true"`
+	ShowInDiscovery     bool `json:"show_in_discovery" gorm:"default:true"`
+	ShowInSuggestions   bool `json:"show_in_suggestions" gorm:"default:true"`
+	AllowSchoolSearch   bool `json:"allow_school_search" gorm:"default:true"`
 }
 
 // NotificationPrivacy 通知隐私设置
@@ -48,24 +48,24 @@ type NotificationPrivacy struct {
 
 // BlockingSettings 屏蔽设置
 type BlockingSettings struct {
-	BlockedUsers           []string `json:"blocked_users" gorm:"type:json"`
-	MutedUsers            []string `json:"muted_users" gorm:"type:json"`
-	BlockedKeywords       []string `json:"blocked_keywords" gorm:"type:json"`
-	AutoBlockNewAccounts  bool     `json:"auto_block_new_accounts" gorm:"default:false"`
-	BlockNonSchoolUsers   bool     `json:"block_non_school_users" gorm:"default:false"`
+	BlockedUsers         []string `json:"blocked_users" gorm:"type:json"`
+	MutedUsers           []string `json:"muted_users" gorm:"type:json"`
+	BlockedKeywords      []string `json:"blocked_keywords" gorm:"type:json"`
+	AutoBlockNewAccounts bool     `json:"auto_block_new_accounts" gorm:"default:false"`
+	BlockNonSchoolUsers  bool     `json:"block_non_school_users" gorm:"default:false"`
 }
 
 // PrivacySettings 用户隐私设置
 type PrivacySettings struct {
-	ID                   string               `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	UserID               string               `json:"user_id" gorm:"type:varchar(36);uniqueIndex;not null"`
-	ProfileVisibility    ProfileVisibility    `json:"profile_visibility" gorm:"embedded;embeddedPrefix:profile_"`
-	SocialPrivacy        SocialPrivacy        `json:"social_privacy" gorm:"embedded;embeddedPrefix:social_"`
-	NotificationPrivacy  NotificationPrivacy  `json:"notification_privacy" gorm:"embedded;embeddedPrefix:notification_"`
-	BlockingSettings     BlockingSettings     `json:"blocking_settings" gorm:"embedded;embeddedPrefix:blocking_"`
-	CreatedAt            time.Time            `json:"created_at"`
-	UpdatedAt            time.Time            `json:"updated_at"`
-	
+	ID                  string              `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	UserID              string              `json:"user_id" gorm:"type:varchar(36);uniqueIndex;not null"`
+	ProfileVisibility   ProfileVisibility   `json:"profile_visibility" gorm:"embedded;embeddedPrefix:profile_"`
+	SocialPrivacy       SocialPrivacy       `json:"social_privacy" gorm:"embedded;embeddedPrefix:social_"`
+	NotificationPrivacy NotificationPrivacy `json:"notification_privacy" gorm:"embedded;embeddedPrefix:notification_"`
+	BlockingSettings    BlockingSettings    `json:"blocking_settings" gorm:"embedded;embeddedPrefix:blocking_"`
+	CreatedAt           time.Time           `json:"created_at"`
+	UpdatedAt           time.Time           `json:"updated_at"`
+
 	// Associations
 	User *User `json:"user,omitempty" gorm:"foreignKey:UserID"`
 }
@@ -101,7 +101,7 @@ type BlockUserRequest struct {
 	UserID string `json:"user_id" binding:"required"`
 }
 
-// MuteUserRequest 静音用户请求  
+// MuteUserRequest 静音用户请求
 type MuteUserRequest struct {
 	UserID string `json:"user_id" binding:"required"`
 }
@@ -227,12 +227,12 @@ func GetDefaultPrivacySettings(userID string) *PrivacySettings {
 			LastActive:   PrivacySchool,
 		},
 		SocialPrivacy: SocialPrivacy{
-			AllowFollowRequests:   true,
-			AllowComments:         true,
-			AllowDirectMessages:   true,
-			ShowInDiscovery:       true,
-			ShowInSuggestions:     true,
-			AllowSchoolSearch:     true,
+			AllowFollowRequests: true,
+			AllowComments:       true,
+			AllowDirectMessages: true,
+			ShowInDiscovery:     true,
+			ShowInSuggestions:   true,
+			AllowSchoolSearch:   true,
 		},
 		NotificationPrivacy: NotificationPrivacy{
 			NewFollowers:       true,
@@ -244,7 +244,7 @@ func GetDefaultPrivacySettings(userID string) *PrivacySettings {
 			EmailNotifications: false,
 		},
 		BlockingSettings: BlockingSettings{
-			BlockedUsers:          make([]string, 0),
+			BlockedUsers:         make([]string, 0),
 			MutedUsers:           make([]string, 0),
 			BlockedKeywords:      make([]string, 0),
 			AutoBlockNewAccounts: false,
@@ -283,7 +283,7 @@ func indexOf(s, substr string) int {
 	if len(substr) > len(s) {
 		return -1
 	}
-	
+
 	for i := 0; i <= len(s)-len(substr); i++ {
 		match := true
 		for j := 0; j < len(substr); j++ {

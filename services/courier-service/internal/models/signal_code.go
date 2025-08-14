@@ -8,83 +8,83 @@ import (
 // SignalCode 六位信号编码表 - OP Code System核心实现
 // 格式: AABBCC，其中AA=学校代码(2位)，BB=片区代码(2位)，CC=具体位置(2位)
 type SignalCode struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	Code        string    `gorm:"not null;unique;size:6" json:"code"`        // 六位编码，如 "PK5F3D"
-	
+	ID   uint   `gorm:"primaryKey" json:"id"`
+	Code string `gorm:"not null;unique;size:6" json:"code"` // 六位编码，如 "PK5F3D"
+
 	// OP Code结构化字段
-	SchoolCode  string    `gorm:"not null;size:2;index" json:"school_code"`  // 前2位: 学校代码 (如: PK)
-	AreaCode    string    `gorm:"not null;size:2;index" json:"area_code"`    // 中2位: 片区代码 (如: 5F)
-	PointCode   string    `gorm:"not null;size:2" json:"point_code"`         // 后2位: 位置代码 (如: 3D)
-	
+	SchoolCode string `gorm:"not null;size:2;index" json:"school_code"` // 前2位: 学校代码 (如: PK)
+	AreaCode   string `gorm:"not null;size:2;index" json:"area_code"`   // 中2位: 片区代码 (如: 5F)
+	PointCode  string `gorm:"not null;size:2" json:"point_code"`        // 后2位: 位置代码 (如: 3D)
+
 	// 类型和位置信息
-	CodeType    string    `gorm:"not null;index" json:"code_type"`           // 编码类型：dormitory, shop, box, club
-	SchoolID    string    `gorm:"index" json:"school_id"`                    // 所属学校ID
-	AreaID      string    `gorm:"index" json:"area_id"`                      // 所属片区ID
-	BuildingID  *string   `json:"building_id,omitempty"`                     // 所属楼栋ID（可选）
-	ZoneCode    string    `gorm:"index" json:"zone_code"`                    // 区域编码（兼容旧系统）
-	
+	CodeType   string  `gorm:"not null;index" json:"code_type"` // 编码类型：dormitory, shop, box, club
+	SchoolID   string  `gorm:"index" json:"school_id"`          // 所属学校ID
+	AreaID     string  `gorm:"index" json:"area_id"`            // 所属片区ID
+	BuildingID *string `json:"building_id,omitempty"`           // 所属楼栋ID（可选）
+	ZoneCode   string  `gorm:"index" json:"zone_code"`          // 区域编码（兼容旧系统）
+
 	// 隐私控制
-	IsPublic    bool      `gorm:"default:false" json:"is_public"`            // 后两位是否公开显示
-	
+	IsPublic bool `gorm:"default:false" json:"is_public"` // 后两位是否公开显示
+
 	// 使用状态
-	IsUsed      bool      `gorm:"default:false;index" json:"is_used"`        // 是否已使用
-	IsActive    bool      `gorm:"default:true;index" json:"is_active"`       // 是否激活
-	UsedBy      *string   `json:"used_by,omitempty"`                         // 使用者ID（信使或用户）
-	UsedAt      *time.Time `json:"used_at,omitempty"`                        // 使用时间
-	LetterID    *string   `json:"letter_id,omitempty"`                       // 关联的信件ID
-	
+	IsUsed   bool       `gorm:"default:false;index" json:"is_used"`  // 是否已使用
+	IsActive bool       `gorm:"default:true;index" json:"is_active"` // 是否激活
+	UsedBy   *string    `json:"used_by,omitempty"`                   // 使用者ID（信使或用户）
+	UsedAt   *time.Time `json:"used_at,omitempty"`                   // 使用时间
+	LetterID *string    `json:"letter_id,omitempty"`                 // 关联的信件ID
+
 	// 元数据
-	Description string    `json:"description"`                               // 编码描述
-	CreatedBy   string    `gorm:"not null" json:"created_by"`                // 创建者ID
+	Description string    `json:"description"`                // 编码描述
+	CreatedBy   string    `gorm:"not null" json:"created_by"` // 创建者ID
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // SignalCodeBatch 信号编码批次表
 type SignalCodeBatch struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	BatchNo     string    `gorm:"not null;unique" json:"batch_no"`           // 批次号
-	SchoolID    string    `gorm:"not null;index" json:"school_id"`           // 学校ID
-	AreaID      string    `gorm:"index" json:"area_id"`                      // 片区ID
-	CodeType    string    `gorm:"not null" json:"code_type"`                 // 编码类型
-	StartCode   string    `gorm:"not null" json:"start_code"`                // 起始编码
-	EndCode     string    `gorm:"not null" json:"end_code"`                  // 结束编码
-	TotalCount  int       `gorm:"not null" json:"total_count"`               // 总数量
-	UsedCount   int       `gorm:"default:0" json:"used_count"`               // 已使用数量
-	Status      string    `gorm:"default:active" json:"status"`              // 批次状态: active, exhausted, suspended
-	CreatedBy   string    `gorm:"not null" json:"created_by"`                // 创建者ID
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	BatchNo    string    `gorm:"not null;unique" json:"batch_no"` // 批次号
+	SchoolID   string    `gorm:"not null;index" json:"school_id"` // 学校ID
+	AreaID     string    `gorm:"index" json:"area_id"`            // 片区ID
+	CodeType   string    `gorm:"not null" json:"code_type"`       // 编码类型
+	StartCode  string    `gorm:"not null" json:"start_code"`      // 起始编码
+	EndCode    string    `gorm:"not null" json:"end_code"`        // 结束编码
+	TotalCount int       `gorm:"not null" json:"total_count"`     // 总数量
+	UsedCount  int       `gorm:"default:0" json:"used_count"`     // 已使用数量
+	Status     string    `gorm:"default:active" json:"status"`    // 批次状态: active, exhausted, suspended
+	CreatedBy  string    `gorm:"not null" json:"created_by"`      // 创建者ID
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // SignalCodeUsageLog 编码使用日志表
 type SignalCodeUsageLog struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	Code        string    `gorm:"not null;index" json:"code"`                // 六位编码
-	Action      string    `gorm:"not null" json:"action"`                    // 操作类型: assign, use, release, deactivate
-	UserID      string    `gorm:"not null;index" json:"user_id"`             // 操作用户ID
-	UserType    string    `gorm:"not null" json:"user_type"`                 // 用户类型: courier, admin, system
-	TargetID    *string   `json:"target_id,omitempty"`                       // 目标ID（信件ID或其他）
-	TargetType  *string   `json:"target_type,omitempty"`                     // 目标类型: letter, zone, etc.
-	OldStatus   string    `json:"old_status"`                                // 原状态
-	NewStatus   string    `json:"new_status"`                                // 新状态
-	Reason      string    `json:"reason"`                                    // 操作原因
-	Metadata    string    `gorm:"type:json" json:"metadata"`                 // 额外元数据JSON
-	IPAddress   string    `json:"ip_address"`                                // 操作IP
-	CreatedAt   time.Time `json:"created_at"`
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	Code       string    `gorm:"not null;index" json:"code"`    // 六位编码
+	Action     string    `gorm:"not null" json:"action"`        // 操作类型: assign, use, release, deactivate
+	UserID     string    `gorm:"not null;index" json:"user_id"` // 操作用户ID
+	UserType   string    `gorm:"not null" json:"user_type"`     // 用户类型: courier, admin, system
+	TargetID   *string   `json:"target_id,omitempty"`           // 目标ID（信件ID或其他）
+	TargetType *string   `json:"target_type,omitempty"`         // 目标类型: letter, zone, etc.
+	OldStatus  string    `json:"old_status"`                    // 原状态
+	NewStatus  string    `json:"new_status"`                    // 新状态
+	Reason     string    `json:"reason"`                        // 操作原因
+	Metadata   string    `gorm:"type:json" json:"metadata"`     // 额外元数据JSON
+	IPAddress  string    `json:"ip_address"`                    // 操作IP
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 // SignalCodeRule 编码生成规则表
 type SignalCodeRule struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
-	RuleName    string    `gorm:"not null;unique" json:"rule_name"`          // 规则名称
-	SchoolID    string    `gorm:"not null;index" json:"school_id"`           // 学校ID
-	CodeType    string    `gorm:"not null" json:"code_type"`                 // 编码类型
-	Pattern     string    `gorm:"not null" json:"pattern"`                   // 编码模式，如 "##@@##"
-	Description string    `json:"description"`                               // 规则描述
-	IsActive    bool      `gorm:"default:true" json:"is_active"`             // 是否激活
-	Priority    int       `gorm:"default:0" json:"priority"`                 // 优先级
-	CreatedBy   string    `gorm:"not null" json:"created_by"`                // 创建者ID
+	RuleName    string    `gorm:"not null;unique" json:"rule_name"` // 规则名称
+	SchoolID    string    `gorm:"not null;index" json:"school_id"`  // 学校ID
+	CodeType    string    `gorm:"not null" json:"code_type"`        // 编码类型
+	Pattern     string    `gorm:"not null" json:"pattern"`          // 编码模式，如 "##@@##"
+	Description string    `json:"description"`                      // 规则描述
+	IsActive    bool      `gorm:"default:true" json:"is_active"`    // 是否激活
+	Priority    int       `gorm:"default:0" json:"priority"`        // 优先级
+	CreatedBy   string    `gorm:"not null" json:"created_by"`       // 创建者ID
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -95,7 +95,7 @@ const (
 	SignalCodeTypeShop      = "shop"      // 商店
 	SignalCodeTypeBox       = "box"       // 投递箱
 	SignalCodeTypeClub      = "club"      // 社团空间
-	
+
 	// 兼容旧系统
 	SignalCodeTypeLetter   = "letter"   // 信件编码（废弃）
 	SignalCodeTypeZone     = "zone"     // 区域编码（废弃）
@@ -115,9 +115,9 @@ const (
 
 // 批次状态常量
 const (
-	BatchStatusActive     = "active"     // 活跃
-	BatchStatusExhausted  = "exhausted"  // 已用尽
-	BatchStatusSuspended  = "suspended"  // 已暂停
+	BatchStatusActive    = "active"    // 活跃
+	BatchStatusExhausted = "exhausted" // 已用尽
+	BatchStatusSuspended = "suspended" // 已暂停
 )
 
 // 操作类型常量
@@ -131,12 +131,12 @@ const (
 
 // SignalCodeRequest 编码申请请求
 type SignalCodeRequest struct {
-	SchoolID    string `json:"school_id" binding:"required"`
-	AreaID      string `json:"area_id" binding:"required"`
-	CodeType    string `json:"code_type" binding:"required,oneof=letter zone school building special"`
-	Quantity    int    `json:"quantity" binding:"required,min=1,max=1000"`
-	Reason      string `json:"reason" binding:"required"`
-	BuildingID  string `json:"building_id,omitempty"`
+	SchoolID   string `json:"school_id" binding:"required"`
+	AreaID     string `json:"area_id" binding:"required"`
+	CodeType   string `json:"code_type" binding:"required,oneof=letter zone school building special"`
+	Quantity   int    `json:"quantity" binding:"required,min=1,max=1000"`
+	Reason     string `json:"reason" binding:"required"`
+	BuildingID string `json:"building_id,omitempty"`
 }
 
 // SignalCodeAssignRequest 编码分配请求
@@ -150,37 +150,37 @@ type SignalCodeAssignRequest struct {
 
 // SignalCodeBatchRequest 批量编码请求
 type SignalCodeBatchRequest struct {
-	SchoolID   string `json:"school_id" binding:"required"`
-	AreaID     string `json:"area_id" binding:"required"`
-	CodeType   string `json:"code_type" binding:"required"`
-	StartCode  string `json:"start_code" binding:"required,len=6"`
-	EndCode    string `json:"end_code" binding:"required,len=6"`
-	BatchNo    string `json:"batch_no" binding:"required"`
+	SchoolID  string `json:"school_id" binding:"required"`
+	AreaID    string `json:"area_id" binding:"required"`
+	CodeType  string `json:"code_type" binding:"required"`
+	StartCode string `json:"start_code" binding:"required,len=6"`
+	EndCode   string `json:"end_code" binding:"required,len=6"`
+	BatchNo   string `json:"batch_no" binding:"required"`
 }
 
 // SignalCodeSearchRequest 编码搜索请求
 type SignalCodeSearchRequest struct {
-	Code       string `form:"code"`
-	SchoolID   string `form:"school_id"`
-	AreaID     string `form:"area_id"`
-	CodeType   string `form:"code_type"`
-	IsUsed     *bool  `form:"is_used"`
-	IsActive   *bool  `form:"is_active"`
-	UsedBy     string `form:"used_by"`
-	Page       int    `form:"page,default=1"`
-	PageSize   int    `form:"page_size,default=20"`
+	Code     string `form:"code"`
+	SchoolID string `form:"school_id"`
+	AreaID   string `form:"area_id"`
+	CodeType string `form:"code_type"`
+	IsUsed   *bool  `form:"is_used"`
+	IsActive *bool  `form:"is_active"`
+	UsedBy   string `form:"used_by"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"page_size,default=20"`
 }
 
 // SignalCodeStats 编码统计信息
 type SignalCodeStats struct {
-	SchoolID      string  `json:"school_id"`
-	SchoolName    string  `json:"school_name"`
-	TotalCodes    int64   `json:"total_codes"`
-	UsedCodes     int64   `json:"used_codes"`
-	AvailableCodes int64  `json:"available_codes"`
-	UsageRate     float64 `json:"usage_rate"`
-	ByType        map[string]int `json:"by_type"`
-	ByArea        map[string]int `json:"by_area"`
+	SchoolID       string         `json:"school_id"`
+	SchoolName     string         `json:"school_name"`
+	TotalCodes     int64          `json:"total_codes"`
+	UsedCodes      int64          `json:"used_codes"`
+	AvailableCodes int64          `json:"available_codes"`
+	UsageRate      float64        `json:"usage_rate"`
+	ByType         map[string]int `json:"by_type"`
+	ByArea         map[string]int `json:"by_area"`
 }
 
 // GenerateOPCode 生成符合PRD规范的OP Code

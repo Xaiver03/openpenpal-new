@@ -27,7 +27,7 @@ func (s *LocationService) CalculateDistance(lat1, lon1, lat2, lon2 float64) floa
 
 	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
 		math.Cos(lat1Rad)*math.Cos(lat2Rad)*
-		math.Sin(dLon/2)*math.Sin(dLon/2)
+			math.Sin(dLon/2)*math.Sin(dLon/2)
 
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
@@ -55,10 +55,10 @@ func (s *LocationService) FindNearbyTasks(courierLat, courierLng float64, radius
 // EstimateDeliveryTime 估算投递时间
 func (s *LocationService) EstimateDeliveryTime(pickupLat, pickupLng, deliveryLat, deliveryLng float64) string {
 	distance := s.CalculateDistance(pickupLat, pickupLng, deliveryLat, deliveryLng)
-	
+
 	// 简单的时间估算：假设平均速度15km/h（考虑校园内步行+等待时间）
 	timeHours := distance / 15.0
-	
+
 	if timeHours < 0.5 {
 		return "30分钟内"
 	} else if timeHours < 1.0 {
@@ -73,13 +73,13 @@ func (s *LocationService) EstimateDeliveryTime(pickupLat, pickupLng, deliveryLat
 // CalculateReward 根据距离计算奖励
 func (s *LocationService) CalculateReward(pickupLat, pickupLng, deliveryLat, deliveryLng float64, priority string) float64 {
 	distance := s.CalculateDistance(pickupLat, pickupLng, deliveryLat, deliveryLng)
-	
+
 	// 基础奖励
 	baseReward := 5.0
-	
+
 	// 距离奖励：每公里增加1元
 	distanceReward := distance * 1.0
-	
+
 	// 优先级奖励
 	priorityReward := 0.0
 	switch priority {
@@ -88,16 +88,16 @@ func (s *LocationService) CalculateReward(pickupLat, pickupLng, deliveryLat, del
 	case models.TaskPriorityExpress:
 		priorityReward = 5.0
 	}
-	
+
 	total := baseReward + distanceReward + priorityReward
-	
+
 	// 最低奖励3元，最高奖励50元
 	if total < 3.0 {
 		total = 3.0
 	} else if total > 50.0 {
 		total = 50.0
 	}
-	
+
 	return math.Round(total*100) / 100 // 保留两位小数
 }
 
@@ -115,17 +115,17 @@ func (s *LocationService) FormatDistance(distanceKm float64) string {
 func (s *LocationService) ParseLocation(location string) (float64, float64, error) {
 	// 这里可以集成百度地图、高德地图等地理编码API
 	// 暂时返回默认值
-	
+
 	// 北京大学的大致坐标
 	if location == "北京大学" || location == "北大" {
 		return 39.9912, 116.3064, nil
 	}
-	
+
 	// 清华大学的大致坐标
 	if location == "清华大学" || location == "清华" {
 		return 40.0038, 116.3265, nil
 	}
-	
+
 	// 默认返回北京市中心
 	return 39.9042, 116.4074, nil
 }
@@ -134,16 +134,16 @@ func (s *LocationService) ParseLocation(location string) (float64, float64, erro
 func (s *LocationService) GetZoneFromCoordinate(lat, lng float64) string {
 	// 这里可以实现更复杂的区域判断逻辑
 	// 暂时简单处理
-	
+
 	// 北京大学范围
 	if lat >= 39.985 && lat <= 39.997 && lng >= 116.300 && lng <= 116.315 {
 		return "北京大学"
 	}
-	
+
 	// 清华大学范围
 	if lat >= 39.998 && lat <= 40.010 && lng >= 116.320 && lng <= 116.335 {
 		return "清华大学"
 	}
-	
+
 	return "其他区域"
 }

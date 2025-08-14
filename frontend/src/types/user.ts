@@ -36,6 +36,9 @@ export interface CourierInfo {
   completedTasks: number
   averageRating: number
   lastActiveAt: string
+  school_code: string
+  username: string
+  school_name: string
 }
 
 /**

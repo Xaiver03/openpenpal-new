@@ -32,28 +32,28 @@ const (
 
 // Product 商品模型
 type Product struct {
-	ID            uuid.UUID     `gorm:"type:uuid;primary_key" json:"id"`
-	Name          string        `gorm:"type:varchar(200);not null" json:"name"`
-	Description   string        `gorm:"type:text" json:"description"`
-	Category      string        `gorm:"type:varchar(100)" json:"category"`
-	ProductType   ProductType   `gorm:"type:varchar(50);not null" json:"product_type"`
-	Price         float64       `gorm:"type:decimal(10,2);not null" json:"price"`
-	OriginalPrice float64       `gorm:"type:decimal(10,2)" json:"original_price"`
-	Discount      int           `gorm:"type:int;default:0" json:"discount"` // 折扣百分比
-	Stock         int           `gorm:"type:int;default:0" json:"stock"`
-	Sold          int           `gorm:"type:int;default:0" json:"sold"`
-	ImageURL      string        `gorm:"type:text" json:"image_url"`
-	ThumbnailURL  string        `gorm:"type:text" json:"thumbnail_url"`
-	Images        datatypes.JSON `gorm:"type:jsonb" json:"images"` // 商品图片列表
-	Tags          datatypes.JSON `gorm:"type:jsonb" json:"tags"`   // 商品标签
+	ID             uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	Name           string         `gorm:"type:varchar(200);not null" json:"name"`
+	Description    string         `gorm:"type:text" json:"description"`
+	Category       string         `gorm:"type:varchar(100)" json:"category"`
+	ProductType    ProductType    `gorm:"type:varchar(50);not null" json:"product_type"`
+	Price          float64        `gorm:"type:decimal(10,2);not null" json:"price"`
+	OriginalPrice  float64        `gorm:"type:decimal(10,2)" json:"original_price"`
+	Discount       int            `gorm:"type:int;default:0" json:"discount"` // 折扣百分比
+	Stock          int            `gorm:"type:int;default:0" json:"stock"`
+	Sold           int            `gorm:"type:int;default:0" json:"sold"`
+	ImageURL       string         `gorm:"type:text" json:"image_url"`
+	ThumbnailURL   string         `gorm:"type:text" json:"thumbnail_url"`
+	Images         datatypes.JSON `gorm:"type:jsonb" json:"images"`         // 商品图片列表
+	Tags           datatypes.JSON `gorm:"type:jsonb" json:"tags"`           // 商品标签
 	Specifications datatypes.JSON `gorm:"type:jsonb" json:"specifications"` // 商品规格
-	Status        ProductStatus `gorm:"type:varchar(20);default:'active'" json:"status"`
-	IsFeatured    bool          `gorm:"default:false" json:"is_featured"`
-	Rating        float64       `gorm:"type:decimal(3,2);default:0" json:"rating"`
-	ReviewCount   int           `gorm:"type:int;default:0" json:"review_count"`
-	CreatedAt     time.Time     `json:"created_at"`
-	UpdatedAt     time.Time     `json:"updated_at"`
-	DeletedAt     *time.Time    `gorm:"index" json:"deleted_at,omitempty"`
+	Status         ProductStatus  `gorm:"type:varchar(20);default:'active'" json:"status"`
+	IsFeatured     bool           `gorm:"default:false" json:"is_featured"`
+	Rating         float64        `gorm:"type:decimal(3,2);default:0" json:"rating"`
+	ReviewCount    int            `gorm:"type:int;default:0" json:"review_count"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      *time.Time     `gorm:"index" json:"deleted_at,omitempty"`
 }
 
 func (p *Product) BeforeCreate(tx *gorm.DB) error {
@@ -65,14 +65,14 @@ func (p *Product) BeforeCreate(tx *gorm.DB) error {
 
 // Cart 购物车模型
 type Cart struct {
-	ID         uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
-	UserID     string     `gorm:"type:varchar(36);not null;index" json:"user_id"`
-	User       *User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Items      []CartItem `gorm:"foreignKey:CartID" json:"items"`
-	TotalItems int        `gorm:"type:int;default:0" json:"total_items"`
-	TotalAmount float64   `gorm:"type:decimal(10,2);default:0" json:"total_amount"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
+	ID          uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
+	UserID      string     `gorm:"type:varchar(36);not null;index" json:"user_id"`
+	User        *User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Items       []CartItem `gorm:"foreignKey:CartID" json:"items"`
+	TotalItems  int        `gorm:"type:int;default:0" json:"total_items"`
+	TotalAmount float64    `gorm:"type:decimal(10,2);default:0" json:"total_amount"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 func (c *Cart) BeforeCreate(tx *gorm.DB) error {
@@ -129,32 +129,32 @@ const (
 
 // Order 订单模型
 type Order struct {
-	ID             uuid.UUID     `gorm:"type:uuid;primary_key" json:"id"`
-	OrderNo        string        `gorm:"type:varchar(50);unique;not null" json:"order_no"`
-	UserID         string        `gorm:"type:varchar(36);not null;index" json:"user_id"`
-	User           *User         `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Items          []OrderItem   `gorm:"foreignKey:OrderID" json:"items"`
-	TotalItems     int           `gorm:"type:int;default:0" json:"total_items"`
-	Subtotal       float64       `gorm:"type:decimal(10,2);default:0" json:"subtotal"`
-	ShippingFee    float64       `gorm:"type:decimal(10,2);default:0" json:"shipping_fee"`
-	TaxFee         float64       `gorm:"type:decimal(10,2);default:0" json:"tax_fee"`
-	DiscountAmount float64       `gorm:"type:decimal(10,2);default:0" json:"discount_amount"`
-	TotalAmount    float64       `gorm:"type:decimal(10,2);not null" json:"total_amount"`
-	Status         OrderStatus   `gorm:"type:varchar(20);default:'pending'" json:"status"`
-	PaymentStatus  PaymentStatus `gorm:"type:varchar(20);default:'pending'" json:"payment_status"`
-	PaymentMethod  string        `gorm:"type:varchar(50)" json:"payment_method"`
-	PaymentID      string        `gorm:"type:varchar(100)" json:"payment_id"`
+	ID              uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	OrderNo         string         `gorm:"type:varchar(50);unique;not null" json:"order_no"`
+	UserID          string         `gorm:"type:varchar(36);not null;index" json:"user_id"`
+	User            *User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Items           []OrderItem    `gorm:"foreignKey:OrderID" json:"items"`
+	TotalItems      int            `gorm:"type:int;default:0" json:"total_items"`
+	Subtotal        float64        `gorm:"type:decimal(10,2);default:0" json:"subtotal"`
+	ShippingFee     float64        `gorm:"type:decimal(10,2);default:0" json:"shipping_fee"`
+	TaxFee          float64        `gorm:"type:decimal(10,2);default:0" json:"tax_fee"`
+	DiscountAmount  float64        `gorm:"type:decimal(10,2);default:0" json:"discount_amount"`
+	TotalAmount     float64        `gorm:"type:decimal(10,2);not null" json:"total_amount"`
+	Status          OrderStatus    `gorm:"type:varchar(20);default:'pending'" json:"status"`
+	PaymentStatus   PaymentStatus  `gorm:"type:varchar(20);default:'pending'" json:"payment_status"`
+	PaymentMethod   string         `gorm:"type:varchar(50)" json:"payment_method"`
+	PaymentID       string         `gorm:"type:varchar(100)" json:"payment_id"`
 	ShippingAddress datatypes.JSON `gorm:"type:jsonb" json:"shipping_address"`
-	TrackingNumber string        `gorm:"type:varchar(100)" json:"tracking_number"`
-	Notes          string        `gorm:"type:text" json:"notes"`
-	CouponCode     string        `gorm:"type:varchar(50)" json:"coupon_code"`
-	PaidAt         *time.Time    `json:"paid_at,omitempty"`
-	ShippedAt      *time.Time    `json:"shipped_at,omitempty"`
-	DeliveredAt    *time.Time    `json:"delivered_at,omitempty"`
-	CompletedAt    *time.Time    `json:"completed_at,omitempty"`
-	CancelledAt    *time.Time    `json:"cancelled_at,omitempty"`
-	CreatedAt      time.Time     `json:"created_at"`
-	UpdatedAt      time.Time     `json:"updated_at"`
+	TrackingNumber  string         `gorm:"type:varchar(100)" json:"tracking_number"`
+	Notes           string         `gorm:"type:text" json:"notes"`
+	CouponCode      string         `gorm:"type:varchar(50)" json:"coupon_code"`
+	PaidAt          *time.Time     `json:"paid_at,omitempty"`
+	ShippedAt       *time.Time     `json:"shipped_at,omitempty"`
+	DeliveredAt     *time.Time     `json:"delivered_at,omitempty"`
+	CompletedAt     *time.Time     `json:"completed_at,omitempty"`
+	CancelledAt     *time.Time     `json:"cancelled_at,omitempty"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
 }
 
 func (o *Order) BeforeCreate(tx *gorm.DB) error {
@@ -190,19 +190,19 @@ func (oi *OrderItem) BeforeCreate(tx *gorm.DB) error {
 
 // ProductReview 商品评价模型
 type ProductReview struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
-	ProductID uuid.UUID `gorm:"type:uuid;not null;index" json:"product_id"`
-	Product   *Product  `gorm:"foreignKey:ProductID" json:"product,omitempty"`
-	UserID    string    `gorm:"type:varchar(36);not null;index" json:"user_id"`
-	User      *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	OrderID   uuid.UUID `gorm:"type:uuid;index" json:"order_id"`
-	Order     *Order    `gorm:"foreignKey:OrderID" json:"order,omitempty"`
-	Rating    int       `gorm:"type:int;not null" json:"rating"` // 1-5
-	Comment   string    `gorm:"type:text" json:"comment"`
-	Images    datatypes.JSON  `gorm:"type:jsonb" json:"images"` // 评价图片
-	IsAnonymous bool    `gorm:"default:false" json:"is_anonymous"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID          uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ProductID   uuid.UUID      `gorm:"type:uuid;not null;index" json:"product_id"`
+	Product     *Product       `gorm:"foreignKey:ProductID" json:"product,omitempty"`
+	UserID      string         `gorm:"type:varchar(36);not null;index" json:"user_id"`
+	User        *User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	OrderID     uuid.UUID      `gorm:"type:uuid;index" json:"order_id"`
+	Order       *Order         `gorm:"foreignKey:OrderID" json:"order,omitempty"`
+	Rating      int            `gorm:"type:int;not null" json:"rating"` // 1-5
+	Comment     string         `gorm:"type:text" json:"comment"`
+	Images      datatypes.JSON `gorm:"type:jsonb" json:"images"` // 评价图片
+	IsAnonymous bool           `gorm:"default:false" json:"is_anonymous"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 func (pr *ProductReview) BeforeCreate(tx *gorm.DB) error {

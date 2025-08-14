@@ -6,8 +6,8 @@ import (
 	"math"
 	"time"
 
-	"gorm.io/gorm"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 // MetricsService 性能监控服务
@@ -53,7 +53,7 @@ func (s *MetricsService) SavePerformanceMetric(userID string, req *models.Perfor
 	// 检查是否需要创建告警
 	s.checkAndCreateAlerts(metric)
 
-	s.logger.Info("Performance metric saved successfully", 
+	s.logger.Info("Performance metric saved successfully",
 		zap.String("session_id", req.SessionID),
 		zap.String("page_url", req.PageURL),
 		zap.Float64("lcp", req.LCP),
@@ -65,7 +65,7 @@ func (s *MetricsService) SavePerformanceMetric(userID string, req *models.Perfor
 // GetDashboardMetrics 获取仪表板指标
 func (s *MetricsService) GetDashboardMetrics(timeRange string) (*models.DashboardMetrics, error) {
 	var duration time.Duration
-	
+
 	switch timeRange {
 	case "1h":
 		duration = time.Hour
@@ -81,7 +81,7 @@ func (s *MetricsService) GetDashboardMetrics(timeRange string) (*models.Dashboar
 	}
 
 	since := time.Now().Add(-duration)
-	
+
 	// 获取平均性能指标
 	var avgMetrics struct {
 		AvgLCP  float64
@@ -159,14 +159,14 @@ func (s *MetricsService) GetDashboardMetrics(timeRange string) (*models.Dashboar
 // GetActiveAlerts 获取活跃告警
 func (s *MetricsService) GetActiveAlerts(limit int) ([]models.PerformanceAlert, error) {
 	var alerts []models.PerformanceAlert
-	
+
 	query := s.db.Where("status = ?", "active").
 		Order("created_at DESC")
-	
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	err := query.Find(&alerts).Error
 	if err != nil {
 		s.logger.Error("Failed to get active alerts", zap.Error(err))
@@ -215,14 +215,14 @@ func (s *MetricsService) checkAndCreateAlerts(metric *models.PerformanceMetric) 
 		severity   string
 	}{
 		// Core Web Vitals 阈值基于Google标准
-		{"lcp", metric.LCP, 2500, "medium"},     // LCP > 2.5s
-		{"lcp", metric.LCP, 4000, "high"},       // LCP > 4s
-		{"fid", metric.FID, 100, "medium"},      // FID > 100ms
-		{"fid", metric.FID, 300, "high"},        // FID > 300ms
-		{"cls", metric.CLS, 0.1, "medium"},      // CLS > 0.1
-		{"cls", metric.CLS, 0.25, "high"},       // CLS > 0.25
-		{"ttfb", metric.TTFB, 800, "medium"},    // TTFB > 800ms
-		{"ttfb", metric.TTFB, 1800, "high"},     // TTFB > 1.8s
+		{"lcp", metric.LCP, 2500, "medium"},  // LCP > 2.5s
+		{"lcp", metric.LCP, 4000, "high"},    // LCP > 4s
+		{"fid", metric.FID, 100, "medium"},   // FID > 100ms
+		{"fid", metric.FID, 300, "high"},     // FID > 300ms
+		{"cls", metric.CLS, 0.1, "medium"},   // CLS > 0.1
+		{"cls", metric.CLS, 0.25, "high"},    // CLS > 0.25
+		{"ttfb", metric.TTFB, 800, "medium"}, // TTFB > 800ms
+		{"ttfb", metric.TTFB, 1800, "high"},  // TTFB > 1.8s
 	}
 
 	for _, alert := range alerts {
@@ -236,7 +236,7 @@ func (s *MetricsService) checkAndCreateAlerts(metric *models.PerformanceMetric) 
 				Severity:   alert.severity,
 				Message:    fmt.Sprintf("%s exceeded threshold: %.2f > %.2f", alert.metricType, alert.value, alert.threshold),
 			}
-			
+
 			s.CreateAlert(metric.UserID, alertReq)
 		}
 	}
@@ -305,7 +305,7 @@ func (s *MetricsService) getAlertStats(since time.Time) (int, int, error) {
 	err := s.db.Model(&models.PerformanceAlert{}).
 		Where("created_at >= ?", since).
 		Count(&errorCount).Error
-	
+
 	if err != nil {
 		return 0, 0, err
 	}
@@ -321,7 +321,7 @@ func (s *MetricsService) getAlertStats(since time.Time) (int, int, error) {
 // getTrendData 获取趋势数据
 func (s *MetricsService) getTrendData(since time.Time, timeRange string) ([]models.TrendPoint, error) {
 	var interval string
-	
+
 	switch timeRange {
 	case "1h":
 		interval = "5 minute"
@@ -351,7 +351,7 @@ func (s *MetricsService) getTrendData(since time.Time, timeRange string) ([]mode
 	`, interval, interval)
 
 	err := s.db.Raw(query, since).Scan(&results).Error
-	
+
 	return results, err
 }
 
@@ -359,34 +359,34 @@ func (s *MetricsService) getTrendData(since time.Time, timeRange string) ([]mode
 func (s *MetricsService) calculatePerformanceScore(lcp, fid, cls, ttfb float64) int {
 	// 基于Google Core Web Vitals标准计算评分
 	score := 100.0
-	
+
 	// LCP评分 (权重: 30%)
 	if lcp > 4000 {
 		score -= 30
 	} else if lcp > 2500 {
 		score -= 15
 	}
-	
+
 	// FID评分 (权重: 30%)
 	if fid > 300 {
 		score -= 30
 	} else if fid > 100 {
 		score -= 15
 	}
-	
+
 	// CLS评分 (权重: 30%)
 	if cls > 0.25 {
 		score -= 30
 	} else if cls > 0.1 {
 		score -= 15
 	}
-	
+
 	// TTFB评分 (权重: 10%)
 	if ttfb > 1800 {
 		score -= 10
 	} else if ttfb > 800 {
 		score -= 5
 	}
-	
+
 	return int(math.Max(0, score))
 }

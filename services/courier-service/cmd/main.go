@@ -30,11 +30,11 @@ func main() {
 	default:
 		logLevel = logging.LevelInfo
 	}
-	
+
 	logging.InitDefaultLogger("courier-service", logLevel)
 	logger := logging.GetDefaultLogger()
-	
-	logger.Info("Starting courier service", 
+
+	logger.Info("Starting courier service",
 		"version", "1.0.0",
 		"environment", cfg.Environment,
 		"port", cfg.Port,
@@ -83,7 +83,7 @@ func main() {
 
 	// 应用核心中间件（按顺序）
 	router.Use(middleware.RequestID()) // 请求ID必须在最前面
-	
+
 	// 根据环境选择恢复中间件
 	if cfg.Environment == "development" {
 		router.Use(middleware.DebugRecovery())
@@ -92,16 +92,16 @@ func main() {
 		router.Use(middleware.DefaultRecovery())
 		router.Use(middleware.DefaultErrorHandler())
 	}
-	
+
 	// 监控中间件
 	router.Use(func(c *gin.Context) {
 		start := time.Now()
 		c.Next()
 		duration := time.Since(start)
-		
+
 		// 记录响应时间
 		monitoring.RecordResponseTime(duration)
-		
+
 		// 如果有错误，记录错误指标
 		if len(c.Errors) > 0 {
 			monitoring.RecordError(c.Errors.Last().Err, map[string]string{
@@ -110,7 +110,7 @@ func main() {
 			})
 		}
 	})
-	
+
 	// 其他中间件
 	router.Use(middleware.CORS())
 	router.Use(func(c *gin.Context) {
@@ -119,12 +119,12 @@ func main() {
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
 		method := c.Request.Method
-		
+
 		c.Next()
-		
+
 		duration := time.Since(start)
 		requestID := middleware.GetRequestID(c)
-		
+
 		logger.Info("HTTP Request",
 			"method", method,
 			"path", path,
@@ -151,7 +151,7 @@ func main() {
 	handlers.RegisterHierarchyRoutes(api, hierarchyService)
 	handlers.RegisterLeaderboardRoutes(api, leaderboardService)
 	handlers.RegisterHierarchicalAssignmentRoutes(api, hierarchicalAssignmentService)
-	
+
 	// 注册信号编码路由 (不需要JWT认证，因为有些接口是公开的)
 	signalCodeHandler := handlers.NewSignalCodeHandler(signalCodeService)
 	handlers.RegisterSignalCodeRoutes(router, signalCodeHandler)
@@ -170,7 +170,7 @@ func main() {
 	router.GET("/metrics", func(c *gin.Context) {
 		registry := monitoring.GetGlobalRegistry()
 		metrics := registry.GetAllMetrics()
-		
+
 		result := make(map[string]interface{})
 		for name, metric := range metrics {
 			result[name] = gin.H{
@@ -180,7 +180,7 @@ func main() {
 				"timestamp": metric.Timestamp(),
 			}
 		}
-		
+
 		c.JSON(200, result)
 	})
 
@@ -199,7 +199,7 @@ func main() {
 	})
 
 	logger.Info("Courier service starting", "port", cfg.Port)
-	
+
 	if err := router.Run(":" + cfg.Port); err != nil {
 		logger.Fatal("Failed to start server", "error", err)
 	}

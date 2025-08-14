@@ -642,6 +642,7 @@ func (h *LetterHandler) AutoCurateLetterForMuseum(c *gin.Context) {
 
 	resp.OK(c, "信件已成功策展到博物馆")
 }
+
 // GetDrafts 获取草稿列表
 func (h *LetterHandler) GetDrafts(c *gin.Context) {
 	userID, exists := middleware.GetUserID(c)
@@ -1039,8 +1040,8 @@ func (h *LetterHandler) BatchOperateLetters(c *gin.Context) {
 	}
 
 	var req struct {
-		LetterIDs []string `json:"letter_ids" binding:"required"`
-		Operation string   `json:"operation" binding:"required,oneof=delete archive publish"`
+		LetterIDs []string               `json:"letter_ids" binding:"required"`
+		Operation string                 `json:"operation" binding:"required,oneof=delete archive publish"`
 		Data      map[string]interface{} `json:"data"`
 	}
 
@@ -1082,9 +1083,9 @@ func (h *LetterHandler) ExportLetters(c *gin.Context) {
 	}
 
 	var req struct {
-		LetterIDs []string `json:"letter_ids"`
-		Format    string   `json:"format" binding:"required,oneof=pdf txt json"`
-		IncludeAttachments bool `json:"include_attachments"`
+		LetterIDs          []string `json:"letter_ids"`
+		Format             string   `json:"format" binding:"required,oneof=pdf txt json"`
+		IncludeAttachments bool     `json:"include_attachments"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1135,7 +1136,7 @@ func (h *LetterHandler) AutoSaveDraft(c *gin.Context) {
 	}
 
 	req.UserID = userID
-	
+
 	letter, err := h.letterService.AutoSaveDraft(c.Request.Context(), &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -1156,11 +1157,11 @@ func (h *LetterHandler) AutoSaveDraft(c *gin.Context) {
 // GetWritingSuggestions 获取写作建议
 func (h *LetterHandler) GetWritingSuggestions(c *gin.Context) {
 	var req struct {
-		Content  string   `json:"content"`
-		Style    string   `json:"style"`
-		Tags     []string `json:"tags"`
-		Mood     string   `json:"mood"`
-		Purpose  string   `json:"purpose"`
+		Content string   `json:"content"`
+		Style   string   `json:"style"`
+		Tags    []string `json:"tags"`
+		Mood    string   `json:"mood"`
+		Purpose string   `json:"purpose"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

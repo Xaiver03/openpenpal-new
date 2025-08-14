@@ -92,7 +92,7 @@ func (s *HierarchyService) GetSubordinates(managerID string) ([]models.Courier, 
 	err := s.db.Where("parent_id = ?", managerID).
 		Order("level ASC, points DESC").
 		Find(&subordinates).Error
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("获取下级信使失败: %w", err)
 	}

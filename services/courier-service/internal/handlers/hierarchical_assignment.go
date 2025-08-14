@@ -187,10 +187,10 @@ func (h *HierarchicalAssignmentHandler) GetAssignableSubordinates(c *gin.Context
 	}
 
 	taskZone := c.Query("task_zone")
-	
+
 	// 获取所有下级信使
 	var subordinates []models.Courier
-	query := h.service.GetDB().Where("parent_id = ? OR (level <= ? AND status = ?)", 
+	query := h.service.GetDB().Where("parent_id = ? OR (level <= ? AND status = ?)",
 		courier.ID, courier.Level, models.CourierStatusApproved)
 
 	// 如果指定了任务区域，进一步筛选
@@ -278,12 +278,12 @@ func (h *HierarchicalAssignmentHandler) GetAssignmentStats(c *gin.Context) {
 		Count(&subordinateCount)
 
 	stats := gin.H{
-		"total_assigned":      totalAssigned,
-		"today_assigned":      todayAssigned,
-		"this_week_assigned":  thisWeekAssigned,
-		"assignment_by_type":  typeStats,
-		"subordinate_count":   subordinateCount,
-		"management_level":    courier.Level,
+		"total_assigned":     totalAssigned,
+		"today_assigned":     todayAssigned,
+		"this_week_assigned": thisWeekAssigned,
+		"assignment_by_type": typeStats,
+		"subordinate_count":  subordinateCount,
+		"management_level":   courier.Level,
 		"zone_type":          courier.ZoneType,
 		"can_assign":         courier.Level >= models.CourierLevelTwo,
 	}

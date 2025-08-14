@@ -35,12 +35,11 @@ type BindBarcodeRequest struct {
 
 // UpdateBarcodeStatusRequest 更新条码状态请求
 type UpdateBarcodeStatusRequest struct {
-	Status         models.BarcodeStatus `json:"status" binding:"required"`
-	CurrentOPCode  string               `json:"current_op_code,omitempty"`
-	ScannedBy      string               `json:"scanned_by,omitempty"`
-	Note           string               `json:"note,omitempty"`
+	Status        models.BarcodeStatus `json:"status" binding:"required"`
+	CurrentOPCode string               `json:"current_op_code,omitempty"`
+	ScannedBy     string               `json:"scanned_by,omitempty"`
+	Note          string               `json:"note,omitempty"`
 }
-
 
 // CreateBarcode 创建条码 - PRD规格: POST /api/barcodes
 func (h *BarcodeHandler) CreateBarcode(c *gin.Context) {
@@ -166,9 +165,9 @@ func (h *BarcodeHandler) BindBarcode(c *gin.Context) {
 	// 验证条码状态是否可以绑定
 	if !letterCode.CanBeBound() {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    4001,
-			"message": "条码状态不允许绑定",
+			"success":        false,
+			"code":           4001,
+			"message":        "条码状态不允许绑定",
 			"current_status": letterCode.Status,
 		})
 		return
@@ -267,9 +266,9 @@ func (h *BarcodeHandler) UpdateBarcodeStatus(c *gin.Context) {
 	// 验证状态转换是否有效
 	if !letterCode.IsValidTransition(req.Status) {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"code":    4001,
-			"message": "无效的状态转换",
+			"success":        false,
+			"code":           4001,
+			"message":        "无效的状态转换",
 			"current_status": letterCode.Status,
 			"target_status":  req.Status,
 		})
@@ -326,11 +325,11 @@ func (h *BarcodeHandler) UpdateBarcodeStatus(c *gin.Context) {
 		"code":    200,
 		"message": "状态更新成功",
 		"data": gin.H{
-			"id":               letterCode.ID,
-			"status":           letterCode.Status,
-			"last_scanned_by":  letterCode.LastScannedBy,
-			"last_scanned_at":  letterCode.LastScannedAt,
-			"scan_count":       letterCode.ScanCount,
+			"id":              letterCode.ID,
+			"status":          letterCode.Status,
+			"last_scanned_by": letterCode.LastScannedBy,
+			"last_scanned_at": letterCode.LastScannedAt,
+			"scan_count":      letterCode.ScanCount,
 		},
 	})
 }
@@ -365,20 +364,20 @@ func (h *BarcodeHandler) GetBarcodeStatus(c *gin.Context) {
 		"code":    200,
 		"message": "获取成功",
 		"data": gin.H{
-			"id":               letterCode.ID,
-			"code":             letterCode.Code,
-			"status":           letterCode.Status,
-			"status_display":   letterCode.GetStatusDisplayName(),
-			"recipient_code":   letterCode.RecipientCode,
-			"envelope_id":      letterCode.EnvelopeID,
-			"bound_at":         letterCode.BoundAt,
-			"delivered_at":     letterCode.DeliveredAt,
-			"last_scanned_by":  letterCode.LastScannedBy,
-			"last_scanned_at":  letterCode.LastScannedAt,
-			"scan_count":       letterCode.ScanCount,
-			"scan_history":     scanHistory,
-			"created_at":       letterCode.CreatedAt,
-			"updated_at":       letterCode.UpdatedAt,
+			"id":              letterCode.ID,
+			"code":            letterCode.Code,
+			"status":          letterCode.Status,
+			"status_display":  letterCode.GetStatusDisplayName(),
+			"recipient_code":  letterCode.RecipientCode,
+			"envelope_id":     letterCode.EnvelopeID,
+			"bound_at":        letterCode.BoundAt,
+			"delivered_at":    letterCode.DeliveredAt,
+			"last_scanned_by": letterCode.LastScannedBy,
+			"last_scanned_at": letterCode.LastScannedAt,
+			"scan_count":      letterCode.ScanCount,
+			"scan_history":    scanHistory,
+			"created_at":      letterCode.CreatedAt,
+			"updated_at":      letterCode.UpdatedAt,
 		},
 	})
 }
@@ -407,8 +406,8 @@ func (h *BarcodeHandler) ValidateBarcodeOperation(c *gin.Context) {
 	}
 
 	var req struct {
-		Operation     string `json:"operation" binding:"required"` // bind, scan, deliver
-		TargetOPCode  string `json:"target_op_code,omitempty"`
+		Operation    string `json:"operation" binding:"required"` // bind, scan, deliver
+		TargetOPCode string `json:"target_op_code,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

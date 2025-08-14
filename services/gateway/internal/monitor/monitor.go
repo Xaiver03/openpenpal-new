@@ -23,8 +23,8 @@ var (
 	// HTTP请求耗时直方图
 	httpRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "gateway_http_request_duration_seconds",
-			Help: "Duration of HTTP requests processed by the gateway",
+			Name:    "gateway_http_request_duration_seconds",
+			Help:    "Duration of HTTP requests processed by the gateway",
 			Buckets: []float64{0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10},
 		},
 		[]string{"method", "path", "status"},
@@ -161,7 +161,7 @@ func RecordProxyRequest(service string, status int) {
 	if status >= 400 {
 		statusStr = "error"
 	}
-	
+
 	proxyRequestsTotal.WithLabelValues(service, statusStr).Inc()
 }
 
@@ -171,7 +171,7 @@ func UpdateServiceHealth(service, instance string, healthy bool) {
 	if healthy {
 		value = 1.0
 	}
-	
+
 	serviceHealthGauge.WithLabelValues(service, instance).Set(value)
 }
 
@@ -196,7 +196,7 @@ func GetMetricsSummary() map[string]interface{} {
 
 	// 这里可以收集当前的指标值
 	// 需要使用prometheus的Gatherer接口来获取当前值
-	
+
 	return summary
 }
 
@@ -217,7 +217,7 @@ type HealthChecker interface {
 
 // ServiceMonitor 服务监控器
 type ServiceMonitor struct {
-	logger      *zap.Logger
+	logger       *zap.Logger
 	healthChecks map[string]HealthChecker
 }
 
@@ -237,7 +237,7 @@ func (sm *ServiceMonitor) RegisterHealthCheck(name string, checker HealthChecker
 // CheckAllServices 检查所有服务
 func (sm *ServiceMonitor) CheckAllServices() map[string]bool {
 	results := make(map[string]bool)
-	
+
 	for name, checker := range sm.healthChecks {
 		healthy, err := checker.CheckHealth()
 		if err != nil {
@@ -247,10 +247,10 @@ func (sm *ServiceMonitor) CheckAllServices() map[string]bool {
 			)
 			healthy = false
 		}
-		
+
 		results[name] = healthy
 		UpdateServiceHealth(name, "default", healthy)
 	}
-	
+
 	return results
 }
