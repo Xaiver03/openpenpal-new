@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { DelayTimePicker, type DelayConfig } from '@/components/ai/delay-time-picker'
 import { aiService } from '@/lib/services/ai-service'
 import { toast } from 'sonner'
 
@@ -39,6 +40,11 @@ export function AIPenpalMatch({
   const [matches, setMatches] = useState<PenpalMatch[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [delayConfig, setDelayConfig] = useState<DelayConfig>({
+    type: 'preset',
+    presetOption: '1hour'
+  })
+  const [showDelayPicker, setShowDelayPicker] = useState(true)
 
   const fetchMatches = async () => {
     if (!letterId) {
@@ -53,6 +59,7 @@ export function AIPenpalMatch({
       const result = await aiService.matchPenpal({
         letterId: letterId,
         max_matches: 3,
+        delay_config: delayConfig,
       })
 
       if (result.matches && result.matches.length > 0) {
@@ -90,7 +97,16 @@ export function AIPenpalMatch({
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-6 ${className}`}>
+      {/* 延迟时间选择器 */}
+      {showDelayPicker && (
+        <DelayTimePicker
+          value={delayConfig}
+          onChange={setDelayConfig}
+          className="mb-6"
+        />
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-purple-600" />

@@ -178,11 +178,24 @@ type AIUsageLog struct {
 
 // Request/Response DTOs
 
+// DelayConfig 精确延迟配置
+type DelayConfig struct {
+	Type            string     `json:"type"`                      // "preset", "relative", "absolute"
+	PresetOption    string     `json:"preset_option,omitempty"`   // "1hour", "tomorrow", "nextweek", "weekend"
+	RelativeDays    int        `json:"relative_days,omitempty"`   // 相对天数
+	RelativeHours   int        `json:"relative_hours,omitempty"`  // 相对小时
+	RelativeMinutes int        `json:"relative_minutes,omitempty"` // 相对分钟
+	AbsoluteTime    *time.Time `json:"absolute_time,omitempty"`   // 绝对时间
+	Timezone        string     `json:"timezone,omitempty"`        // 时区，默认用户本地时区
+	UserDescription string     `json:"user_description,omitempty"` // 用户自定义描述
+}
+
 // AIMatchRequest AI匹配请求
 type AIMatchRequest struct {
-	LetterID     string `json:"letter_id" binding:"required"`
-	MaxMatches   int    `json:"max_matches"` // 最大匹配数，默认3
-	DelayOption  string `json:"delay_option,omitempty"` // 延迟选项：quick(1-10min), normal(10-30min), slow(30-60min)
+	LetterID     string       `json:"letter_id" binding:"required"`
+	MaxMatches   int          `json:"max_matches"` // 最大匹配数，默认3
+	DelayOption  string       `json:"delay_option,omitempty"`  // 兼容旧版：quick/normal/slow
+	DelayConfig  *DelayConfig `json:"delay_config,omitempty"`  // 新版精确配置
 }
 
 // AIReplyRequest AI回信请求

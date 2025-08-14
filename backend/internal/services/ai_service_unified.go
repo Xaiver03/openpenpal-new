@@ -144,12 +144,18 @@ func (s *UnifiedAIService) GenerateReply(ctx context.Context, req *models.AIRepl
 	return reply, nil
 }
 
-// MatchPenPal 笔友匹配（使用配置化匹配算法，支持用户可控延迟）
+// MatchPenPal 笔友匹配（使用配置化匹配算法，支持精确时间控制）
 func (s *UnifiedAIService) MatchPenPal(ctx context.Context, req *models.AIMatchRequest) (*models.AIMatchResponse, error) {
-	log.Printf("💌 [UnifiedAIService] 执行笔友匹配，信件ID: %s, 延迟选项: %s", req.LetterID, req.DelayOption)
+	log.Printf("💌 [UnifiedAIService] 执行笔友匹配，信件ID: %s", req.LetterID)
 
-	// 计算用户选择的延迟时间
-	delayMinutes := s.calculateUserDelay(req.DelayOption)
+	// 计算延迟时间和描述
+	delayUntil, delayDescription, err := s.calculatePreciseDelay(req)
+	if err != nil {
+		log.Printf("⚠️ [UnifiedAIService] 计算延迟时间失败: %v", err)
+		// 降级到立即匹配
+		delayUntil = time.Now()
+		delayDescription = "立即匹配"
+	}
 	
 	// 获取匹配算法配置
 	matchConfig, err := s.configService.GetConfig("matching", "algorithm")
@@ -157,16 +163,17 @@ func (s *UnifiedAIService) MatchPenPal(ctx context.Context, req *models.AIMatchR
 		log.Printf("⚠️ [UnifiedAIService] 获取匹配算法配置失败，使用默认: %v", err)
 	}
 
-	// 如果有延迟要求，使用延迟队列
-	if delayMinutes > 0 {
-		log.Printf("🕐 [UnifiedAIService] 延迟 %d 分钟后执行匹配", delayMinutes)
+	// 如果需要延迟，使用延迟队列
+	if time.Until(delayUntil) > time.Minute {
+		delayDuration := time.Until(delayUntil)
+		log.Printf("🕐 [UnifiedAIService] 延迟执行匹配: %s (%s)", delayDescription, delayDuration.String())
 		
 		// 创建延迟任务
 		task := &models.DelayQueueRecord{
 			ID:           uuid.New().String(),
 			TaskType:     "ai_match",
 			Payload:      s.marshalMatchRequest(req),
-			DelayedUntil: time.Now().Add(time.Duration(delayMinutes) * time.Minute),
+			DelayedUntil: delayUntil,
 			Status:       "pending",
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
@@ -182,34 +189,207 @@ func (s *UnifiedAIService) MatchPenPal(ctx context.Context, req *models.AIMatchR
 		// 返回处理中状态
 		return &models.AIMatchResponse{
 			Status:  "processing",
-			Message: fmt.Sprintf("正在为您寻找最合适的笔友，预计 %d 分钟后完成匹配...", delayMinutes),
+			Message: fmt.Sprintf("正在为您寻找最合适的笔友，%s", delayDescription),
 			Metadata: map[string]interface{}{
-				"delay_minutes": delayMinutes,
-				"task_id":       task.ID,
+				"delay_until":     delayUntil,
+				"delay_description": delayDescription,
+				"task_id":         task.ID,
 			},
 		}, nil
 	}
 
 	// 立即执行匹配
+	log.Printf("⚡ [UnifiedAIService] 立即执行匹配: %s", delayDescription)
 	return s.performImmediateMatch(ctx, req, matchConfig)
 }
 
-// 计算用户选择的延迟时间
-func (s *UnifiedAIService) calculateUserDelay(delayOption string) int {
-	switch delayOption {
-	case "quick":
-		// 1-10分钟随机延迟
-		return rand.Intn(10) + 1
-	case "normal":
-		// 10-30分钟随机延迟
-		return rand.Intn(21) + 10
-	case "slow":
-		// 30-60分钟随机延迟
-		return rand.Intn(31) + 30
-	default:
-		// 默认无延迟（向后兼容）
-		return 0
+// calculatePreciseDelay 计算精确的延迟时间
+func (s *UnifiedAIService) calculatePreciseDelay(req *models.AIMatchRequest) (time.Time, string, error) {
+	now := time.Now()
+	
+	// 如果使用新的DelayConfig
+	if req.DelayConfig != nil {
+		return s.calculateDelayFromConfig(req.DelayConfig, now)
 	}
+	
+	// 向后兼容旧的DelayOption
+	if req.DelayOption != "" {
+		return s.calculateDelayFromOption(req.DelayOption, now), "", nil
+	}
+	
+	// 默认立即执行
+	return now, "立即匹配", nil
+}
+
+// calculateDelayFromConfig 根据DelayConfig计算延迟时间
+func (s *UnifiedAIService) calculateDelayFromConfig(config *models.DelayConfig, baseTime time.Time) (time.Time, string, error) {
+	switch config.Type {
+	case "preset":
+		return s.calculatePresetDelay(config.PresetOption, baseTime)
+		
+	case "relative":
+		targetTime := baseTime.
+			Add(time.Duration(config.RelativeDays) * 24 * time.Hour).
+			Add(time.Duration(config.RelativeHours) * time.Hour).
+			Add(time.Duration(config.RelativeMinutes) * time.Minute)
+			
+		description := s.formatRelativeTimeDescription(config, targetTime, baseTime)
+		return targetTime, description, nil
+		
+	case "absolute":
+		if config.AbsoluteTime == nil {
+			return baseTime, "立即匹配", fmt.Errorf("绝对时间未指定")
+		}
+		
+		targetTime := *config.AbsoluteTime
+		description := s.formatAbsoluteTimeDescription(targetTime, baseTime)
+		return targetTime, description, nil
+		
+	default:
+		return baseTime, "立即匹配", fmt.Errorf("未知的延迟类型: %s", config.Type)
+	}
+}
+
+// calculatePresetDelay 计算预设延迟选项
+func (s *UnifiedAIService) calculatePresetDelay(preset string, baseTime time.Time) (time.Time, string, error) {
+	switch preset {
+	case "1hour":
+		targetTime := baseTime.Add(1 * time.Hour)
+		return targetTime, "1小时后完成匹配", nil
+		
+	case "3hours":
+		targetTime := baseTime.Add(3 * time.Hour)
+		return targetTime, "3小时后完成匹配", nil
+		
+	case "tomorrow":
+		// 明天同一时间
+		targetTime := baseTime.Add(24 * time.Hour)
+		return targetTime, "明天此时完成匹配", nil
+		
+	case "tomorrow_morning":
+		// 明天早上8点
+		tomorrow := baseTime.Add(24 * time.Hour)
+		targetTime := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 8, 0, 0, 0, tomorrow.Location())
+		return targetTime, "明天早上8点完成匹配", nil
+		
+	case "weekend":
+		// 下个周末（周六上午10点）
+		daysUntilSaturday := (6 - int(baseTime.Weekday()) + 7) % 7
+		if daysUntilSaturday == 0 && baseTime.Hour() >= 10 {
+			daysUntilSaturday = 7 // 如果已经是周六且过了10点，推到下周六
+		}
+		saturday := baseTime.Add(time.Duration(daysUntilSaturday) * 24 * time.Hour)
+		targetTime := time.Date(saturday.Year(), saturday.Month(), saturday.Day(), 10, 0, 0, 0, saturday.Location())
+		return targetTime, "周末上午完成匹配", nil
+		
+	case "nextweek":
+		// 下周同一天同一时间
+		targetTime := baseTime.Add(7 * 24 * time.Hour)
+		return targetTime, "下周此时完成匹配", nil
+		
+	default:
+		// 未知预设，使用随机延迟
+		minutes := rand.Intn(30) + 10 // 10-40分钟随机
+		targetTime := baseTime.Add(time.Duration(minutes) * time.Minute)
+		return targetTime, fmt.Sprintf("%d分钟后完成匹配", minutes), nil
+	}
+}
+
+// calculateDelayFromOption 向后兼容旧的简单选项
+func (s *UnifiedAIService) calculateDelayFromOption(option string, baseTime time.Time) time.Time {
+	switch option {
+	case "quick":
+		minutes := rand.Intn(10) + 1 // 1-10分钟
+		return baseTime.Add(time.Duration(minutes) * time.Minute)
+	case "normal":
+		minutes := rand.Intn(21) + 10 // 10-30分钟  
+		return baseTime.Add(time.Duration(minutes) * time.Minute)
+	case "slow":
+		minutes := rand.Intn(31) + 30 // 30-60分钟
+		return baseTime.Add(time.Duration(minutes) * time.Minute)
+	default:
+		return baseTime // 立即执行
+	}
+}
+
+// formatRelativeTimeDescription 格式化相对时间的人性化描述
+func (s *UnifiedAIService) formatRelativeTimeDescription(config *models.DelayConfig, targetTime, baseTime time.Time) string {
+	// 如果用户提供了自定义描述，优先使用
+	if config.UserDescription != "" {
+		duration := targetTime.Sub(baseTime)
+		return fmt.Sprintf("%s（%s后）", config.UserDescription, s.formatDuration(duration))
+	}
+	
+	// 生成默认描述
+	totalMinutes := int(targetTime.Sub(baseTime).Minutes())
+	
+	if config.RelativeDays > 0 {
+		if config.RelativeHours == 0 && config.RelativeMinutes == 0 {
+			if config.RelativeDays == 1 {
+				return "1天后完成匹配"
+			}
+			return fmt.Sprintf("%d天后完成匹配", config.RelativeDays)
+		}
+		return fmt.Sprintf("%d天%d小时后完成匹配", config.RelativeDays, config.RelativeHours)
+	}
+	
+	if config.RelativeHours > 0 {
+		if config.RelativeMinutes == 0 {
+			return fmt.Sprintf("%d小时后完成匹配", config.RelativeHours)
+		}
+		return fmt.Sprintf("%d小时%d分钟后完成匹配", config.RelativeHours, config.RelativeMinutes)
+	}
+	
+	return fmt.Sprintf("%d分钟后完成匹配", config.RelativeMinutes)
+}
+
+// formatAbsoluteTimeDescription 格式化绝对时间的人性化描述
+func (s *UnifiedAIService) formatAbsoluteTimeDescription(targetTime, baseTime time.Time) string {
+	duration := targetTime.Sub(baseTime)
+	
+	if duration < 0 {
+		return "指定时间已过，将立即执行匹配"
+	}
+	
+	// 判断是今天、明天还是其他日期
+	targetDate := targetTime.Format("2006-01-02")
+	baseDate := baseTime.Format("2006-01-02")
+	
+	if targetDate == baseDate {
+		return fmt.Sprintf("今天%s完成匹配", targetTime.Format("15:04"))
+	}
+	
+	tomorrow := baseTime.Add(24 * time.Hour)
+	if targetDate == tomorrow.Format("2006-01-02") {
+		return fmt.Sprintf("明天%s完成匹配", targetTime.Format("15:04"))
+	}
+	
+	// 其他日期
+	return fmt.Sprintf("%s完成匹配", targetTime.Format("1月2日 15:04"))
+}
+
+// formatDuration 格式化时间间隔为人性化描述
+func (s *UnifiedAIService) formatDuration(d time.Duration) string {
+	hours := int(d.Hours())
+	minutes := int(d.Minutes()) % 60
+	
+	if hours > 24 {
+		days := hours / 24
+		remainingHours := hours % 24
+		if remainingHours == 0 {
+			return fmt.Sprintf("%d天", days)
+		}
+		return fmt.Sprintf("%d天%d小时", days, remainingHours)
+	}
+	
+	if hours > 0 {
+		if minutes == 0 {
+			return fmt.Sprintf("%d小时", hours)
+		}
+		return fmt.Sprintf("%d小时%d分钟", hours, minutes)
+	}
+	
+	return fmt.Sprintf("%d分钟", minutes)
 }
 
 // 执行立即匹配
