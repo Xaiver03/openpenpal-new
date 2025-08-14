@@ -23,7 +23,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useFollow, useFollowActions } from '@/stores/follow-store'
+import { useFollow } from '@/stores/follow-store'
 import { UserCard, UserCardSkeleton } from './user-card'
 import { toast } from 'sonner'
 import type { 
@@ -50,8 +50,14 @@ export function UserSuggestions({
   className,
   onUserFollow,
 }: UserSuggestionsProps) {
-  const { suggestions, isLoading, loadSuggestions, refreshSuggestions } = useFollow()
-  const { followUser, followMultipleUsers } = useFollowActions()
+  const { 
+    suggestions, 
+    isLoading, 
+    loadSuggestions, 
+    refreshSuggestions,
+    followUser, 
+    followMultipleUsers 
+  } = useFollow()
   
   const [localState, setLocalState] = React.useState<SuggestionsState>({
     dismissedIds: new Set(),

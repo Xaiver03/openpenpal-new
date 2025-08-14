@@ -86,7 +86,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       userAgent: navigator.userAgent,
       url: window.location.href,
       userId: this.getCurrentUserId(),
-      stackTrace: errorInfo.componentStack
+      stackTrace: errorInfo.componentStack || undefined
     }
 
     this.errorHandler.handleError(error, context)
@@ -159,7 +159,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       await this.errorHandler.submitFeedback({
         error: error?.message || 'Unknown error',
         stack: error?.stack,
-        componentStack: errorInfo?.componentStack,
+        componentStack: errorInfo?.componentStack || undefined,
         feedback: feedbackText,
         url: window.location.href,
         timestamp: new Date().toISOString(),

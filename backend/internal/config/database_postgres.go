@@ -74,6 +74,19 @@ func SetupDatabaseDirect(config *Config) (*gorm.DB, error) {
 		if err := SetJSONDefaults(db); err != nil {
 			log.Printf("Warning: Failed to set JSON defaults: %v", err)
 		}
+		
+		// 创建性能优化索引 - SOTA实现
+		log.Println("Starting performance optimization...")
+		if err := CreateOptimizedIndexes(db); err != nil {
+			log.Printf("Warning: Failed to create optimized indexes: %v", err)
+		}
+		
+		// 创建性能视图
+		if err := CreatePerformanceViews(db); err != nil {
+			log.Printf("Warning: Failed to create performance views: %v", err)
+		}
+		
+		log.Println("Performance optimization completed")
 	}
 	
 	return db, nil
@@ -97,6 +110,7 @@ func autoMigrateDirect(db *gorm.DB) error {
 		// 信使相关
 		&models.Courier{},
 		&models.CourierTask{},
+		&models.LevelUpgradeRequest{},
 
 		// 信封相关
 		&models.Envelope{},

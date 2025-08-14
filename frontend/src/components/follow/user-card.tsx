@@ -88,7 +88,7 @@ export function UserCard({
         )}>
           {user.nickname}
         </h3>
-        {user.role === 'admin' && (
+        {(user.role === 'platform_admin' || user.role === 'super_admin') && (
           <Badge variant="secondary" className="text-xs">
             <Award className="h-3 w-3 mr-1" />
             管理员

@@ -114,7 +114,7 @@ const PlazaPageComponent = () => {
     error: null as string | null,
     searchQuery: '',
     isSearchMode: false,
-    hotRecommendations: [],
+    hotRecommendations: [] as any[],
     hotRecommendationsLoading: true
   })
 
@@ -219,6 +219,30 @@ const PlazaPageComponent = () => {
     }
   ]
 
+  // 缺失的处理函数
+  const handleSearch = async (query: string) => {
+    updateState({ searchQuery: query, isSearchMode: true })
+    await fetchPosts(true, query)
+  }
+
+  const clearSearch = () => {
+    updateState({ searchQuery: '', isSearchMode: false })
+    fetchPosts()
+  }
+
+  const setSelectedCategory = (category: string) => {
+    updateState({ selectedCategory: category })
+  }
+
+  const setSortBy = (sort: string) => {
+    updateState({ sortBy: sort })
+  }
+
+  const setPosts = (updater: any) => {
+    const newPosts = typeof updater === 'function' ? updater(state.posts) : updater
+    updateState({ posts: newPosts })
+  }
+
   useEffect(() => {
     fetchPosts()
     fetchHotRecommendations()
@@ -234,7 +258,7 @@ const PlazaPageComponent = () => {
         dedupe: true
       })
       
-      if (response.data) {
+      if (response.data && Array.isArray(response.data)) {
         const formattedRecommendations = response.data.map((letter: any) => ({
           id: letter.id,
           title: letter.title || '无标题',
@@ -305,8 +329,9 @@ const PlazaPageComponent = () => {
       
       if (response.success || response.data) {
         // 将后端数据转换为前端需要的格式
-        const letterData = Array.isArray(response.data) ? response.data : 
-                          (response.data?.data && Array.isArray(response.data.data)) ? response.data.data : []
+        const responseAny = response as any
+        const letterData = Array.isArray(responseAny.data) ? responseAny.data : 
+                          (responseAny.data?.data && Array.isArray(responseAny.data.data)) ? responseAny.data.data : []
         const formattedPosts = letterData.map((letter: any) => ({
           id: letter.id,
           code: letter.code,
@@ -352,16 +377,6 @@ const PlazaPageComponent = () => {
   const getTagsForLetter = (content: string) => {
     const commonTags = ['成长', '梦想', '友谊', '爱情', '家庭', '回忆', '感悟', '青春']
     return commonTags.filter(tag => content.includes(tag)).slice(0, 3)
-  }
-
-  const handleSearch = async (query: string) => {
-    updateState({ searchQuery: query, isSearchMode: true })
-    await fetchPosts(true, query)
-  }
-
-  const clearSearch = () => {
-    updateState({ searchQuery: '', isSearchMode: false })
-    fetchPosts()
   }
 
   const filteredPosts = state.posts.filter((post: any) => 
@@ -424,9 +439,9 @@ const PlazaPageComponent = () => {
                 <div className="flex-1 max-w-2xl">
                   <AdvancedSearch onSearch={handleSearch} />
                 </div>
-                {isSearchMode && (
+                {state.isSearchMode && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-amber-700">搜索 "{searchQuery}"</span>
+                    <span className="text-sm text-amber-700">搜索 "{state.searchQuery}"</span>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -447,11 +462,11 @@ const PlazaPageComponent = () => {
                     return (
                       <Button
                         key={category.id}
-                        variant={selectedCategory === category.id ? "default" : "outline"}
+                        variant={state.selectedCategory === category.id ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSelectedCategory(category.id)}
                         className={`${
-                          selectedCategory === category.id 
+                          state.selectedCategory === category.id 
                             ? 'bg-amber-600 text-white' 
                             : 'border-amber-300 text-amber-700 hover:bg-amber-50'
                         }`}
@@ -467,7 +482,7 @@ const PlazaPageComponent = () => {
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-muted-foreground">排序：</span>
                   <select 
-                    value={sortBy} 
+                    value={state.sortBy} 
                     onChange={(e) => setSortBy(e.target.value)}
                     className="text-sm border border-amber-300 rounded-md px-3 py-1 bg-white text-amber-700"
                   >
@@ -499,7 +514,7 @@ const PlazaPageComponent = () => {
               </p>
             </div>
             
-            {hotRecommendationsLoading && (
+            {state.hotRecommendationsLoading && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[...Array(6)].map((_, i) => (
                   <Card key={i} className="border-red-200 animate-pulse">
@@ -518,9 +533,9 @@ const PlazaPageComponent = () => {
               </div>
             )}
             
-            {!hotRecommendationsLoading && hotRecommendations.length > 0 && (
+            {!state.hotRecommendationsLoading && state.hotRecommendations.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {hotRecommendations.map((rec: any) => (
+                {state.hotRecommendations.map((rec: any) => (
                   <Card key={rec.id} className="group hover:shadow-lg transition-all duration-300 border-red-200 bg-gradient-to-br from-red-50 to-pink-50">
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between mb-2">
@@ -560,7 +575,7 @@ const PlazaPageComponent = () => {
               </div>
             )}
             
-            {!hotRecommendationsLoading && hotRecommendations.length === 0 && (
+            {!state.hotRecommendationsLoading && state.hotRecommendations.length === 0 && (
               <div className="text-center py-8">
                 <div className="text-red-600 mb-2">暂无热门推荐</div>
                 <p className="text-red-500 text-sm">快来写信，成为第一个热门作者！</p>
@@ -573,7 +588,7 @@ const PlazaPageComponent = () => {
         <section className="py-12 bg-white">
           {/* 添加容器包装器实现左右留空 */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {loading && (
+            {state.loading && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {[...Array(8)].map((_, i) => (
                   <Card key={i} className="border-amber-200 animate-pulse">
@@ -593,16 +608,16 @@ const PlazaPageComponent = () => {
               </div>
             )}
 
-            {error && (
+            {state.error && (
               <div className="text-center py-12">
-                <div className="text-red-600 mb-4">{error}</div>
+                <div className="text-red-600 mb-4">{state.error}</div>
                 <Button onClick={() => fetchPosts()} className="bg-amber-600 hover:bg-amber-700">
                   重试
                 </Button>
               </div>
             )}
 
-            {!loading && !error && posts.length === 0 && (
+            {!state.loading && !state.error && state.posts.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-amber-600 mb-4">暂无信件</div>
                 <Button asChild className="bg-amber-600 hover:bg-amber-700">
@@ -614,7 +629,7 @@ const PlazaPageComponent = () => {
               </div>
             )}
 
-            {!loading && !error && posts.length > 0 && (
+            {!state.loading && !state.error && state.posts.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {sortedPosts.map((post: any) => (
                   <Link key={post.id} href={`/read/${post.code}`}>
@@ -662,7 +677,7 @@ const PlazaPageComponent = () => {
                                 await LetterService.likeLetter(post.id)
                                 toast.success('点赞成功！')
                                 // 更新本地状态
-                                setPosts(prevPosts => 
+                                setPosts((prevPosts: any[]) => 
                                   prevPosts.map((p: any) => 
                                     p.id === post.id 
                                       ? { ...p, likes: p.likes + 1 }
@@ -714,14 +729,15 @@ const PlazaPageComponent = () => {
                           <User className="w-3 h-3 flex-shrink-0" />
                           <span className="truncate">{post.author}</span>
                           {post.user_id && (
-                            <CompactFollowButton
-                              user_id={post.user_id}
-                              className="ml-1 h-5 px-1 text-xs"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                            />
+                            <div onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}>
+                              <CompactFollowButton
+                                user_id={post.user_id}
+                                className="ml-1 h-5 px-1 text-xs"
+                              />
+                            </div>
                           )}
                         </div>
                         <span className="text-xs flex-shrink-0">{post.publishDate}</span>
@@ -733,7 +749,7 @@ const PlazaPageComponent = () => {
               </div>
             )}
 
-            {!loading && !error && posts.length > 0 && (
+            {!state.loading && !state.error && state.posts.length > 0 && (
               <div className="text-center mt-12">
                 <Button variant="outline" size="lg" className="border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => fetchPosts()}>
                   加载更多作品

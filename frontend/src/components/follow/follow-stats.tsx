@@ -173,7 +173,7 @@ export function FollowStats({
         )}
         
         {/* Recent Followers */}
-        {show_recent && localStats.stats?.recent_followers?.length > 0 && (
+        {show_recent && localStats.stats?.recent_followers && localStats.stats.recent_followers.length > 0 && (
           <>
             <Separator />
             <div className="space-y-3">
@@ -182,7 +182,7 @@ export function FollowStats({
                 最近关注者
               </h4>
               <div className="space-y-2">
-                {localStats.stats.recent_followers.slice(0, 3).map((follower) => (
+                {localStats.stats?.recent_followers?.slice(0, 3).map((follower) => (
                   <div key={follower.id} className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                       {follower.avatar ? (
@@ -213,10 +213,10 @@ export function FollowStats({
                   </div>
                 ))}
                 
-                {localStats.stats.recent_followers.length > 3 && (
+                {localStats.stats?.recent_followers && localStats.stats.recent_followers.length > 3 && (
                   <Button variant="ghost" size="sm" className="w-full">
                     <MoreHorizontal className="h-4 w-4 mr-2" />
-                    查看更多 ({localStats.stats.recent_followers.length - 3})
+                    查看更多 ({(localStats.stats?.recent_followers?.length || 0) - 3})
                   </Button>
                 )}
               </div>
@@ -225,7 +225,7 @@ export function FollowStats({
         )}
         
         {/* Popular Following */}
-        {show_recent && localStats.stats?.popular_following?.length > 0 && (
+        {show_recent && localStats.stats?.popular_following && localStats.stats.popular_following.length > 0 && (
           <>
             <Separator />
             <div className="space-y-3">
@@ -234,7 +234,7 @@ export function FollowStats({
                 热门关注
               </h4>
               <div className="space-y-2">
-                {localStats.stats.popular_following.slice(0, 3).map((user) => (
+                {localStats.stats?.popular_following?.slice(0, 3).map((user) => (
                   <div key={user.id} className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                       {user.avatar ? (

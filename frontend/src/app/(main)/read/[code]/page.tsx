@@ -222,9 +222,9 @@ export default function ReadLetterPage() {
               <User className="h-4 w-4" />
               <span>来自：{letter.sender_name}</span>
             </div>
-            {letter.user_id && (
+            {letter.sender_id && (
               <FollowButton
-                user_id={letter.user_id}
+                user_id={letter.sender_id}
                 size="sm"
                 variant="outline"
               />

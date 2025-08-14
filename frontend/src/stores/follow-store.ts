@@ -672,9 +672,11 @@ export const useFollow = () => {
     // Actions
     followUser: store.followUser,
     unfollowUser: store.unfollowUser,
+    followMultipleUsers: store.followMultipleUsers,
     loadFollowers: store.loadFollowers,
     loadFollowing: store.loadFollowing,
     loadSuggestions: store.loadSuggestions,
+    refreshSuggestions: store.refreshSuggestions,
   }
 }
 

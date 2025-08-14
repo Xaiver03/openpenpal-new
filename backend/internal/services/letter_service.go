@@ -67,18 +67,51 @@ func (s *LetterService) SetOPCodeService(opcodeService *OPCodeService) {
 	s.opcodeService = opcodeService
 }
 
+// GetDB 获取数据库连接（用于其他服务访问）
+func (s *LetterService) GetDB() *gorm.DB {
+	return s.db
+}
+
 // CreateDraft 创建草稿
 func (s *LetterService) CreateDraft(userID string, req *models.CreateLetterRequest) (*models.Letter, error) {
+	// PRD要求：验证收件人OP Code
+	if req.RecipientOPCode != "" {
+		// 验证OP Code格式
+		if err := models.ValidateOPCode(req.RecipientOPCode); err != nil {
+			return nil, fmt.Errorf("收件人OP Code格式不正确: %w", err)
+		}
+		
+		// 验证OP Code是否存在（如果有OP Code服务）
+		if s.opcodeService != nil {
+			isValid, err := s.opcodeService.ValidateOPCode(req.RecipientOPCode)
+			if err != nil {
+				return nil, fmt.Errorf("OP Code验证失败: %w", err)
+			}
+			if !isValid {
+				return nil, fmt.Errorf("收件人OP Code不存在或已失效")
+			}
+		}
+	}
+	
+	// 验证发件人OP Code（如果提供）
+	if req.SenderOPCode != "" {
+		if err := models.ValidateOPCode(req.SenderOPCode); err != nil {
+			return nil, fmt.Errorf("发件人OP Code格式不正确: %w", err)
+		}
+	}
+
 	letter := &models.Letter{
-		ID:         uuid.New().String(),
-		UserID:     userID,
-		AuthorID:   userID, // 设置作者ID
-		Title:      req.Title,
-		Content:    req.Content,
-		Style:      req.Style,
-		Status:     models.StatusDraft,
-		Visibility: models.VisibilityPrivate, // 设置默认可见性
-		ReplyTo:    req.ReplyTo,
+		ID:              uuid.New().String(),
+		UserID:          userID,
+		AuthorID:        userID, // 设置作者ID
+		Title:           req.Title,
+		Content:         req.Content,
+		Style:           req.Style,
+		Status:          models.StatusDraft,
+		Visibility:      models.VisibilityPrivate, // 设置默认可见性
+		ReplyTo:         req.ReplyTo,
+		RecipientOPCode: req.RecipientOPCode, // PRD要求：设置收件人OP Code
+		SenderOPCode:    req.SenderOPCode,    // 可选的发件人OP Code
 	}
 
 	if err := s.db.Create(letter).Error; err != nil {

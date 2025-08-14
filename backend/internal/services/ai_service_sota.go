@@ -32,6 +32,39 @@ type AIServiceMetrics struct {
 	mu              sync.RWMutex
 }
 
+// IncrementRequest increments the total request counter
+func (m *AIServiceMetrics) IncrementRequest() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.TotalRequests++
+}
+
+// IncrementSuccess increments the success request counter
+func (m *AIServiceMetrics) IncrementSuccess() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.SuccessRequests++
+}
+
+// IncrementFallback increments the fallback counter
+func (m *AIServiceMetrics) IncrementFallback() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.FallbackCount++
+}
+
+// RecordResponseTime records the response time
+func (m *AIServiceMetrics) RecordResponseTime(duration time.Duration) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// Simple moving average calculation
+	if m.TotalRequests > 0 {
+		m.AvgResponseTime = (m.AvgResponseTime*float64(m.TotalRequests-1) + float64(duration.Milliseconds())) / float64(m.TotalRequests)
+	} else {
+		m.AvgResponseTime = float64(duration.Milliseconds())
+	}
+}
+
 // CircuitBreaker implements the circuit breaker pattern
 type CircuitBreaker struct {
 	maxFailures  int

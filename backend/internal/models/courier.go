@@ -29,9 +29,23 @@ type Courier struct {
 	Level           int            `json:"level" gorm:"default:1"`
 	TaskCount       int            `json:"task_count" gorm:"default:0"`
 	Points          int            `json:"points" gorm:"default:0"`
+	
+	// 层级管理字段（与数据库对齐）
+	ZoneCode      string  `json:"zone_code" gorm:"type:text"`
+	ZoneType      string  `json:"zone_type" gorm:"type:text"`
+	ParentID      *string `json:"parent_id" gorm:"type:varchar(36);index"`
+	CreatedByID   *string `json:"created_by_id" gorm:"type:varchar(36)"`
+	Phone         string  `json:"phone" gorm:"type:text"`
+	IDCard        string  `json:"id_card" gorm:"type:text"`
+	
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `json:"deleted_at" gorm:"index"`
+	
+	// 关联关系
+	Parent   *Courier  `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
+	Children []Courier `json:"children,omitempty" gorm:"foreignKey:ParentID"`
+	CreatedBy *User    `json:"created_by,omitempty" gorm:"foreignKey:CreatedByID"`
 }
 
 // CourierTask 信使任务模型
@@ -98,6 +112,31 @@ func (Courier) TableName() string {
 
 func (CourierTask) TableName() string {
 	return "courier_tasks"
+}
+
+// LevelUpgradeRequest 信使升级请求模型（与数据库对齐）
+type LevelUpgradeRequest struct {
+	ID            int64      `json:"id" gorm:"primaryKey;autoIncrement"`
+	CourierID     string     `json:"courier_id" gorm:"type:text;not null;index"`
+	CurrentLevel  int64      `json:"current_level" gorm:"not null"`
+	RequestLevel  int64      `json:"request_level" gorm:"not null"`
+	Reason        string     `json:"reason" gorm:"type:text"`
+	Evidence      string     `json:"evidence" gorm:"type:text"`
+	Status        string     `json:"status" gorm:"type:text;default:'pending'"`
+	ReviewedBy    string     `json:"reviewed_by" gorm:"type:text"`
+	ReviewedAt    *time.Time `json:"reviewed_at"`
+	ReviewComment string     `json:"review_comment" gorm:"type:text"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	
+	// 关联关系
+	Courier  *Courier `json:"courier,omitempty" gorm:"foreignKey:CourierID"`
+	Reviewer *User    `json:"reviewer,omitempty" gorm:"foreignKey:ReviewedBy"`
+}
+
+// TableName 指定表名
+func (LevelUpgradeRequest) TableName() string {
+	return "level_upgrade_requests"
 }
 
 // --- 四级信使系统相关模型 ---

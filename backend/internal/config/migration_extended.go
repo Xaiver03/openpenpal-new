@@ -51,6 +51,31 @@ func MigrateExtendedModels(db *gorm.DB) error {
 	}
 	log.Println("Letter extended models migrated successfully")
 
+	// 用户扩展模型
+	log.Println("Migrating user extended models...")
+	err = db.AutoMigrate(
+		&models.UserProfileExtended{},
+		&models.UserStatsData{},
+		&models.UserPrivacy{},
+		&models.UserAchievement{},
+	)
+	if err != nil {
+		log.Printf("User extended models migration error: %v", err)
+		return err
+	}
+	log.Println("User extended models migrated successfully")
+
+	// 扫描历史系统模型 - PRD要求
+	log.Println("Migrating scan event models...")
+	err = db.AutoMigrate(
+		&models.ScanEvent{},
+	)
+	if err != nil {
+		log.Printf("Scan event models migration error: %v", err)
+		return err
+	}
+	log.Println("Scan event models migrated successfully")
+
 	// 创建默认模板
 	log.Println("Creating default templates...")
 	createDefaultTemplates(db)

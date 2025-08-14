@@ -15,6 +15,9 @@ const (
 	StatusInTransit LetterStatus = "in_transit"
 	StatusDelivered LetterStatus = "delivered"
 	StatusRead      LetterStatus = "read"
+	
+	// AI相关状态别名
+	LetterStatusDraft LetterStatus = "draft"
 )
 
 // LetterStyle 信件样式枚举
@@ -26,6 +29,15 @@ const (
 	StyleVintage LetterStyle = "vintage"
 	StyleElegant LetterStyle = "elegant"
 	StyleCasual  LetterStyle = "casual"
+)
+
+// LetterType 信件类型枚举
+type LetterType string
+
+const (
+	LetterTypeOriginal LetterType = "original"
+	LetterTypeReply    LetterType = "reply"
+	LetterTypeForward  LetterType = "forward"
 )
 
 // LetterVisibility 信件可见性枚举
@@ -47,7 +59,9 @@ type Letter struct {
 	Style      LetterStyle       `json:"style" gorm:"type:varchar(20);not null;default:'classic'"`
 	Status     LetterStatus      `json:"status" gorm:"type:varchar(20);not null;default:'draft'"`
 	Visibility LetterVisibility  `json:"visibility" gorm:"type:varchar(20);not null;default:'private'"`
+	Type       LetterType        `json:"type" gorm:"type:varchar(20);not null;default:'original'"`
 	LikeCount  int               `json:"like_count" gorm:"default:0"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty" gorm:"type:jsonb"`
 	
 	// OP Code System - 核心地址标识
 	RecipientOPCode string          `json:"recipient_op_code" gorm:"type:varchar(6);index"` // 收件人OP Code，如: PK5F3D
@@ -192,10 +206,12 @@ type LetterPhoto struct {
 
 // CreateLetterRequest 创建信件请求
 type CreateLetterRequest struct {
-	Title   string      `json:"title"`
-	Content string      `json:"content" binding:"required"`
-	Style   LetterStyle `json:"style" binding:"required"`
-	ReplyTo string      `json:"reply_to,omitempty"`
+	Title           string      `json:"title"`
+	Content         string      `json:"content" binding:"required"`
+	Style           LetterStyle `json:"style" binding:"required"`
+	ReplyTo         string      `json:"reply_to,omitempty"`
+	RecipientOPCode string      `json:"recipient_op_code" binding:"required,len=6"` // PRD要求：必填OP Code
+	SenderOPCode    string      `json:"sender_op_code,omitempty" binding:"omitempty,len=6"`
 }
 
 // UpdateLetterStatusRequest 更新信件状态请求

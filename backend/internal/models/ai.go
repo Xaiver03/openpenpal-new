@@ -42,6 +42,30 @@ const (
 	TaskTypeModerate    AITaskType = "moderate"    // 内容审核
 )
 
+// AIContentTemplate AI内容模板
+type AIContentTemplate struct {
+	ID           string                 `json:"id"`
+	TemplateType string                 `json:"template_type"`
+	Category     string                 `json:"category"`
+	Title        string                 `json:"title"`
+	Content      string                 `json:"content"`
+	Tags         []string               `json:"tags"`
+	Metadata     map[string]interface{} `json:"metadata"`
+	UsageCount   int                    `json:"usage_count"`
+	Rating       float64                `json:"rating"`
+	QualityScore int                    `json:"quality_score"`
+	IsActive     bool                   `json:"is_active"`
+}
+
+// AIPersonaInfo AI人设信息
+type AIPersonaInfo struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Style       string `json:"style"`
+	Available   bool   `json:"available"`
+}
+
 // AIMatch AI匹配记录
 type AIMatch struct {
 	ID            string     `json:"id" gorm:"primaryKey;type:varchar(36)"`
@@ -162,12 +186,13 @@ type AIMatchRequest struct {
 
 // AIReplyRequest AI回信请求
 type AIReplyRequest struct {
-	LetterID     string    `json:"letter_id" binding:"required"`
-	Persona      AIPersona `json:"persona" binding:"required"`
-	PersonaType  string    `json:"persona_type,omitempty"` // "custom" or "predefined"
-	PersonaDesc  string    `json:"persona_desc,omitempty"` // 自定义人设描述
-	DelayHours   int       `json:"delay_hours"` // 延迟小时数，默认24
-	DeliveryDays int       `json:"delivery_days,omitempty"` // 延迟天数
+	LetterID       string    `json:"letter_id" binding:"required"`
+	Persona        AIPersona `json:"persona" binding:"required"`
+	PersonaType    string    `json:"persona_type,omitempty"` // "custom" or "predefined"
+	PersonaDesc    string    `json:"persona_desc,omitempty"` // 自定义人设描述
+	DelayHours     int       `json:"delay_hours"` // 延迟小时数，默认24
+	DeliveryDays   int       `json:"delivery_days,omitempty"` // 延迟天数
+	OriginalLetter *Letter   `json:"original_letter,omitempty"` // 原始信件信息
 }
 
 // AIReplyAdviceRequest AI回信建议请求
@@ -215,6 +240,7 @@ type AIInspirationResponse struct {
 		Style  string   `json:"style"`
 		Tags   []string `json:"tags"`
 	} `json:"inspirations"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // DelayQueueRecord 延迟队列记录

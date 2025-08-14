@@ -24,7 +24,7 @@ import {
   SortDesc
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useFollow, useFollowActions } from '@/stores/follow-store'
+import { useFollow } from '@/stores/follow-store'
 import { UserCard, UserCardSkeleton } from './user-card'
 import type { FollowListProps, FollowListQuery, FollowUser } from '@/types/follow'
 
@@ -53,9 +53,10 @@ export function FollowList({
     isLoading, 
     errors,
     followerCount,
-    followingCount
+    followingCount,
+    loadFollowers,
+    loadFollowing
   } = useFollow()
-  const { loadFollowers, loadFollowing } = useFollowActions()
   
   const [localState, setLocalState] = React.useState<FollowListState>({
     searchQuery: '',

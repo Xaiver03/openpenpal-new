@@ -319,6 +319,195 @@ func (s *OPCodeService) MigrateZoneToOPCode(zone string) (string, error) {
 	return "", fmt.Errorf("无法将Zone '%s' 转换为OP Code", zone)
 }
 
+// SearchAreas 搜索片区
+func (s *OPCodeService) SearchAreas(schoolCode string) (map[string]interface{}, error) {
+	// 参数验证
+	if schoolCode == "" {
+		return nil, errors.New("学校代码不能为空")
+	}
+	schoolCode = strings.ToUpper(schoolCode)
+	
+	// 验证学校代码是否存在
+	var school models.OPCodeSchool
+	if err := s.db.Where("school_code = ? AND is_active = ?", schoolCode, true).First(&school).Error; err != nil {
+		return nil, errors.New("学校代码不存在")
+	}
+	
+	var areas []models.OPCodeArea
+	
+	// 查询片区数据
+	if err := s.db.Where("school_code = ? AND is_active = ?", schoolCode, true).
+		Order("area_code").Find(&areas).Error; err != nil {
+		return nil, err
+	}
+	
+	// 转换为前端需要的格式
+	result := make(map[string]interface{})
+	result["school_code"] = schoolCode
+	result["school_name"] = school.SchoolName
+	result["areas"] = make([]map[string]interface{}, 0, len(areas))
+	
+	for _, area := range areas {
+		areaData := map[string]interface{}{
+			"area_code":   area.AreaCode,
+			"area_name":   area.AreaName,
+			"description": area.Description,
+		}
+		result["areas"] = append(result["areas"].([]map[string]interface{}), areaData)
+	}
+	
+	return result, nil
+}
+
+// SearchBuildings 搜索楼栋
+func (s *OPCodeService) SearchBuildings(schoolCode, areaCode string) (map[string]interface{}, error) {
+	// 参数验证
+	if schoolCode == "" {
+		return nil, errors.New("学校代码不能为空")
+	}
+	
+	schoolCode = strings.ToUpper(schoolCode)
+	if areaCode != "" {
+		areaCode = strings.ToUpper(areaCode)
+	}
+	
+	// 构建查询条件
+	query := s.db.Table("signal_codes").Where("school_code = ? AND is_active = ?", schoolCode, true)
+	if areaCode != "" {
+		query = query.Where("area_code = ?", areaCode)
+	}
+	
+	// 查询并按楼栋分组
+	var buildings []struct {
+		SchoolCode string `json:"school_code"`
+		AreaCode   string `json:"area_code"`
+		PointCode  string `json:"point_code"`
+		PointName  string `json:"point_name"`
+		PointType  string `json:"point_type"`
+	}
+	
+	if err := query.Select("school_code, area_code, point_code, point_name, point_type").
+		Group("school_code, area_code, point_code, point_name, point_type").
+		Order("area_code, point_code").Scan(&buildings).Error; err != nil {
+		return nil, err
+	}
+	
+	// 转换为前端需要的格式
+	result := make(map[string]interface{})
+	result["school_code"] = schoolCode
+	if areaCode != "" {
+		result["area_code"] = areaCode
+	}
+	result["buildings"] = make([]map[string]interface{}, 0, len(buildings))
+	
+	for _, building := range buildings {
+		buildingData := map[string]interface{}{
+			"school_code": building.SchoolCode,
+			"area_code":   building.AreaCode,
+			"point_code":  building.PointCode,
+			"point_name":  building.PointName,
+			"point_type":  building.PointType,
+		}
+		result["buildings"] = append(result["buildings"].([]map[string]interface{}), buildingData)
+	}
+	
+	return result, nil
+}
+
+// SearchPoints 搜索投递点
+func (s *OPCodeService) SearchPoints(schoolCode, areaCode string) (map[string]interface{}, error) {
+	// 参数验证
+	if schoolCode == "" {
+		return nil, errors.New("学校代码不能为空")
+	}
+	
+	schoolCode = strings.ToUpper(schoolCode)
+	if areaCode != "" {
+		areaCode = strings.ToUpper(areaCode)
+	}
+	
+	// 使用临时结构体映射数据库字段
+	type TempSignalCode struct {
+		Code        string `json:"code"`
+		SchoolCode  string `json:"school_code"`
+		AreaCode    string `json:"area_code"`
+		PointCode   string `json:"point_code"`
+		Description string `json:"description"` // 映射数据库中的description字段
+		CodeType    string `json:"code_type"`
+		IsPublic    bool   `json:"is_public"`
+	}
+	
+	// 构建查询条件
+	query := s.db.Table("signal_codes").Where("school_code = ? AND is_active = ?", schoolCode, true)
+	if areaCode != "" {
+		query = query.Where("area_code = ?", areaCode)
+	}
+	
+	var points []TempSignalCode
+	
+	if err := query.Select("code, school_code, area_code, point_code, description, code_type, is_public").
+		Order("area_code, point_code").Scan(&points).Error; err != nil {
+		return nil, err
+	}
+	
+	// 转换为前端需要的格式
+	result := make(map[string]interface{})
+	result["school_code"] = schoolCode
+	if areaCode != "" {
+		result["area_code"] = areaCode
+	}
+	result["points"] = make([]map[string]interface{}, 0, len(points))
+	
+	for _, point := range points {
+		pointData := map[string]interface{}{
+			"code":        point.Code,
+			"school_code": point.SchoolCode,
+			"area_code":   point.AreaCode,
+			"point_code":  point.PointCode,
+			"point_name":  point.Description, // 使用description作为point_name
+			"point_type":  point.CodeType,
+			"is_public":   point.IsPublic,
+		}
+		result["points"] = append(result["points"].([]map[string]interface{}), pointData)
+	}
+	
+	return result, nil
+}
+
+// SearchSchools 搜索学校
+func (s *OPCodeService) SearchSchools(name string, page, limit int) (map[string]interface{}, error) {
+	var schools []models.OPCodeSchool
+	var total int64
+	
+	query := s.db.Model(&models.OPCodeSchool{}).Where("is_active = ?", true)
+	
+	// 如果提供了名称，进行模糊搜索
+	if name != "" {
+		query = query.Where("school_name ILIKE ? OR full_name ILIKE ?", "%"+name+"%", "%"+name+"%")
+	}
+	
+	// 计算总数
+	query.Count(&total)
+	
+	// 分页查询
+	offset := (page - 1) * limit
+	if err := query.Offset(offset).Limit(limit).Find(&schools).Error; err != nil {
+		return nil, err
+	}
+	
+	// 转换为前端需要的格式
+	result := make(map[string]interface{})
+	result["schools"] = schools
+	result["pagination"] = map[string]interface{}{
+		"page":       page,
+		"limit":      limit,
+		"total":      total,
+		"total_page": (total + int64(limit) - 1) / int64(limit),
+	}
+	
+	return result, nil
+}
+
 // generateID 生成UUID（简化版）
 func generateID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())

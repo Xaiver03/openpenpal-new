@@ -14,11 +14,13 @@ import { ApiError } from '../api-client'
 export interface ErrorContext {
   component?: string
   action?: string
+  level?: 'page' | 'component' | 'feature'
   userId?: string
   requestId?: string
   timestamp?: string
   userAgent?: string
   url?: string
+  stackTrace?: string
   additionalData?: Record<string, any>
 }
 
@@ -180,6 +182,39 @@ export class ErrorHandler {
    */
   clearErrors(): void {
     this.errorReports.clear()
+  }
+  
+  /**
+   * Submit feedback for error reports
+   */
+  async submitFeedback(feedbackData: {
+    error: string
+    stack?: string
+    componentStack?: string
+    feedback: string
+    url: string
+    timestamp: string
+    userId?: string
+  }): Promise<void> {
+    try {
+      // For now, just log the feedback (could be sent to analytics service)
+      console.log('📧 User Feedback Submitted:', {
+        error: feedbackData.error,
+        feedback: feedbackData.feedback,
+        context: {
+          url: feedbackData.url,
+          timestamp: feedbackData.timestamp,
+          userId: feedbackData.userId
+        }
+      })
+      
+      // In production, this would send to an error tracking service
+      // await fetch('/api/error-feedback', { method: 'POST', body: JSON.stringify(feedbackData) })
+      
+    } catch (err) {
+      console.error('Failed to submit error feedback:', err)
+      throw err
+    }
   }
 }
 

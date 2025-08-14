@@ -43,6 +43,7 @@ interface UserLetter {
   content_preview: string
   created_at: string
   status: string
+  visibility: 'private' | 'public' | 'friends'
   recipient?: string
   sender?: string
 }
@@ -440,7 +441,7 @@ function UserPageContent() {
                     <h3 className="text-lg font-medium text-gray-800">我的作品</h3>
                     <div className="flex gap-2 text-sm">
                       <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">全部 {userLetters.length}</span>
-                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded">公开 {userLetters.filter(l => l.is_public).length}</span>
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded">公开 {userLetters.filter(l => l.visibility === 'public').length}</span>
                     </div>
                   </div>
                   
@@ -453,7 +454,7 @@ function UserPageContent() {
                               {letter.title || '无标题'}
                             </h4>
                             <div className="flex gap-1">
-                              {letter.is_public && (
+                              {letter.visibility === 'public' && (
                                 <span className="text-xs bg-green-100 text-green-600 px-1.5 py-0.5 rounded">公开</span>
                               )}
                             </div>

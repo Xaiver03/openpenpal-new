@@ -47,6 +47,7 @@ func main() {
 	courierService := services.NewCourierService(db)
 	museumService := services.NewMuseumService(db)
 	aiService := services.NewAIService(db, cfg)
+	configService := services.NewConfigService(db)
 	notificationService := services.NewNotificationService(db, cfg)
 	analyticsService := services.NewAnalyticsService(db)
 	schedulerService := services.NewSchedulerService(db)
@@ -58,7 +59,8 @@ func main() {
 	moderationService := services.NewModerationService(db, cfg, aiService)
 	shopService := services.NewShopService(db)
 	commentService := services.NewCommentService(db, cfg)
-	// opcodeService := services.NewOPCodeService(db) // OP Code服务 - Temporarily disabled
+	opcodeService := services.NewOPCodeService(db) // OP Code服务 - 重新启用
+	scanEventService := services.NewScanEventService(db) // 扫描事件服务 - PRD要求
 
 	// 初始化延迟队列服务
 	delayQueueService, err := services.NewDelayQueueService(db, cfg)
@@ -83,6 +85,7 @@ func main() {
 	letterService.SetNotificationService(notificationService)
 	letterService.SetWebSocketService(wsService)
 	letterService.SetAIService(aiService)
+	letterService.SetOPCodeService(opcodeService) // PRD要求：集成OP Code验证
 	envelopeService.SetCreditService(creditService)
 	museumService.SetCreditService(creditService)
 	museumService.SetNotificationService(notificationService)
@@ -110,7 +113,7 @@ func main() {
 	promotionService := services.NewPromotionService(db)
 	courierGrowthHandler := handlers.NewCourierGrowthHandler(courierService, userService, promotionService)
 	museumHandler := handlers.NewMuseumHandler(museumService)
-	aiHandler := handlers.NewAIHandler(aiService)
+	aiHandler := handlers.NewAIHandler(aiService, configService)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
 	schedulerHandler := handlers.NewSchedulerHandler(schedulerService)
@@ -119,15 +122,31 @@ func main() {
 	systemSettingsHandler := handlers.NewSystemSettingsHandler(systemSettingsService, cfg)
 	storageHandler := handlers.NewStorageHandler(storageService)
 	moderationHandler := handlers.NewModerationHandler(moderationService)
+	opcodeHandler := handlers.NewOPCodeHandler(opcodeService, courierService)
+	barcodeHandler := handlers.NewBarcodeHandler(letterService, opcodeService, scanEventService) // PRD条码系统处理器
+	scanEventHandler := handlers.NewScanEventHandler(scanEventService) // 扫描事件处理器
 	shopHandler := handlers.NewShopHandler(shopService, userService)
 	commentHandler := handlers.NewCommentHandler(commentService)
 	userProfileHandler := handlers.NewUserProfileHandler(db) // 用户档案处理器
-	// opcodeHandler := handlers.NewOPCodeHandler(opcodeService, courierService) // OP Code处理器 - Temporarily disabled
 	
 	// QR扫描服务和处理器 - SOTA集成：复用现有依赖 - Temporarily disabled
 	// qrScanService := services.NewQRScanService(db, letterService, courierService, wsAdapter)
 	// qrScanHandler := handlers.NewQRScanHandler(qrScanService, middleware.NewAuthMiddleware(cfg, db)) - Temporarily disabled
 	wsHandler := wsService.GetHandler()
+
+	// SOTA管理API适配器 - 兼容Java前端
+	adminAdapter := adapters.NewAdminAdapter(
+		adminHandler,
+		userHandler,
+		letterHandler,
+		courierHandler,
+		museumHandler,
+		adminService,
+		userService,
+		letterService,
+		courierService,
+		museumService,
+	)
 
 	// 设置Gin模式
 	if cfg.Environment == "production" {
@@ -557,15 +576,19 @@ func main() {
 			shopAuth.DELETE("/favorites/:id", shopHandler.RemoveFromFavorites) // 取消收藏
 		}
 		
-		// OP Code系统 - OpenPenPal核心地理编码系统 - Temporarily disabled
-		/*
+		// OP Code系统 - OpenPenPal核心地理编码系统 - 重新启用
 		opcode := protected.Group("/opcode")
 		{
 			// 用户功能
 			opcode.POST("/apply", opcodeHandler.ApplyOPCode)                     // 申请OP Code
 			opcode.GET("/validate", opcodeHandler.ValidateOPCode)                // 验证格式
 			opcode.GET("/search", opcodeHandler.SearchOPCodes)                   // 搜索OP Code
+			opcode.GET("/search/schools", opcodeHandler.SearchSchools)           // 搜索学校
+			opcode.GET("/search/areas", opcodeHandler.SearchAreas)               // 搜索片区
+			opcode.GET("/search/buildings", opcodeHandler.SearchBuildings)       // 搜索楼栋
+			opcode.GET("/search/points", opcodeHandler.SearchPoints)             // 搜索投递点
 			opcode.GET("/stats/:school_code", opcodeHandler.GetOPCodeStats)      // 获取统计
+			opcode.GET("/:code", opcodeHandler.GetOPCode)                        // 获取OP Code信息
 			
 			// 管理功能（需要额外权限验证）
 			opcodeAdmin := opcode.Group("/admin")
@@ -573,7 +596,31 @@ func main() {
 				opcodeAdmin.POST("/applications/:application_id/review", opcodeHandler.AdminReviewApplication) // 审核申请
 			}
 		}
-		*/
+
+		// 条码系统 - PRD规格实现
+		barcodes := protected.Group("/barcodes")
+		{
+			barcodes.POST("", barcodeHandler.CreateBarcode)                      // 创建条码
+			barcodes.PATCH("/:id/bind", barcodeHandler.BindBarcode)              // 绑定条码
+			barcodes.PATCH("/:id/status", barcodeHandler.UpdateBarcodeStatus)    // 更新状态
+			barcodes.GET("/:id/status", barcodeHandler.GetBarcodeStatus)         // 获取状态
+			barcodes.POST("/:id/validate", barcodeHandler.ValidateBarcodeOperation) // 验证操作权限
+		}
+
+		// 扫描事件系统 - PRD要求的完整扫描历史
+		scanEvents := protected.Group("/scan-events")
+		{
+			scanEvents.GET("", scanEventHandler.GetScanHistory)                  // 获取扫描历史
+			scanEvents.GET("/:id", scanEventHandler.GetScanEventByID)            // 获取扫描事件详情
+			scanEvents.GET("/barcode/:barcode_id/timeline", scanEventHandler.GetBarcodeTimeline) // 获取条码时间线
+			scanEvents.GET("/summary", scanEventHandler.GetScanEventSummary)     // 获取统计摘要
+			scanEvents.GET("/user/activity", scanEventHandler.GetUserScanActivity) // 获取用户扫描活动
+			scanEvents.GET("/location/:op_code/stats", scanEventHandler.GetLocationScanStats) // 获取位置统计
+			
+			// 管理员功能
+			scanEvents.POST("", scanEventHandler.CreateScanEvent)               // 手动创建扫描事件
+			scanEvents.POST("/cleanup", scanEventHandler.CleanupOldScanEvents)  // 清理旧事件
+		}
 	}
 
 	// 管理员路由
@@ -687,6 +734,8 @@ func main() {
 		{
 			adminAI.GET("/config", aiHandler.GetAIConfig)           // 获取AI配置
 			adminAI.PUT("/config", aiHandler.UpdateAIConfig)        // 更新AI配置
+			adminAI.GET("/templates", aiHandler.GetContentTemplates) // 获取内容模板
+			adminAI.POST("/templates", aiHandler.CreateContentTemplate) // 创建内容模板
 			adminAI.GET("/monitoring", aiHandler.GetAIMonitoring)   // 获取AI监控数据
 			adminAI.GET("/analytics", aiHandler.GetAIAnalytics)     // 获取AI分析数据
 			adminAI.GET("/logs", aiHandler.GetAILogs)               // 获取AI操作日志

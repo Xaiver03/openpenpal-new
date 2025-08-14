@@ -49,6 +49,8 @@ export interface User {
   avatar: string
   role: UserRole
   school_code: string           // Matches backend JSON tag
+  school_name?: string          // School display name
+  bio?: string                  // User biography
   is_active: boolean           // Matches backend JSON tag
   last_login_at?: string       // Matches backend JSON tag (time.Time -> string)
   created_at: string           // Matches backend JSON tag

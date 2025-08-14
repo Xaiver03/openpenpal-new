@@ -26,18 +26,18 @@ import type { CommentListProps, CommentAction, CommentFormData } from '@/types/c
 
 export const CommentList = React.forwardRef<HTMLDivElement, CommentListProps>(
   ({
-    letterId,
-    maxDepth = 3,
-    enableNested = true,
-    showStats = true,
-    allowComments = true,
-    initialSort = 'createdAt',
+    letter_id,
+    max_depth = 3,
+    enable_nested = true,
+    show_stats = true,
+    allow_comments = true,
+    initial_sort = 'created_at',
     className,
     ...props
   }, ref) => {
-    const [showCommentForm, setShowCommentForm] = useState(false)
-    const [sortBy, setSortBy] = useState(initialSort)
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+    const [show_comment_form, setShowCommentForm] = useState(false)
+    const [sort_by, setSortBy] = useState(initial_sort)
+    const [sort_order, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
     // Use comment hook for state management
     const {
@@ -45,19 +45,19 @@ export const CommentList = React.forwardRef<HTMLDivElement, CommentListProps>(
       stats,
       loading,
       error,
-      hasMore,
-      loadComments,
-      createComment,
-      updateComment,
-      deleteComment,
-      likeComment,
-      loadReplies,
+      has_more,
+      load_comments,
+      create_comment,
+      update_comment,
+      delete_comment,
+      like_comment,
+      load_replies,
       refresh,
-      clearError,
+      clear_error,
     } = useComments({
-      letterId,
-      initialQuery: {
-        sortBy: initialSort,
+      letter_id,
+      initial_query: {
+        sort_by: initial_sort,
         order: 'desc',
         limit: 20,
       },
@@ -88,18 +88,18 @@ export const CommentList = React.forwardRef<HTMLDivElement, CommentListProps>(
     }, [sort_by, sort_order, load_comments])
 
     // Handle comment actions
-    const handleCommentAction = useCallback(async (action: CommentAction) => {
+    const handle_comment_action = useCallback(async (action: CommentAction) => {
       try {
         switch (action.type) {
           case 'like':
-            await likeComment(action.commentId)
+            await like_comment(action.comment_id)
             break
           
           case 'reply':
             if (action.data) {
-              await createComment({
-                letterId,
-                parentId: action.commentId,
+              await create_comment({
+                letter_id,
+                parent_id: action.comment_id,
                 content: action.data.content,
               })
             }
@@ -107,35 +107,35 @@ export const CommentList = React.forwardRef<HTMLDivElement, CommentListProps>(
           
           case 'edit':
             if (action.data) {
-              await updateComment(action.commentId, {
+              await update_comment(action.comment_id, {
                 content: action.data.content,
               })
             }
             break
           
           case 'delete':
-            await deleteComment(action.commentId)
+            await delete_comment(action.comment_id)
             break
         }
       } catch (err) {
         console.error('Comment action failed:', err)
         // Error handling is managed by the hook
       }
-    }, [letterId, likeComment, createComment, updateComment, deleteComment])
+    }, [letter_id, like_comment, create_comment, update_comment, delete_comment])
 
     // Handle new comment submission
-    const handleNewComment = useCallback(async (formData: CommentFormData) => {
-      await createComment({
-        letterId,
+    const handle_new_comment = useCallback(async (formData: CommentFormData) => {
+      await create_comment({
+        letter_id,
         content: formData.content,
       })
       setShowCommentForm(false)
-    }, [letterId, createComment])
+    }, [letter_id, create_comment])
 
     // Load more comments
-    const loadMore = useCallback(() => {
+    const load_more = useCallback(() => {
       const currentPage = Math.floor(comments.length / 20) + 1
-      loadComments({ 
+      load_comments({ 
         page: currentPage + 1,
         sort_by,
         order: sort_order 
