@@ -60,7 +60,7 @@ const (
 	TaskStatusInTransit = "in_transit" // 投递中
 	TaskStatusDelivered = "delivered"  // 已投递
 	TaskStatusFailed    = "failed"     // 投递失败
-	TaskStatusCanceled = "canceled"  // 已取消
+	TaskStatusCanceled  = "canceled"   // 已取消
 )
 
 // 任务优先级常量

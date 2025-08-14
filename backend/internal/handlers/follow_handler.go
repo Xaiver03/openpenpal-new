@@ -403,6 +403,31 @@ func (h *FollowHandler) FollowMultipleUsers(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
+// GetUserStats 获取用户关注统计
+// @Summary 获取用户关注统计
+// @Description 获取指定用户的关注和粉丝数量统计
+// @Tags Follow
+// @Accept json
+// @Produce json
+// @Param user_id path string true "用户ID"
+// @Success 200 {object} utils.Response{data=models.UserStats}
+// @Router /api/v1/follow/users/{user_id}/stats [get]
+func (h *FollowHandler) GetUserStats(c *gin.Context) {
+	targetUserID := c.Param("user_id")
+	if targetUserID == "" {
+		utils.ErrorResponse(c, http.StatusBadRequest, "User ID is required", nil)
+		return
+	}
+
+	stats, err := h.followService.GetUserStats(targetUserID)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get user stats", err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Success", stats)
+}
+
 // RemoveFollower 移除粉丝
 // @Summary 移除粉丝
 // @Description 从粉丝列表中移除指定用户

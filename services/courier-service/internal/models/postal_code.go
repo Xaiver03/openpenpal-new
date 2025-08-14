@@ -78,10 +78,10 @@ type PostalCodeZone struct {
 type PostalCodeStatus string
 
 const (
-	PostalCodeStatusPending   PostalCodeStatus = "pending"   // 待审核
-	PostalCodeStatusApproved  PostalCodeStatus = "approved"  // 已批准
-	PostalCodeStatusRejected  PostalCodeStatus = "rejected"  // 已拒绝
-	PostalCodeStatusAssigned  PostalCodeStatus = "assigned"  // 已分配
+	PostalCodeStatusPending  PostalCodeStatus = "pending"  // 待审核
+	PostalCodeStatusApproved PostalCodeStatus = "approved" // 已批准
+	PostalCodeStatusRejected PostalCodeStatus = "rejected" // 已拒绝
+	PostalCodeStatusAssigned PostalCodeStatus = "assigned" // 已分配
 	PostalCodeStatusCanceled PostalCodeStatus = "canceled" // 已取消
 )
 

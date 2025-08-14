@@ -571,7 +571,7 @@ func courierIDFromZone(zone models.CourierZone) string {
 }
 
 // hasPermissionForAction 检查是否有特定动作的权限
-func (s *PostalManagementService) hasPermissionForAction(level models.CourierLevel, action, zoneID string) bool {
+func (s *PostalManagementService) hasPermissionForAction(level models.CourierLevel, action, _ string) bool {
 	permissions, exists := models.PostalCodePermissionMatrix[level]
 	if !exists {
 		return false
@@ -793,7 +793,7 @@ func (s *PostalManagementService) ValidateCodeRange(schoolID, areaID string, cod
 }
 
 // isValidCodeFormat 检查编号格式是否有效
-func (s *PostalManagementService) isValidCodeFormat(code, schoolID, areaID string) bool {
+func (s *PostalManagementService) isValidCodeFormat(code, schoolID, _ string) bool {
 	// 获取学校规则
 	var rule models.PostalCodeRule
 	if err := s.db.Where("school_id = ?", schoolID).First(&rule).Error; err != nil {

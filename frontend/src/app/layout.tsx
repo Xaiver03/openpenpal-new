@@ -7,12 +7,18 @@ import { AuthProvider } from '@/contexts/auth-context-new'
 import { AuthInitializer } from '@/components/providers/auth-initializer'
 import { WebSocketErrorBoundary, PageErrorBoundary } from '@/components/error-boundary'
 import { QueryProvider } from '@/components/providers/query-provider'
-import { WebSocketProvider, PerformanceMonitor } from '@/components/providers/client-providers'
-import { NotificationManager } from '@/components/realtime/notification-center'
 import { LazyWrapper } from '@/components/optimization/performance-wrapper'
-import { AuthDebugPanel } from '@/components/debug/auth-debug-panel'
 // AuthDebugWidget removed - using AuthDebugPanel instead
 import { TokenRefreshProvider } from '@/components/providers/token-refresh-provider'
+import dynamic from 'next/dynamic'
+
+const ClientBoundary = dynamic(
+  () => import('@/components/providers/client-boundary').then(mod => ({ default: mod.ClientBoundary })),
+  { 
+    ssr: false,
+    loading: () => <div className="relative flex min-h-screen flex-col"><main className="flex-1"></main></div>
+  }
+)
 
 const inter = Inter({
   subsets: ['latin'],
@@ -75,14 +81,9 @@ export default function RootLayout({
                 <AuthInitializer>
                   <TokenRefreshProvider>
                     <WebSocketErrorBoundary fallback={<div className="hidden"></div>}>
-                      <WebSocketProvider>
-                        <div className="relative flex min-h-screen flex-col">
-                          <main className="flex-1">{children}</main>
-                          <NotificationManager />
-                          <PerformanceMonitor />
-                          <AuthDebugPanel />
-                        </div>
-                      </WebSocketProvider>
+                      <ClientBoundary>
+                        {children}
+                      </ClientBoundary>
                     </WebSocketErrorBoundary>
                   </TokenRefreshProvider>
                 </AuthInitializer>

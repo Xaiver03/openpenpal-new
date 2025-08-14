@@ -435,7 +435,8 @@ func (s *CourierLevelService) GetPerformanceData(_ string, zones []models.Courie
 
 	// 如果指定了区域，过滤区域
 	if zoneType != "" && zoneID != "" {
-		// 这里需要根据实际的数据结构来过滤
+		// TODO: 根据实际的数据结构来过滤区域
+		// 需要实现基于zoneType和zoneID的具体过滤逻辑
 		// 简化实现，假设任务表中有zone相关字段
 	}
 

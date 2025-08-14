@@ -219,7 +219,7 @@ func Metrics() gin.HandlerFunc {
 }
 
 // recordMetrics 记录监控指标（占位符，实际实现在monitor包中）
-func recordMetrics(method, path string, status int, duration time.Duration) {
+func recordMetrics(_, _ string, status int, duration time.Duration) {
 	// 这里会调用monitor包的相关函数
 	// monitor.RecordHTTPRequest(method, path, status, duration)
 }

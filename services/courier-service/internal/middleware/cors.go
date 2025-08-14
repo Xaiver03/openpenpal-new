@@ -25,7 +25,7 @@ func CORS() gin.HandlerFunc {
 
 // Logger 日志中间件
 func Logger() gin.HandlerFunc {
-	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+	return gin.LoggerWithFormatter(func(_ gin.LogFormatterParams) string {
 		return ""
 	})
 }

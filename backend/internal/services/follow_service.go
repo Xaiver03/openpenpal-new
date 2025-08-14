@@ -539,3 +539,34 @@ func (s *FollowService) getFollowingIDs(userID string) ([]string, error) {
 	}
 	return ids, nil
 }
+
+// GetUserStats 获取用户关注统计
+func (s *FollowService) GetUserStats(userID string) (*models.UserStats, error) {
+	var stats models.UserFollowStats
+	
+	// 查找用户统计信息
+	if err := s.db.Where("user_id = ?", userID).First(&stats).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// 如果没有统计记录，创建一个新的
+			stats = models.UserFollowStats{
+				UserID:         userID,
+				FollowingCount: 0,
+				FollowersCount: 0,
+			}
+			if err := s.db.Create(&stats).Error; err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+	
+	// 返回统计数据
+	return &models.UserStats{
+		UserID:         userID,
+		FollowingCount: stats.FollowingCount,
+		FollowersCount: stats.FollowersCount,
+		MutualCount:    stats.MutualCount,
+		LastActive:     stats.UpdatedAt,
+	}, nil
+}

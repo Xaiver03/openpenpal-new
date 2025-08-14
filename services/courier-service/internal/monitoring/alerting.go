@@ -108,7 +108,7 @@ func (h *WebhookAlertHandler) Handle(_ context.Context, _ *Alert) error {
 	return nil
 }
 
-func (h *WebhookAlertHandler) CanHandle(alert *Alert) bool {
+func (h *WebhookAlertHandler) CanHandle(_ *Alert) bool {
 	return h.URL != ""
 }
 

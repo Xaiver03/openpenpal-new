@@ -584,7 +584,8 @@ func (s *CourierGrowthService) GetRanking(zoneType, zoneID, timeRange, _ string,
 
 	// 根据区域类型过滤
 	if zoneType != "" && zoneID != "" {
-		// 这里需要添加区域过滤逻辑
+		// TODO: 实现区域过滤逻辑
+		// 需要根据zoneType和zoneID对排行榜数据进行过滤
 	}
 
 	// 根据时间范围过滤

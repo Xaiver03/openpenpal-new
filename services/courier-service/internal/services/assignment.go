@@ -75,7 +75,7 @@ func (s *AssignmentService) AutoAssignTask(task *models.Task) (*models.Courier, 
 }
 
 // findCouriersByHierarchy 根据4级层级结构查找合适的信使
-func (s *AssignmentService) findCouriersByHierarchy(task *models.Task, lat, lng, radiusKm float64) []models.Courier {
+func (s *AssignmentService) findCouriersByHierarchy(task *models.Task, _, _, radiusKm float64) []models.Courier {
 	// 确定任务的区域编码
 	taskZoneCode := s.extractZoneCodeFromLocation(task.PickupLocation)
 
@@ -111,7 +111,7 @@ func (s *AssignmentService) findCouriersByHierarchy(task *models.Task, lat, lng,
 }
 
 // findNearbyActiveCouriers 查找附近的活跃信使（原有方法保持兼容）
-func (s *AssignmentService) findNearbyActiveCouriers(lat, lng, radiusKm float64) []models.Courier {
+func (s *AssignmentService) findNearbyActiveCouriers(_, _, radiusKm float64) []models.Courier {
 	var couriers []models.Courier
 
 	// 查找所有活跃的信使

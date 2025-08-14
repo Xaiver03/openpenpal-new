@@ -14,16 +14,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// ProxyManager 代理管理器
-type ProxyManager struct {
+// Manager 代理管理器
+type Manager struct {
 	serviceDiscovery *discovery.ServiceDiscovery
 	logger           *zap.Logger
 	proxies          map[string]*httputil.ReverseProxy
 }
 
-// NewProxyManager 创建代理管理器
-func NewProxyManager(serviceDiscovery *discovery.ServiceDiscovery, logger *zap.Logger) *ProxyManager {
-	return &ProxyManager{
+// NewManager 创建代理管理器
+func NewManager(serviceDiscovery *discovery.ServiceDiscovery, logger *zap.Logger) *Manager {
+	return &Manager{
 		serviceDiscovery: serviceDiscovery,
 		logger:           logger,
 		proxies:          make(map[string]*httputil.ReverseProxy),
@@ -31,7 +31,7 @@ func NewProxyManager(serviceDiscovery *discovery.ServiceDiscovery, logger *zap.L
 }
 
 // ProxyHandler 创建代理处理器
-func (pm *ProxyManager) ProxyHandler(serviceName string) gin.HandlerFunc {
+func (pm *Manager) ProxyHandler(serviceName string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 获取目标服务实例
 		instance, err := pm.serviceDiscovery.GetHealthyInstance(serviceName)
@@ -69,7 +69,7 @@ func (pm *ProxyManager) ProxyHandler(serviceName string) gin.HandlerFunc {
 }
 
 // getOrCreateProxy 获取或创建代理
-func (pm *ProxyManager) getOrCreateProxy(serviceName, targetHost string) *httputil.ReverseProxy {
+func (pm *Manager) getOrCreateProxy(serviceName, targetHost string) *httputil.ReverseProxy {
 	key := fmt.Sprintf("%s-%s", serviceName, targetHost)
 
 	if proxy, exists := pm.proxies[key]; exists {
@@ -101,7 +101,7 @@ func (pm *ProxyManager) getOrCreateProxy(serviceName, targetHost string) *httput
 }
 
 // setupProxyRequest 设置代理请求
-func (pm *ProxyManager) setupProxyRequest(c *gin.Context, serviceName string) {
+func (pm *Manager) setupProxyRequest(c *gin.Context, serviceName string) {
 	// 添加跟踪ID
 	traceID := c.GetHeader("X-Trace-ID")
 	if traceID == "" {
@@ -122,7 +122,7 @@ func (pm *ProxyManager) setupProxyRequest(c *gin.Context, serviceName string) {
 }
 
 // modifyRequest 修改请求
-func (pm *ProxyManager) modifyRequest(req *http.Request, serviceName string) {
+func (pm *Manager) modifyRequest(req *http.Request, serviceName string) {
 	// 重写路径：移除服务前缀
 	req.URL.Path = pm.rewritePath(req.URL.Path, serviceName)
 
@@ -137,7 +137,7 @@ func (pm *ProxyManager) modifyRequest(req *http.Request, serviceName string) {
 }
 
 // rewritePath 重写请求路径
-func (pm *ProxyManager) rewritePath(originalPath, serviceName string) string {
+func (pm *Manager) rewritePath(originalPath, serviceName string) string {
 	// 移除 /api/v1 前缀
 	path := strings.TrimPrefix(originalPath, "/api/v1")
 
@@ -164,7 +164,7 @@ func (pm *ProxyManager) rewritePath(originalPath, serviceName string) string {
 }
 
 // modifyResponse 修改响应
-func (pm *ProxyManager) modifyResponse(resp *http.Response, serviceName string) error {
+func (pm *Manager) modifyResponse(resp *http.Response, serviceName string) error {
 	// 添加服务标识头
 	resp.Header.Set("X-Service-Source", serviceName)
 	resp.Header.Set("X-Gateway", "openpenpal-api-gateway")
@@ -178,7 +178,7 @@ func (pm *ProxyManager) modifyResponse(resp *http.Response, serviceName string) 
 }
 
 // handleProxyError 处理代理错误
-func (pm *ProxyManager) handleProxyError(w http.ResponseWriter, r *http.Request, serviceName string, err error) {
+func (pm *Manager) handleProxyError(w http.ResponseWriter, r *http.Request, serviceName string, err error) {
 	pm.logger.Error("Proxy error",
 		zap.String("service", serviceName),
 		zap.String("path", r.URL.Path),
@@ -206,7 +206,7 @@ func (pm *ProxyManager) handleProxyError(w http.ResponseWriter, r *http.Request,
 }
 
 // logRequest 记录请求日志
-func (pm *ProxyManager) logRequest(c *gin.Context, serviceName, targetHost string, duration time.Duration) {
+func (pm *Manager) logRequest(c *gin.Context, serviceName, targetHost string, duration time.Duration) {
 	pm.logger.Info("Proxy request completed",
 		zap.String("service", serviceName),
 		zap.String("target", targetHost),
@@ -221,7 +221,7 @@ func (pm *ProxyManager) logRequest(c *gin.Context, serviceName, targetHost strin
 }
 
 // HealthCheckHandler 健康检查处理器
-func (pm *ProxyManager) HealthCheckHandler() gin.HandlerFunc {
+func (pm *Manager) HealthCheckHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		serviceName := c.Param("service")
 

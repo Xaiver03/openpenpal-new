@@ -62,7 +62,8 @@ func (s *TaskService) GetAvailableTasks(query *models.TaskQuery) ([]models.Task,
 
 	// 应用筛选条件
 	if query.Zone != "" {
-		// 这里可以根据区域筛选，需要地理位置匹配
+		// TODO: 实现基于区域的任务筛选功能
+		// 需要根据地理位置进行匹配，结合四级信使体系
 		// 暂时简单处理
 	}
 

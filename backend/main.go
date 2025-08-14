@@ -574,6 +574,7 @@ func main() {
 
 			// 关注状态
 			follow.GET("/users/:user_id/status", followHandler.GetFollowStatus) // 获取关注状态
+			follow.GET("/users/:user_id/stats", followHandler.GetUserStats)     // 获取用户统计
 
 			// 用户搜索和发现
 			follow.GET("/users/search", followHandler.SearchUsers)                // 搜索用户

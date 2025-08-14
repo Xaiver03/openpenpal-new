@@ -47,7 +47,7 @@ func JWTAuth(jwtSecret string) gin.HandlerFunc {
 
 		// 解析JWT token
 		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(_ *jwt.Token) (interface{}, error) {
 			return []byte(jwtSecret), nil
 		})
 

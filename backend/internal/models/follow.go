@@ -182,6 +182,15 @@ type FollowStatsResponse struct {
 	PopularFollowing     []FollowUser `json:"popular_following"`
 }
 
+// UserStats 用户统计信息（用于API返回）
+type UserStats struct {
+	UserID         string    `json:"user_id"`
+	FollowingCount int       `json:"following_count"`
+	FollowersCount int       `json:"followers_count"`
+	MutualCount    int       `json:"mutual_count"`
+	LastActive     time.Time `json:"last_active"`
+}
+
 // TableName 指定表名
 func (UserRelationship) TableName() string {
 	return "user_relationships"

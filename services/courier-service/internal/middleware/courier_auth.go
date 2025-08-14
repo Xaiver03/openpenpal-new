@@ -179,7 +179,7 @@ func (cam *CourierAuthMiddleware) checkPermission(courierID string, permission m
 }
 
 // checkContextualPermission 检查上下文相关权限
-func (cam *CourierAuthMiddleware) checkContextualPermission(courierID string, level models.CourierLevel, permission models.CourierPermission, c *gin.Context) (bool, string) {
+func (cam *CourierAuthMiddleware) checkContextualPermission(courierID string, level models.CourierLevel, _ models.CourierPermission, c *gin.Context) (bool, string) {
 	// 从请求路径或参数中获取区域信息
 	zoneInfo := cam.extractZoneInfoFromRequest(c)
 

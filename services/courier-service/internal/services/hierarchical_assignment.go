@@ -129,7 +129,7 @@ func (s *HierarchicalAssignmentService) cascadeAssignment(manager *models.Courie
 }
 
 // autoHierarchyAssignment 自动层级分配
-func (s *HierarchicalAssignmentService) autoHierarchyAssignment(manager *models.Courier, task *models.Task, req *models.HierarchicalTaskAssignmentRequest) (*models.Task, error) {
+func (s *HierarchicalAssignmentService) autoHierarchyAssignment(manager *models.Courier, task *models.Task, _ *models.HierarchicalTaskAssignmentRequest) (*models.Task, error) {
 	// 使用现有的自动分配服务，但限制在管理范围内
 	taskZoneCode := s.assignmentService.extractZoneCodeFromLocation(task.PickupLocation)
 

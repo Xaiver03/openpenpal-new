@@ -61,13 +61,14 @@ func (s *LocationService) EstimateDeliveryTime(pickupLat, pickupLng, deliveryLat
 
 	if timeHours < 0.5 {
 		return "30分钟内"
-	} else if timeHours < 1.0 {
-		return "1小时内"
-	} else if timeHours < 2.0 {
-		return "2小时内"
-	} else {
-		return "3小时以上"
 	}
+	if timeHours < 1.0 {
+		return "1小时内"
+	}
+	if timeHours < 2.0 {
+		return "2小时内"
+	}
+	return "3小时以上"
 }
 
 // CalculateReward 根据距离计算奖励
@@ -106,9 +107,8 @@ func (s *LocationService) FormatDistance(distanceKm float64) string {
 	if distanceKm < 1.0 {
 		meters := int(distanceKm * 1000)
 		return fmt.Sprintf("%dm", meters)
-	} else {
-		return fmt.Sprintf("%.1fkm", distanceKm)
 	}
+	return fmt.Sprintf("%.1fkm", distanceKm)
 }
 
 // ParseLocation 解析位置字符串（这里可以集成地理编码服务）

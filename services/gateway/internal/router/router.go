@@ -13,18 +13,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// RouterManager 路由管理器
-type RouterManager struct {
+// Manager 路由管理器
+type Manager struct {
 	config             *config.Config
-	proxyManager       *proxy.ProxyManager
+	proxyManager       *proxy.Manager
 	logger             *zap.Logger
 	router             *gin.Engine
 	performanceHandler *handlers.MetricsHandler
 }
 
-// NewRouterManager 创建路由管理器
-func NewRouterManager(cfg *config.Config, proxyManager *proxy.ProxyManager, logger *zap.Logger) *RouterManager {
-	return &RouterManager{
+// NewManager 创建路由管理器
+func NewManager(cfg *config.Config, proxyManager *proxy.Manager, logger *zap.Logger) *Manager {
+	return &Manager{
 		config:       cfg,
 		proxyManager: proxyManager,
 		logger:       logger,
@@ -32,12 +32,12 @@ func NewRouterManager(cfg *config.Config, proxyManager *proxy.ProxyManager, logg
 }
 
 // SetMetricsHandler 设置性能监控处理器
-func (rm *RouterManager) SetMetricsHandler(handler *handlers.MetricsHandler) {
+func (rm *Manager) SetMetricsHandler(handler *handlers.MetricsHandler) {
 	rm.performanceHandler = handler
 }
 
 // SetupRoutes 设置所有路由
-func (rm *RouterManager) SetupRoutes() *gin.Engine {
+func (rm *Manager) SetupRoutes() *gin.Engine {
 	// 初始化Gin
 	if rm.config.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
@@ -62,7 +62,7 @@ func (rm *RouterManager) SetupRoutes() *gin.Engine {
 }
 
 // setupGlobalMiddleware 设置全局中间件
-func (rm *RouterManager) setupGlobalMiddleware() {
+func (rm *Manager) setupGlobalMiddleware() {
 	// 基础中间件
 	rm.router.Use(middleware.RequestID())
 	rm.router.Use(middleware.Logger(rm.logger))
@@ -77,7 +77,7 @@ func (rm *RouterManager) setupGlobalMiddleware() {
 }
 
 // setupBaseRoutes 设置基础路由
-func (rm *RouterManager) setupBaseRoutes() {
+func (rm *Manager) setupBaseRoutes() {
 	// 健康检查
 	rm.router.GET("/health", rm.healthCheckHandler())
 	rm.router.GET("/ping", func(c *gin.Context) {
@@ -95,7 +95,7 @@ func (rm *RouterManager) setupBaseRoutes() {
 }
 
 // setupAPIRoutes 设置API路由
-func (rm *RouterManager) setupAPIRoutes() {
+func (rm *Manager) setupAPIRoutes() {
 	// API v1 路由组
 	apiV1 := rm.router.Group("/api/v1")
 
@@ -144,7 +144,7 @@ func (rm *RouterManager) setupAPIRoutes() {
 }
 
 // setupAuthRoutes 设置认证路由
-func (rm *RouterManager) setupAuthRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupAuthRoutes(group *gin.RouterGroup) {
 	authGroup := group.Group("/auth")
 	authGroup.Use(middleware.NewRateLimiter(60)) // 每分钟60次
 
@@ -153,7 +153,7 @@ func (rm *RouterManager) setupAuthRoutes(group *gin.RouterGroup) {
 }
 
 // setupUserRoutes 设置用户路由
-func (rm *RouterManager) setupUserRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupUserRoutes(group *gin.RouterGroup) {
 	userGroup := group.Group("/users")
 	userGroup.Use(middleware.NewRateLimiter(120))
 
@@ -162,7 +162,7 @@ func (rm *RouterManager) setupUserRoutes(group *gin.RouterGroup) {
 }
 
 // setupLetterRoutes 设置信件路由
-func (rm *RouterManager) setupLetterRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupLetterRoutes(group *gin.RouterGroup) {
 	letterGroup := group.Group("/letters")
 	letterGroup.Use(middleware.NewRateLimiter(100))
 
@@ -171,7 +171,7 @@ func (rm *RouterManager) setupLetterRoutes(group *gin.RouterGroup) {
 }
 
 // setupCourierRoutes 设置信使路由
-func (rm *RouterManager) setupCourierRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupCourierRoutes(group *gin.RouterGroup) {
 	courierGroup := group.Group("/courier")
 	courierGroup.Use(middleware.NewRateLimiter(80))
 
@@ -207,7 +207,8 @@ func (rm *RouterManager) setupCourierRoutes(group *gin.RouterGroup) {
 	courierProtected := courierGroup.Group("")
 	courierProtected.Use(middleware.CourierAuth())
 	{
-		// 特定的courier-service路由可以在这里添加
+		// TODO: 添加需要信使认证的特定路由
+		// 例如: 信使个人信息更新、任务管理等
 	}
 
 	// 管理员路由
@@ -219,7 +220,7 @@ func (rm *RouterManager) setupCourierRoutes(group *gin.RouterGroup) {
 }
 
 // setupOCRRoutes 设置OCR路由
-func (rm *RouterManager) setupOCRRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupOCRRoutes(group *gin.RouterGroup) {
 	ocrGroup := group.Group("/ocr")
 	ocrGroup.Use(middleware.NewRateLimiter(20)) // OCR操作限制更严格
 
@@ -228,7 +229,7 @@ func (rm *RouterManager) setupOCRRoutes(group *gin.RouterGroup) {
 }
 
 // setupAdminRoutes 设置管理路由
-func (rm *RouterManager) setupAdminRoutes() {
+func (rm *Manager) setupAdminRoutes() {
 	adminGroup := rm.router.Group("/admin")
 	adminGroup.Use(middleware.JWTAuth(rm.config.JWTSecret))
 	adminGroup.Use(middleware.AdminAuth())
@@ -249,7 +250,7 @@ func (rm *RouterManager) setupAdminRoutes() {
 }
 
 // healthCheckHandler 健康检查处理器
-func (rm *RouterManager) healthCheckHandler() gin.HandlerFunc {
+func (rm *Manager) healthCheckHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":    "healthy",
@@ -261,7 +262,7 @@ func (rm *RouterManager) healthCheckHandler() gin.HandlerFunc {
 }
 
 // versionHandler 版本信息处理器
-func (rm *RouterManager) versionHandler() gin.HandlerFunc {
+func (rm *Manager) versionHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"service":    "OpenPenPal API Gateway",
@@ -274,7 +275,7 @@ func (rm *RouterManager) versionHandler() gin.HandlerFunc {
 }
 
 // infoHandler 服务信息处理器
-func (rm *RouterManager) infoHandler() gin.HandlerFunc {
+func (rm *Manager) infoHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		info := gin.H{
 			"gateway": gin.H{
@@ -301,7 +302,7 @@ func (rm *RouterManager) infoHandler() gin.HandlerFunc {
 }
 
 // gatewayStatusHandler 网关状态处理器
-func (rm *RouterManager) gatewayStatusHandler() gin.HandlerFunc {
+func (rm *Manager) gatewayStatusHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// TODO: 实现网关状态收集
 		c.JSON(http.StatusOK, gin.H{
@@ -316,7 +317,7 @@ func (rm *RouterManager) gatewayStatusHandler() gin.HandlerFunc {
 }
 
 // servicesStatusHandler 服务状态处理器
-func (rm *RouterManager) servicesStatusHandler() gin.HandlerFunc {
+func (rm *Manager) servicesStatusHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// TODO: 从服务发现获取服务状态
 		c.JSON(http.StatusOK, gin.H{
@@ -326,7 +327,7 @@ func (rm *RouterManager) servicesStatusHandler() gin.HandlerFunc {
 }
 
 // setupWebSocketRoutes 设置WebSocket路由
-func (rm *RouterManager) setupWebSocketRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupWebSocketRoutes(group *gin.RouterGroup) {
 	wsGroup := group.Group("/ws")
 	// WebSocket连接不需要速率限制
 
@@ -335,7 +336,7 @@ func (rm *RouterManager) setupWebSocketRoutes(group *gin.RouterGroup) {
 }
 
 // metricsHandler 指标处理器
-func (rm *RouterManager) metricsHandler() gin.HandlerFunc {
+func (rm *Manager) metricsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		summary := monitor.GetMetricsSummary()
 		c.JSON(http.StatusOK, summary)
@@ -343,7 +344,7 @@ func (rm *RouterManager) metricsHandler() gin.HandlerFunc {
 }
 
 // reloadConfigHandler 重新加载配置处理器
-func (rm *RouterManager) reloadConfigHandler() gin.HandlerFunc {
+func (rm *Manager) reloadConfigHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// TODO: 实现配置重新加载
 		rm.logger.Info("Config reload requested",
@@ -358,7 +359,7 @@ func (rm *RouterManager) reloadConfigHandler() gin.HandlerFunc {
 }
 
 // setupMetricsRoutes 设置性能监控路由
-func (rm *RouterManager) setupMetricsRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupMetricsRoutes(group *gin.RouterGroup) {
 	if rm.performanceHandler == nil {
 		rm.logger.Warn("MetricsHandler not initialized, using placeholder endpoints")
 		rm.setupPlaceholderMetricsRoutes(group)
@@ -386,7 +387,7 @@ func (rm *RouterManager) setupMetricsRoutes(group *gin.RouterGroup) {
 }
 
 // setupPlaceholderMetricsRoutes 设置占位符性能监控路由
-func (rm *RouterManager) setupPlaceholderMetricsRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupPlaceholderMetricsRoutes(group *gin.RouterGroup) {
 	metricsGroup := group.Group("/metrics")
 	metricsGroup.Use(middleware.NewRateLimiter(100))
 
@@ -427,7 +428,7 @@ func (rm *RouterManager) setupPlaceholderMetricsRoutes(group *gin.RouterGroup) {
 }
 
 // setupHealthRoutes 设置健康检查路由
-func (rm *RouterManager) setupHealthRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupHealthRoutes(group *gin.RouterGroup) {
 	healthGroup := group.Group("/health")
 	healthGroup.Use(middleware.NewRateLimiter(200)) // 每分钟200次
 
@@ -468,7 +469,7 @@ func (rm *RouterManager) setupHealthRoutes(group *gin.RouterGroup) {
 }
 
 // setupPostcodeRoutes 设置Postcode地址编码路由
-func (rm *RouterManager) setupPostcodeRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupPostcodeRoutes(group *gin.RouterGroup) {
 	postcodeGroup := group.Group("/postcode")
 	postcodeGroup.Use(middleware.NewRateLimiter(120)) // 每分钟120次
 
@@ -527,7 +528,7 @@ func (rm *RouterManager) setupPostcodeRoutes(group *gin.RouterGroup) {
 }
 
 // setupAddressRoutes 设置地址相关路由 (兼容性路由)
-func (rm *RouterManager) setupAddressRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupAddressRoutes(group *gin.RouterGroup) {
 	addressGroup := group.Group("/address")
 	addressGroup.Use(middleware.NewRateLimiter(100)) // 每分钟100次
 
@@ -536,7 +537,7 @@ func (rm *RouterManager) setupAddressRoutes(group *gin.RouterGroup) {
 }
 
 // setupShopRoutes 设置商店相关路由
-func (rm *RouterManager) setupShopRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupShopRoutes(group *gin.RouterGroup) {
 	shopGroup := group.Group("/shop")
 	shopGroup.Use(middleware.NewRateLimiter(100)) // 每分钟100次
 
@@ -545,7 +546,7 @@ func (rm *RouterManager) setupShopRoutes(group *gin.RouterGroup) {
 }
 
 // setupAIRoutes 设置AI相关路由
-func (rm *RouterManager) setupAIRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupAIRoutes(group *gin.RouterGroup) {
 	aiGroup := group.Group("/ai")
 	// AI服务可以有更宽松的限制，因为它们通常比较耗时
 	aiGroup.Use(middleware.NewRateLimiter(60)) // 每分钟60次
@@ -556,7 +557,7 @@ func (rm *RouterManager) setupAIRoutes(group *gin.RouterGroup) {
 }
 
 // setupMuseumRoutes 设置博物馆相关路由
-func (rm *RouterManager) setupMuseumRoutes(group *gin.RouterGroup) {
+func (rm *Manager) setupMuseumRoutes(group *gin.RouterGroup) {
 	museumGroup := group.Group("/museum")
 	museumGroup.Use(middleware.NewRateLimiter(100)) // 每分钟100次
 
