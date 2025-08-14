@@ -88,18 +88,18 @@ export const CommentList = React.forwardRef<HTMLDivElement, CommentListProps>(
     }, [sort_by, sort_order, load_comments])
 
     // Handle comment actions
-    const handle_comment_action = useCallback(async (action: CommentAction) => {
+    const handleCommentAction = useCallback(async (action: CommentAction) => {
       try {
         switch (action.type) {
           case 'like':
-            await like_comment(action.comment_id)
+            await likeComment(action.commentId)
             break
           
           case 'reply':
             if (action.data) {
-              await create_comment({
-                letter_id,
-                parent_id: action.comment_id,
+              await createComment({
+                letterId,
+                parentId: action.commentId,
                 content: action.data.content,
               })
             }
@@ -107,36 +107,36 @@ export const CommentList = React.forwardRef<HTMLDivElement, CommentListProps>(
           
           case 'edit':
             if (action.data) {
-              await update_comment(action.comment_id, {
+              await updateComment(action.commentId, {
                 content: action.data.content,
               })
             }
             break
           
           case 'delete':
-            await delete_comment(action.comment_id)
+            await deleteComment(action.commentId)
             break
         }
       } catch (err) {
         console.error('Comment action failed:', err)
         // Error handling is managed by the hook
       }
-    }, [letter_id, like_comment, create_comment, update_comment, delete_comment])
+    }, [letterId, likeComment, createComment, updateComment, deleteComment])
 
     // Handle new comment submission
-    const handle_new_comment = useCallback(async (form_data: CommentFormData) => {
-      await create_comment({
-        letter_id,
-        content: form_data.content,
+    const handleNewComment = useCallback(async (formData: CommentFormData) => {
+      await createComment({
+        letterId,
+        content: formData.content,
       })
       setShowCommentForm(false)
-    }, [letter_id, create_comment])
+    }, [letterId, createComment])
 
     // Load more comments
-    const load_more = useCallback(() => {
-      const current_page = Math.floor(comments.length / 20) + 1
-      load_comments({ 
-        page: current_page + 1,
+    const loadMore = useCallback(() => {
+      const currentPage = Math.floor(comments.length / 20) + 1
+      loadComments({ 
+        page: currentPage + 1,
         sort_by,
         order: sort_order 
       })
