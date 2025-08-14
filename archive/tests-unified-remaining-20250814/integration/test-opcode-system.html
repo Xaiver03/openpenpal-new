@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OP Code系统测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>OP Code 系统测试页面</h1>
+    
+    <div class="test-section">
+        <h2>测试路由重定向</h2>
+        <button onclick="testRedirect()">测试 /postcode 重定向到 /opcode</button>
+        <div id="redirect-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试API端点</h2>
+        <button onclick="testAPI()">测试 OP Code API</button>
+        <div id="api-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>访问新页面</h2>
+        <a href="http://localhost:3000/opcode" target="_blank">
+            <button>打开新的OP Code页面</button>
+        </a>
+        <a href="http://localhost:3000/postcode" target="_blank">
+            <button>测试旧路由重定向</button>
+        </a>
+    </div>
+
+    <script>
+        async function testRedirect() {
+            const resultDiv = document.getElementById('redirect-result')
+            try {
+                // 测试是否会重定向
+                resultDiv.innerHTML = `
+                    <p>请点击下面的链接测试重定向：</p>
+                    <a href="http://localhost:3000/postcode" target="_blank">点击访问 /postcode</a>
+                    <p>如果重定向成功，你应该会被带到 /opcode 页面</p>
+                `
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">错误: ${error.message}</p>`
+            }
+        }
+
+        async function testAPI() {
+            const resultDiv = document.getElementById('api-result')
+            try {
+                const response = await fetch('http://localhost:3000/api/opcode/PK5F3D')
+                const data = await response.json()
+                
+                resultDiv.innerHTML = `
+                    <h3>API响应:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `
+                
+                if (data.success) {
+                    resultDiv.classList.add('success')
+                } else {
+                    resultDiv.classList.add('error')
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">错误: ${error.message}</p>`
+                resultDiv.classList.add('error')
+            }
+        }
+    </script>
+</body>
+</html>

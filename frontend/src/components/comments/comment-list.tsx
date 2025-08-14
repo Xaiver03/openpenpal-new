@@ -26,18 +26,18 @@ import type { CommentListProps, CommentAction, CommentFormData } from '@/types/c
 
 export const CommentList = React.forwardRef<HTMLDivElement, CommentListProps>(
   ({
-    letter_id,
-    max_depth = 3,
-    enable_nested = true,
-    show_stats = true,
-    allow_comments = true,
-    initial_sort = 'created_at',
+    letterId,
+    maxDepth = 3,
+    enableNested = true,
+    showStats = true,
+    allowComments = true,
+    initialSort = 'createdAt',
     className,
     ...props
   }, ref) => {
-    const [show_comment_form, setShowCommentForm] = useState(false)
-    const [sort_by, setSortBy] = useState(initial_sort)
-    const [sort_order, setSortOrder] = useState<'asc' | 'desc'>('desc')
+    const [showCommentForm, setShowCommentForm] = useState(false)
+    const [sortBy, setSortBy] = useState(initialSort)
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
     // Use comment hook for state management
     const {
@@ -45,19 +45,19 @@ export const CommentList = React.forwardRef<HTMLDivElement, CommentListProps>(
       stats,
       loading,
       error,
-      has_more,
-      load_comments,
-      create_comment,
-      update_comment,
-      delete_comment,
-      like_comment,
-      load_replies,
+      hasMore,
+      loadComments,
+      createComment,
+      updateComment,
+      deleteComment,
+      likeComment,
+      loadReplies,
       refresh,
-      clear_error,
+      clearError,
     } = useComments({
-      letter_id,
-      initial_query: {
-        sort_by: initial_sort,
+      letterId,
+      initialQuery: {
+        sortBy: initialSort,
         order: 'desc',
         limit: 20,
       },

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试OP Code权限配置</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-item { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #b8daff; }
+    </style>
+</head>
+<body>
+    <h1>OP Code 权限配置测试</h1>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testPermissions() {
+            const resultsDiv = document.getElementById('results')
+            const testCases = [
+                'courier-level1',
+                'courier-level2', 
+                'courier-level3',
+                'courier-level4'
+            ]
+
+            for (const courierId of testCases) {
+                try {
+                    const response = await fetch(`http://localhost:3001/api/postcode/permissions/${courierId}`)
+                    const data = await response.json()
+                    
+                    const testItem = document.createElement('div')
+                    testItem.className = data.success ? 'test-item success' : 'test-item error'
+                    
+                    testItem.innerHTML = `
+                        <h3>${courierId}</h3>
+                        <p><strong>状态:</strong> ${response.status} ${response.statusText}</p>
+                        <p><strong>响应:</strong></p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `
+                    
+                    resultsDiv.appendChild(testItem)
+                } catch (error) {
+                    const testItem = document.createElement('div')
+                    testItem.className = 'test-item error'
+                    testItem.innerHTML = `
+                        <h3>${courierId} - 请求失败</h3>
+                        <p><strong>错误:</strong> ${error.message}</p>
+                    `
+                    resultsDiv.appendChild(testItem)
+                }
+            }
+        }
+
+        // 页面加载后执行测试
+        window.addEventListener('load', testPermissions)
+    </script>
+</body>
+</html>
