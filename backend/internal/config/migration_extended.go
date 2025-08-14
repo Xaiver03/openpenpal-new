@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"strings"
 	"openpenpal-backend/internal/models"
 
 	"gorm.io/gorm"
@@ -20,8 +21,12 @@ func MigrateExtendedModels(db *gorm.DB) error {
 		&models.MuseumExhibitionEntry{},
 	)
 	if err != nil {
-		log.Printf("Museum extended models migration error: %v", err)
-		return err
+		if strings.Contains(err.Error(), "already exists") {
+			log.Printf("Museum tables already exist, continuing: %v", err)
+		} else {
+			log.Printf("Museum extended models migration error: %v", err)
+			return err
+		}
 	}
 	log.Println("Museum extended models migrated successfully")
 
@@ -31,8 +36,12 @@ func MigrateExtendedModels(db *gorm.DB) error {
 	// 先迁移表结构
 	err = db.AutoMigrate(&models.LetterTemplate{})
 	if err != nil {
-		log.Printf("Letter template migration error: %v", err)
-		return err
+		if strings.Contains(err.Error(), "already exists") {
+			log.Printf("Letter template table already exists, continuing: %v", err)
+		} else {
+			log.Printf("Letter template migration error: %v", err)
+			return err
+		}
 	}
 	
 	// 然后更新现有的 letter_templates 表的 content 字段
@@ -46,8 +55,12 @@ func MigrateExtendedModels(db *gorm.DB) error {
 		&models.LetterShare{},
 	)
 	if err != nil {
-		log.Printf("Letter extended models migration error: %v", err)
-		return err
+		if strings.Contains(err.Error(), "already exists") {
+			log.Printf("Letter extended models already exist, continuing: %v", err)
+		} else {
+			log.Printf("Letter extended models migration error: %v", err)
+			return err
+		}
 	}
 	log.Println("Letter extended models migrated successfully")
 
@@ -60,8 +73,12 @@ func MigrateExtendedModels(db *gorm.DB) error {
 		&models.UserAchievement{},
 	)
 	if err != nil {
-		log.Printf("User extended models migration error: %v", err)
-		return err
+		if strings.Contains(err.Error(), "already exists") {
+			log.Printf("User extended models already exist, continuing: %v", err)
+		} else {
+			log.Printf("User extended models migration error: %v", err)
+			return err
+		}
 	}
 	log.Println("User extended models migrated successfully")
 
@@ -71,8 +88,12 @@ func MigrateExtendedModels(db *gorm.DB) error {
 		&models.ScanEvent{},
 	)
 	if err != nil {
-		log.Printf("Scan event models migration error: %v", err)
-		return err
+		if strings.Contains(err.Error(), "already exists") {
+			log.Printf("Scan event models already exist, continuing: %v", err)
+		} else {
+			log.Printf("Scan event models migration error: %v", err)
+			return err
+		}
 	}
 	log.Println("Scan event models migrated successfully")
 

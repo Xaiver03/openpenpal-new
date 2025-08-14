@@ -61,6 +61,7 @@ func main() {
 	shopService := services.NewShopService(db)
 	commentService := services.NewCommentService(db, cfg)
 	followService := services.NewFollowService(db) // 关注系统服务
+	// privacyService := services.NewPrivacyService(db) // 隐私设置服务
 	opcodeService := services.NewOPCodeService(db) // OP Code服务 - 重新启用
 	scanEventService := services.NewScanEventService(db) // 扫描事件服务 - PRD要求
 
@@ -88,6 +89,7 @@ func main() {
 	letterService.SetWebSocketService(wsService)
 	letterService.SetAIService(aiService)
 	letterService.SetOPCodeService(opcodeService) // PRD要求：集成OP Code验证
+	letterService.SetUserService(userService) // 添加用户服务依赖
 	envelopeService.SetCreditService(creditService)
 	envelopeService.SetUserService(userService) // FSD增强：OP Code区域验证
 	museumService.SetCreditService(creditService)
@@ -131,6 +133,7 @@ func main() {
 	shopHandler := handlers.NewShopHandler(shopService, userService)
 	commentHandler := handlers.NewCommentHandler(commentService)
 	followHandler := handlers.NewFollowHandler(followService) // 关注系统处理器
+	// privacyHandler := handlers.NewPrivacyHandler(privacyService) // 隐私设置处理器
 	userProfileHandler := handlers.NewUserProfileHandler(db) // 用户档案处理器
 	
 	// QR扫描服务和处理器 - SOTA集成：复用现有依赖 - Temporarily disabled
@@ -580,6 +583,36 @@ func main() {
 			// 粉丝管理
 			follow.DELETE("/followers/:user_id", followHandler.RemoveFollower) // 移除粉丝
 		}
+
+		// 隐私设置系统 - 暂时禁用
+		/*
+		privacy := protected.Group("/privacy")
+		{
+			// 隐私设置管理
+			privacy.GET("/settings", privacyHandler.GetPrivacySettings)        // 获取隐私设置
+			privacy.PUT("/settings", privacyHandler.UpdatePrivacySettings)     // 更新隐私设置
+			privacy.POST("/settings/reset", privacyHandler.ResetPrivacySettings) // 重置隐私设置
+			
+			// 隐私权限检查
+			privacy.GET("/check/:user_id", privacyHandler.CheckPrivacy)        // 检查隐私权限
+			privacy.POST("/check/:user_id/batch", privacyHandler.BatchCheckPrivacy) // 批量检查隐私权限
+			
+			// 用户屏蔽管理
+			privacy.POST("/block", privacyHandler.BlockUser)                   // 屏蔽用户
+			privacy.DELETE("/block/:user_id", privacyHandler.UnblockUser)      // 取消屏蔽用户
+			privacy.GET("/blocked", privacyHandler.GetBlockedUsers)            // 获取屏蔽用户列表
+			
+			// 用户静音管理
+			privacy.POST("/mute", privacyHandler.MuteUser)                     // 静音用户
+			privacy.DELETE("/mute/:user_id", privacyHandler.UnmuteUser)        // 取消静音用户
+			privacy.GET("/muted", privacyHandler.GetMutedUsers)                // 获取静音用户列表
+			
+			// 关键词过滤管理
+			privacy.POST("/keywords/block", privacyHandler.AddBlockedKeyword)  // 添加屏蔽关键词
+			privacy.DELETE("/keywords/block/:keyword", privacyHandler.RemoveBlockedKeyword) // 移除屏蔽关键词
+			privacy.GET("/keywords/blocked", privacyHandler.GetBlockedKeywords) // 获取屏蔽关键词列表
+		}
+		*/
 
 		// 商店系统（需要认证的部分）
 		shopAuth := protected.Group("/shop")

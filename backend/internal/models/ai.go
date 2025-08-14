@@ -236,7 +236,10 @@ type AICurateRequest struct {
 
 // AIMatchResponse AI匹配响应
 type AIMatchResponse struct {
-	Matches []struct {
+	Status   string                 `json:"status,omitempty"`
+	Message  string                 `json:"message,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Matches  []struct {
 		UserID     string   `json:"user_id"`
 		Username   string   `json:"username"`
 		Score      float64  `json:"score"`

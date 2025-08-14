@@ -28,6 +28,7 @@ type LetterService struct {
 	aiSvc           *AIService
 	wsService       *websocket.WebSocketService
 	opcodeService   *OPCodeService // OP Code验证服务
+	userSvc         *UserService   // 用户服务
 }
 
 func NewLetterService(db *gorm.DB, config *config.Config) *LetterService {
@@ -65,6 +66,11 @@ func (s *LetterService) SetAIService(aiSvc *AIService) {
 // SetOPCodeService 设置OP Code服务（避免循环依赖）
 func (s *LetterService) SetOPCodeService(opcodeService *OPCodeService) {
 	s.opcodeService = opcodeService
+}
+
+// SetUserService 设置用户服务（避免循环依赖）
+func (s *LetterService) SetUserService(userSvc *UserService) {
+	s.userSvc = userSvc
 }
 
 // GetDB 获取数据库连接（用于其他服务访问）

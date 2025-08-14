@@ -22,7 +22,8 @@ import {
   Settings,
   Crown,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  Package
 } from 'lucide-react'
 import { useCourierPermission } from '@/hooks/use-courier-permission'
 import { useAuth } from '@/contexts/auth-context-new'
@@ -175,6 +176,15 @@ export default function CourierPage() {
         href: '/courier/growth/manage',
         icon: UserCheck,
         color: 'bg-purple-600 hover:bg-purple-700'
+      })
+      
+      // L3/L4信使专属：批量条码管理
+      quickActions.push({
+        title: '批量管理',
+        description: '批量生成和管理条码系统',
+        href: '/courier/batch',
+        icon: Package,
+        color: 'bg-amber-600 hover:bg-amber-700'
       })
     }
   }

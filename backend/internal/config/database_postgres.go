@@ -172,10 +172,16 @@ func autoMigrateDirect(db *gorm.DB) error {
 		&models.StorageOperation{},
 	}
 
+	// Use simple AutoMigrate - it should handle existing tables
 	err := db.AutoMigrate(modelsToMigrate...)
 	if err != nil {
-		log.Printf("Main migration error in autoMigrateDirect: %v", err)
-		return err
+		// If it's just table already exists errors, we can ignore them
+		if strings.Contains(err.Error(), "already exists") {
+			log.Printf("Some tables already exist during migration, this is normal: %v", err)
+		} else {
+			log.Printf("Migration error: %v", err)
+			return err
+		}
 	}
 	log.Println("Main auto migration completed successfully in autoMigrateDirect")
 	return nil

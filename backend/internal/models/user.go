@@ -169,6 +169,7 @@ type User struct {
 	Avatar       string         `json:"avatar" gorm:"type:varchar(500)"`
 	Role         UserRole       `json:"role" gorm:"type:varchar(20);not null;default:'user'"`
 	SchoolCode   string         `json:"school_code" gorm:"type:varchar(20);index"`
+	OPCode       string         `json:"op_code" gorm:"type:varchar(6);index"` // OP Code地址
 	IsActive     bool           `json:"is_active" gorm:"default:true"`
 	LastLoginAt  *time.Time     `json:"last_login_at"`
 	CreatedAt    time.Time      `json:"created_at"`

@@ -321,7 +321,7 @@ func (s *UnifiedAIService) formatRelativeTimeDescription(config *models.DelayCon
 	}
 	
 	// 生成默认描述
-	totalMinutes := int(targetTime.Sub(baseTime).Minutes())
+	_ = int(targetTime.Sub(baseTime).Minutes()) // 未使用，保留以备将来扩展
 	
 	if config.RelativeDays > 0 {
 		if config.RelativeHours == 0 && config.RelativeMinutes == 0 {

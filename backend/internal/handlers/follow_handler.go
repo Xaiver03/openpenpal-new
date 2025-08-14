@@ -33,23 +33,23 @@ func NewFollowHandler(followService *services.FollowService) *FollowHandler {
 func (h *FollowHandler) FollowUser(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
 	var req models.FollowActionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request format: "+err.Error())
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request format", err)
 		return
 	}
 
 	response, err := h.followService.FollowUser(userID, req.UserID, req.NotificationEnabled)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to follow user: "+err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to follow user", err)
 		return
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
 // UnfollowUser 取消关注用户
@@ -64,23 +64,23 @@ func (h *FollowHandler) FollowUser(c *gin.Context) {
 func (h *FollowHandler) UnfollowUser(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
 	targetUserID := c.Param("user_id")
 	if targetUserID == "" {
-		utils.ErrorResponse(c, http.StatusBadRequest, "User ID is required")
+		utils.ErrorResponse(c, http.StatusBadRequest, "User ID is required", nil)
 		return
 	}
 
 	response, err := h.followService.UnfollowUser(userID, targetUserID)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to unfollow user: "+err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to unfollow user", err)
 		return
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
 // GetFollowers 获取用户的粉丝列表
@@ -109,7 +109,7 @@ func (h *FollowHandler) GetFollowers(c *gin.Context) {
 	}
 
 	if targetUserID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -117,11 +117,11 @@ func (h *FollowHandler) GetFollowers(c *gin.Context) {
 	
 	response, err := h.followService.GetFollowers(targetUserID, req)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get followers: "+err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get followers", err)
 		return
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
 // GetFollowing 获取用户的关注列表
@@ -150,7 +150,7 @@ func (h *FollowHandler) GetFollowing(c *gin.Context) {
 	}
 
 	if targetUserID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -158,11 +158,11 @@ func (h *FollowHandler) GetFollowing(c *gin.Context) {
 	
 	response, err := h.followService.GetFollowing(targetUserID, req)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get following: "+err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get following", err)
 		return
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
 // SearchUsers 搜索用户
@@ -190,11 +190,11 @@ func (h *FollowHandler) SearchUsers(c *gin.Context) {
 	
 	response, err := h.followService.SearchUsers(req, currentUserID)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to search users: "+err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to search users", err)
 		return
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
 // GetUserSuggestions 获取用户推荐
@@ -212,7 +212,7 @@ func (h *FollowHandler) SearchUsers(c *gin.Context) {
 func (h *FollowHandler) GetUserSuggestions(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -220,11 +220,11 @@ func (h *FollowHandler) GetUserSuggestions(c *gin.Context) {
 	
 	response, err := h.followService.GetUserSuggestions(userID, req)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get user suggestions: "+err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get user suggestions", err)
 		return
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
 // GetFollowStatus 获取关注状态
@@ -239,23 +239,23 @@ func (h *FollowHandler) GetUserSuggestions(c *gin.Context) {
 func (h *FollowHandler) GetFollowStatus(c *gin.Context) {
 	currentUserID := c.GetString("user_id")
 	if currentUserID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
 	targetUserID := c.Param("user_id")
 	if targetUserID == "" {
-		utils.ErrorResponse(c, http.StatusBadRequest, "User ID is required")
+		utils.ErrorResponse(c, http.StatusBadRequest, "User ID is required", nil)
 		return
 	}
 
 	status, err := h.followService.GetFollowStatus(currentUserID, targetUserID)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get follow status: "+err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get follow status", err)
 		return
 	}
 
-	utils.SuccessResponse(c, status)
+	utils.SuccessResponse(c, http.StatusOK, "Success", status)
 }
 
 // RefreshSuggestions 刷新推荐
@@ -269,7 +269,7 @@ func (h *FollowHandler) GetFollowStatus(c *gin.Context) {
 func (h *FollowHandler) RefreshSuggestions(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -283,11 +283,11 @@ func (h *FollowHandler) RefreshSuggestions(c *gin.Context) {
 	
 	response, err := h.followService.GetUserSuggestions(userID, req)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh suggestions: "+err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to refresh suggestions", err)
 		return
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
 // Helper functions for parsing request parameters
@@ -366,7 +366,7 @@ func (h *FollowHandler) parseUserSuggestionsRequest(c *gin.Context) *models.User
 func (h *FollowHandler) FollowMultipleUsers(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
@@ -375,7 +375,7 @@ func (h *FollowHandler) FollowMultipleUsers(c *gin.Context) {
 	}
 	
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request format: "+err.Error())
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request format", err)
 		return
 	}
 
@@ -400,7 +400,7 @@ func (h *FollowHandler) FollowMultipleUsers(c *gin.Context) {
 		"errors":        errors,
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
 // RemoveFollower 移除粉丝
@@ -415,22 +415,22 @@ func (h *FollowHandler) FollowMultipleUsers(c *gin.Context) {
 func (h *FollowHandler) RemoveFollower(c *gin.Context) {
 	currentUserID := c.GetString("user_id")
 	if currentUserID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", nil)
 		return
 	}
 
 	followerUserID := c.Param("user_id")
 	if followerUserID == "" {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Follower user ID is required")
+		utils.ErrorResponse(c, http.StatusBadRequest, "Follower user ID is required", nil)
 		return
 	}
 
 	// 移除粉丝实际上是让对方取消对当前用户的关注
 	response, err := h.followService.UnfollowUser(followerUserID, currentUserID)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to remove follower: "+err.Error())
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to remove follower", err)
 		return
 	}
 
-	utils.SuccessResponse(c, response)
+	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
