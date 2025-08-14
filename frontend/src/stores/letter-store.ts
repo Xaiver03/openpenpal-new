@@ -144,7 +144,9 @@ export const useLetterStore = create<LetterStore>()(
               id: generateId(),
               letter_id: draftId,
               code: generateLetterCode(),
-              generated_at: new Date(),
+              created_at: new Date(),
+              updated_at: new Date(),
+              status: 'bound' as any,
             }
 
             // 这里应该调用实际的API

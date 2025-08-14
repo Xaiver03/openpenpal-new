@@ -52,6 +52,17 @@ export interface LetterDraft {
 }
 
 /**
+ * 信件统计信息 - 匹配后端JSON格式
+ */
+export interface LetterStats {
+  total_sent: number
+  total_received: number
+  in_transit: number
+  delivered: number
+  drafts: number
+}
+
+/**
  * 信件编号 - 增强支持FSD条码系统规格
  */
 export interface LetterCode {

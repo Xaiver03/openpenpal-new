@@ -14,7 +14,7 @@ OpenPenPal 的 AI 子系统通过接入大模型 API，为写信体验提供辅�
 ```
 flowchart TD
   User -->|写匿名信| AI_Matcher -->|返回目标编码| Barcode_Module
-  User -->|开启虚拟笔友| AI_Reply -->|周期性生成信件| Barcode_Module
+  User -->|开启云中锦书| AI_Reply -->|周期性生成信件| Barcode_Module
   User -->|获取灵感| AI_Inspiration
   User -->|提交公开信| AI_Curation --> Museum_System
 ```
@@ -59,9 +59,9 @@ POST /api/ai/match
 
 ---
 
-### **3.2 AI 笔友模拟器（Virtual Penpal）**
+### **3.2 云中锦书（Cloud Letter Companion）**
 
-**用途**：用户自选一个笔友人格，开启长期通信，AI 每隔 1–3 天自动回信。
+**用途**：用户选择一个长期陪伴的AI笔友人设，建立持续的书信往来关系，AI保持一致的性格和记忆，每隔 1–3 天自动回信。
 
 **调用链路**：
 
@@ -111,7 +111,45 @@ Response:
 
 ---
 
-### **3.4 信件策展引擎（Letter Curation）**
+### **3.4 角色驿站（Character Station）**
+
+**用途**：基于不同角色视角为用户的回信提供思路和建议，支持自定义角色和情感引导。
+
+**调用链路**：
+
+- 输入：来信内容 + 自定义角色描述 + 关系类型
+    
+- 输出：回信角度建议 + 情感策略 + 语气建议
+
+**API Schema**：
+
+```
+POST /api/ai/reply-advice
+{
+  "original_letter": "string",
+  "relationship": "friend|elder|classmate|custom",
+  "custom_persona": "温柔的学姐，善于倾听",
+  "response_style": "warm|formal|casual"
+}
+```
+
+**返回**：
+
+```
+{
+  "advice": {
+    "perspective": "从学姐的角度",
+    "key_points": ["回应对方的困惑", "分享相似经历", "给予温暖鼓励"],
+    "tone_suggestion": "温柔而有力量",
+    "emotion_strategy": "共情 + 支持"
+  },
+  "sample_openings": ["看到你的困惑，让我想起了...", "作为过来人..."]
+}
+```
+
+---
+
+### **3.5 信件策展引擎（Letter Curation）**
 
 **用途**：用户公开信件时，AI 自动归类主题并推荐到博物馆栏目（如“告别特展”“暗恋”）。
 
@@ -152,7 +190,8 @@ POST /api/ai/curate
 |**功能点**|**推荐模型能力**|**说明**|
 |---|---|---|
 |AI匹配|embedding + 向量召回|支持 Faiss/Weaviate，本地或云|
-|虚拟笔友回信|gpt-4, claude, moonshot 等|多轮历史记忆支持|
+|云中锦书回信|gpt-4, claude, moonshot 等|多轮历史记忆支持，长期人设一致性|
+|角色驿站建议|gpt-3.5-turbo, claude-haiku|角色视角分析，情感引导|
 |灵感生成|prompt + fine-tuned RAG|可本地生成，不强依赖大模型|
 |策展与分类|gpt + rule-based logic|可部署半结构化 prompt 分类器|
 
@@ -192,6 +231,194 @@ H[用户点击写作灵感] --> I[GET /ai/inspiration]
 |情绪缓解建议|信件中如含强烈负面情绪，返回慰问语或建议|
 |AI写信挑战|每周主题挑战，如“孤独信挑战”，AI参与创作|
 |多语言笔友|跨语种信件翻译/AI生成|
+
+---
+
+## **八、当前实现状态（2025年1月）**
+
+### **8.1 API实现对照表**
+
+| API接口 | 设计路径 | 实际实现 | 状态 | 说明 |
+|---------|----------|----------|------|------|
+| AI匹配 | POST /api/ai/match | POST /api/ai/match | ✅ 完成 | 完全符合设计 |
+| 云中锦书 | POST /api/ai/virtual-reply | POST /api/ai/reply | ✅ 完成 | 路径略有差异 |
+| 写作灵感 | GET /api/ai/inspiration | POST /api/ai/inspiration | ✅ 完成 | 改为POST支持参数 |
+| 角色驿站 | POST /api/ai/reply-advice | POST /api/ai/reply-advice | ✅ 完成 | 完全符合设计 |
+| 信件策展 | POST /api/ai/curate | POST /api/ai/curate | ✅ 完成 | 后端完成，前端待集成 |
+
+### **8.2 数据模型实现**
+
+**已实现的核心数据表**：
+```sql
+-- AI配置表
+CREATE TABLE ai_configs (
+    id VARCHAR(36) PRIMARY KEY,
+    provider VARCHAR(50),        -- openai/claude/siliconflow
+    api_key TEXT,
+    api_endpoint TEXT,
+    model VARCHAR(100),
+    temperature FLOAT,
+    max_tokens INT,
+    is_active BOOLEAN,
+    priority INT,
+    daily_quota INT,
+    used_quota INT,
+    quota_reset_at TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+-- AI使用日志表
+CREATE TABLE ai_usage_logs (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36),
+    task_type VARCHAR(50),       -- match/reply/inspiration/curate
+    task_id VARCHAR(36),
+    provider VARCHAR(50),
+    model VARCHAR(100),
+    input_tokens INT,
+    output_tokens INT,
+    total_tokens INT,
+    status VARCHAR(20),
+    error_message TEXT,
+    created_at TIMESTAMP
+);
+
+-- AI回信建议表
+CREATE TABLE ai_reply_advices (
+    id VARCHAR(36) PRIMARY KEY,
+    letter_id VARCHAR(36),
+    user_id VARCHAR(36),
+    persona_type VARCHAR(50),
+    persona_name VARCHAR(100),
+    persona_desc TEXT,
+    perspectives TEXT,           -- JSON数组
+    emotional_tone VARCHAR(100),
+    suggested_topics TEXT,
+    writing_style VARCHAR(100),
+    key_points TEXT,
+    delivery_delay INT,
+    scheduled_for TIMESTAMP,
+    provider VARCHAR(50),
+    created_at TIMESTAMP,
+    used_at TIMESTAMP
+);
+```
+
+### **8.3 安全机制实现**
+
+| 安全要求 | 设计要求 | 实现情况 | 状态 |
+|----------|----------|----------|------|
+| 匿名保护 | 仅返回编码 | ✅ 已实现 | 完全符合 |
+| 内容预审 | 人工二审 | ⚠️ 基础实现 | 需加强审核能力 |
+| AI标记 | 标记AI生成 | ✅ 已实现 | 前端有标识 |
+| 延迟机制 | 1-3天延迟 | ⚠️ 模拟延迟 | 需改为真实队列 |
+| 情绪拦截 | 极端情绪检测 | ❌ 未实现 | 待开发 |
+
+### **8.4 模型集成状态**
+
+**已集成的AI提供商**：
+1. **OpenAI**
+   - 模型：GPT-3.5-turbo, GPT-4
+   - 用途：全功能支持
+   - 状态：✅ 稳定运行
+
+2. **Claude (Anthropic)**
+   - 模型：Claude-3-sonnet
+   - 用途：高质量对话生成
+   - 状态：✅ 已集成
+
+3. **SiliconFlow**
+   - 模型：Qwen2.5-7B-Instruct
+   - 用途：国产模型备份
+   - 状态：✅ 已集成
+
+### **8.5 性能优化实现**
+
+1. **多提供商故障转移**
+   ```go
+   // 自动切换逻辑已实现
+   if provider1.Failed() {
+       useProvider2()
+   }
+   ```
+
+2. **配额管理**
+   - 每日配额限制
+   - 自动重置机制
+   - 用户级别控制
+
+3. **响应缓存**
+   - ❌ 待实现
+   - 建议使用Redis缓存常见请求
+
+### **8.6 前端集成状态**
+
+**AI功能页面** (`/ai`):
+- ✅ 写作灵感模块
+- ✅ 云中锦书对话
+- ✅ 笔友匹配界面
+- ✅ 角色驿站建议
+- ⚠️ 策展功能待完善
+
+**组件实现**：
+```typescript
+// 已实现的核心组件
+- AIWritingInspiration    // 写作灵感
+- CloudLetterCompanion    // 云中锦书
+- AIPenpalMatch          // 笔友匹配
+- AIReplyAdvice          // 回信建议
+- AIPersonaSelector      // 人设选择器
+```
+
+---
+
+## **九、技术债务与优化建议**
+
+### **9.1 待解决的技术债务**
+
+1. **TypeScript类型错误**
+   - 161个编译错误待修复
+   - 主要集中在UI组件props
+
+2. **延迟机制**
+   - 当前使用setTimeout模拟
+   - 需实现基于消息队列的真实延迟
+
+3. **缓存策略**
+   - AI响应未缓存
+   - 重复请求浪费资源
+
+### **9.2 架构优化建议**
+
+1. **引入消息队列**
+   ```
+   用户请求 → RabbitMQ/Redis → 延迟投递
+   ```
+
+2. **实现响应缓存**
+   ```
+   请求 → Redis缓存检查 → AI调用 → 缓存存储
+   ```
+
+3. **增强监控**
+   - API调用统计
+   - 错误率监控
+   - 成本分析报表
+
+### **9.3 功能增强建议**
+
+1. **情感分析增强**
+   - 集成专业情感分析模型
+   - 实现多维度情绪检测
+
+2. **个性化推荐**
+   - 基于用户历史构建画像
+   - 实现智能内容推荐
+
+3. **多模态支持**
+   - 支持图片理解
+   - 语音信件转文字
 
 ---
 
