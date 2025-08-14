@@ -3,20 +3,20 @@ package services
 import (
 	"fmt"
 	"openpenpal-backend/internal/models"
-
-	"gorm.io/gorm"
+	
+	"golang.org/x/crypto/bcrypt"
 )
 
 // AdminResetPassword 管理员重置用户密码
 func (s *UserService) AdminResetPassword(userID string, newPassword string) error {
 	// 生成新的密码哈希
-	hashedPassword, err := s.hashPassword(newPassword)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	// 更新用户密码
-	if err := s.db.Model(&models.User{}).Where("id = ?", userID).Update("password_hash", hashedPassword).Error; err != nil {
+	if err := s.db.Model(&models.User{}).Where("id = ?", userID).Update("password_hash", string(hashedPassword)).Error; err != nil {
 		return fmt.Errorf("failed to update password: %w", err)
 	}
 

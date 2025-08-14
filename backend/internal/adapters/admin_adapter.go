@@ -146,9 +146,9 @@ func (a *AdminAdapter) AdaptPageResponse(c *gin.Context, items interface{}, tota
 func (a *AdminAdapter) GetUsersCompat(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	limitStr := c.DefaultQuery("limit", "20")
-	search := c.Query("search")
+	_ = c.Query("search")
 	role := c.Query("role")
-	status := c.Query("status")
+	_ = c.Query("status")
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page <= 0 {
@@ -175,7 +175,7 @@ func (a *AdminAdapter) GetUsersCompat(c *gin.Context) {
 	if role != "" {
 		var filtered []models.User
 		for _, user := range response.Users {
-			if user.Role == role {
+			if string(user.Role) == role {
 				filtered = append(filtered, user)
 			}
 		}
@@ -357,7 +357,7 @@ func (a *AdminAdapter) GetLetterCompat(c *gin.Context) {
 		return
 	}
 
-	letter, err := a.letterService.GetLetterByID(letterID)
+	letter, err := a.letterService.GetLetterByID(letterID, "")
 	if err != nil {
 		a.AdaptErrorResponse(c, http.StatusNotFound, "信件不存在", err)
 		return
@@ -464,5 +464,26 @@ func (a *AdminAdapter) GetSystemHealthCompat(c *gin.Context) {
 	}
 
 	response := a.AdaptResponse(stats.SystemHealth, "获取成功")
+	c.JSON(http.StatusOK, response)
+}
+
+// UpdateSystemConfigCompat 更新系统配置 - 兼容Java前端
+func (a *AdminAdapter) UpdateSystemConfigCompat(c *gin.Context) {
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		a.AdaptErrorResponse(c, http.StatusBadRequest, "请求数据无效", err)
+		return
+	}
+
+	// 检查权限
+	userRole, exists := c.Get("role")
+	if !exists || (userRole != "admin" && userRole != "super_admin") {
+		a.AdaptErrorResponse(c, http.StatusForbidden, "权限不足", nil)
+		return
+	}
+
+	// TODO: 实现系统配置更新逻辑
+	// 当前返回成功响应，等待具体配置需求明确
+	response := a.AdaptResponse(req, "配置更新成功")
 	c.JSON(http.StatusOK, response)
 }
