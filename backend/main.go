@@ -60,6 +60,7 @@ func main() {
 	moderationService := services.NewModerationService(db, cfg, aiService)
 	shopService := services.NewShopService(db)
 	commentService := services.NewCommentService(db, cfg)
+	followService := services.NewFollowService(db) // 关注系统服务
 	opcodeService := services.NewOPCodeService(db) // OP Code服务 - 重新启用
 	scanEventService := services.NewScanEventService(db) // 扫描事件服务 - PRD要求
 
@@ -129,6 +130,7 @@ func main() {
 	scanEventHandler := handlers.NewScanEventHandler(scanEventService) // 扫描事件处理器
 	shopHandler := handlers.NewShopHandler(shopService, userService)
 	commentHandler := handlers.NewCommentHandler(commentService)
+	followHandler := handlers.NewFollowHandler(followService) // 关注系统处理器
 	userProfileHandler := handlers.NewUserProfileHandler(db) // 用户档案处理器
 	
 	// QR扫描服务和处理器 - SOTA集成：复用现有依赖 - Temporarily disabled
@@ -552,6 +554,32 @@ func main() {
 
 		// 评论系统
 		handlers.RegisterCommentRoutes(protected, commentHandler)
+
+		// 关注系统
+		follow := protected.Group("/follow")
+		{
+			// 关注操作
+			follow.POST("/users", followHandler.FollowUser)                    // 关注用户
+			follow.DELETE("/users/:user_id", followHandler.UnfollowUser)       // 取消关注用户
+			follow.POST("/users/batch", followHandler.FollowMultipleUsers)     // 批量关注用户
+			
+			// 关注列表
+			follow.GET("/followers", followHandler.GetFollowers)               // 获取当前用户粉丝列表
+			follow.GET("/following", followHandler.GetFollowing)               // 获取当前用户关注列表
+			follow.GET("/users/:user_id/followers", followHandler.GetFollowers) // 获取指定用户粉丝列表
+			follow.GET("/users/:user_id/following", followHandler.GetFollowing) // 获取指定用户关注列表
+			
+			// 关注状态
+			follow.GET("/users/:user_id/status", followHandler.GetFollowStatus) // 获取关注状态
+			
+			// 用户搜索和发现
+			follow.GET("/users/search", followHandler.SearchUsers)             // 搜索用户
+			follow.GET("/suggestions", followHandler.GetUserSuggestions)       // 获取用户推荐
+			follow.POST("/suggestions/refresh", followHandler.RefreshSuggestions) // 刷新推荐
+			
+			// 粉丝管理
+			follow.DELETE("/followers/:user_id", followHandler.RemoveFollower) // 移除粉丝
+		}
 
 		// 商店系统（需要认证的部分）
 		shopAuth := protected.Group("/shop")
