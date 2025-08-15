@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { usePermission } from '@/hooks/use-permission'
+import AdminService from '@/lib/services/admin-service'
 import { 
   Users, 
   Mail, 
@@ -172,31 +173,53 @@ export default function AnalyticsPage() {
         setIsLoading(true)
         setError(null)
         
-        // 这里调用真实的分析API，暂时使用基础数据模拟
-        // 在实际实现中，应该调用 analyticsService.getDashboardData() 等方法
-        const mockData: AnalyticsData = {
-          totalUsers: 0,
-          newUsersToday: 0,
-          totalLetters: 0,
-          lettersToday: 0,
-          activeCouriers: 0,
-          avgDeliveryTime: 2.4,
-          userGrowthData: [0, 0, 0, 0, 0, 0, 0],
-          letterVolumeData: [0, 0, 0, 0, 0, 0, 0],
-          courierPerformanceData: [0, 0, 0, 0, 0, 0, 0],
-          regionData: [0, 0, 0, 0, 0],
-          statusData: [0, 0, 0, 0],
-          userRoleStats: {
-            regular: 0,
-            level1: 0,
-            level2: 0,
-            level3: 0,
-            level4: 0
-          },
-          topCouriers: []
-        }
+        // 调用真实的分析API
+        const response = await AdminService.getDashboardStats()
         
-        setAnalyticsData(mockData)
+        if (response.success && response.data) {
+          const stats = response.data
+          
+          // 转换为页面需要的格式
+          const analyticsData: AnalyticsData = {
+            totalUsers: stats.users.total,
+            newUsersToday: stats.users.new_today,
+            totalLetters: stats.letters.total,
+            lettersToday: stats.letters.sent_today,
+            activeCouriers: stats.couriers.active,
+            avgDeliveryTime: stats.couriers.performance.average_delivery_time || 2.4,
+            // 使用历史趋势数据，如果没有则使用空数组
+            userGrowthData: stats.users.growth_trend?.map(d => d.count) || [0, 0, 0, 0, 0, 0, 0],
+            letterVolumeData: stats.letters.trend?.map(d => d.sent) || [0, 0, 0, 0, 0, 0, 0],
+            courierPerformanceData: stats.letters.trend?.map(d => d.delivered) || [0, 0, 0, 0, 0, 0, 0],
+            // 地区数据 - 从学校统计中获取
+            regionData: Object.values(stats.letters.by_school || {}).slice(0, 5) as number[],
+            // 状态数据
+            statusData: [
+              stats.letters.by_status?.draft || 0,
+              stats.letters.by_status?.pending || 0,
+              stats.letters.by_status?.in_transit || 0,
+              stats.letters.by_status?.delivered || 0
+            ],
+            userRoleStats: {
+              regular: stats.users.by_role?.user || 0,
+              level1: stats.users.by_role?.courier_level1 || 0,
+              level2: stats.users.by_role?.courier_level2 || 0,
+              level3: stats.users.by_role?.courier_level3 || 0,
+              level4: stats.users.by_role?.courier_level4 || 0
+            },
+            topCouriers: stats.couriers.top_performers?.map((c: any) => ({
+              id: c.courier_name,
+              name: c.courier_name,
+              completedTasks: c.completed_tasks,
+              successRate: c.success_rate,
+              rating: 4.5 // 默认评分
+            })) || []
+          }
+          
+          setAnalyticsData(analyticsData)
+        } else {
+          throw new Error('获取数据失败')
+        }
       } catch (err) {
         console.error('Failed to fetch analytics data:', err)
         setError('获取分析数据失败')

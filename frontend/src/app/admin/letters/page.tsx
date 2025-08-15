@@ -56,6 +56,9 @@ import {
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { usePermission, PERMISSIONS } from '@/hooks/use-permission'
+import { BackButton } from '@/components/ui/back-button'
+import { Breadcrumb, ADMIN_BREADCRUMBS } from '@/components/ui/breadcrumb'
+import AdminService from '@/lib/services/admin-service'
 
 interface Letter {
   id: string
@@ -174,82 +177,53 @@ export default function LettersManagePage() {
   const loadLetters = async () => {
     setLoading(true)
     try {
-      // TODO: 替换为实际API调用
-      const mockLetters: Letter[] = [
-        {
-          id: 'L001',
-          title: '给远方朋友的信',
+      const response = await AdminService.getLetters({
+        page: 1,
+        limit: 50,
+        sort_by: 'created_at',
+        sort_order: 'desc'
+      })
+      
+      if (response.success && response.data?.letters) {
+        // Map API response to local Letter type
+        const mappedLetters: Letter[] = response.data.letters.map((letter: any) => ({
+          id: letter.id,
+          title: letter.title || '无标题',
           sender: {
-            id: 'U001',
-            username: 'student001',
-            nickname: '北大小明',
-            school_name: '北京大学'
+            id: letter.sender_info?.id || letter.sender_id,
+            username: letter.sender_info?.username || 'unknown',
+            nickname: letter.sender_info?.name || '未知发送者',
+            school_name: letter.sender_info?.school || '未知学校'
           },
-          recipient: {
-            id: 'U002',
-            username: 'student002',
-            nickname: '清华小红',
-            school_name: '清华大学'
-          },
-          status: 'in_transit',
-          priority: 'normal',
-          content_preview: '亲爱的朋友，好久不见，最近过得怎么样？我在北大的学习生活很充实...',
-          word_count: 856,
-          created_at: '2024-01-20T10:30:00Z',
-          updated_at: '2024-01-21T14:20:00Z',
-          courier: {
-            id: 'C001',
-            name: '快递小王'
-          },
-          tracking_code: 'OP20240121001',
-          delivery_address: '清华大学紫荆公寓',
-          flags: []
-        },
-        {
-          id: 'L002',
-          title: '新年祝福',
-          sender: {
-            id: 'U003',
-            username: 'student003',
-            nickname: '复旦小李',
-            school_name: '复旦大学'
-          },
-          status: 'delivered',
-          priority: 'normal',
-          content_preview: '新年快乐！愿你在新的一年里身体健康，学业进步，心想事成...',
-          word_count: 432,
-          created_at: '2024-01-15T08:00:00Z',
-          updated_at: '2024-01-18T16:45:00Z',
-          delivered_at: '2024-01-18T16:45:00Z',
-          courier: {
-            id: 'C002',
-            name: '快递小张'
-          },
-          tracking_code: 'OP20240115001',
-          flags: []
-        },
-        {
-          id: 'L003',
-          title: '紧急通知',
-          sender: {
-            id: 'U004',
-            username: 'admin001',
-            nickname: '管理员',
-            school_name: '北京大学'
-          },
-          status: 'failed',
-          priority: 'urgent',
-          content_preview: '关于学期末考试安排的重要通知，请各位同学务必注意时间安排...',
-          word_count: 234,
-          created_at: '2024-01-19T14:00:00Z',
-          updated_at: '2024-01-20T09:30:00Z',
-          tracking_code: 'OP20240119001',
-          flags: ['urgent', 'admin']
-        }
-      ]
-      setLetters(mockLetters)
+          recipient: letter.recipient_info ? {
+            id: letter.recipient_id || '',
+            username: letter.recipient_info.username || '',
+            nickname: letter.recipient_info.name || '未知收件人',
+            school_name: letter.recipient_info.school || ''
+          } : undefined,
+          status: letter.status || 'draft',
+          priority: letter.priority || 'normal',
+          content_preview: letter.content?.substring(0, 100) || '',
+          word_count: letter.word_count || 0,
+          created_at: letter.created_at,
+          updated_at: letter.updated_at,
+          delivered_at: letter.delivered_at,
+          courier: letter.delivery_info?.courier_name ? {
+            id: letter.courier_id || '',
+            name: letter.delivery_info.courier_name
+          } : undefined,
+          tracking_code: letter.tracking_code || letter.letter_code,
+          delivery_address: letter.delivery_address || '',
+          flags: letter.flags || []
+        }))
+        setLetters(mappedLetters)
+      } else {
+        setLetters([])
+        console.error('Failed to load letters: Invalid response format')
+      }
     } catch (error) {
       console.error('Failed to load letters:', error)
+      setLetters([])
     } finally {
       setLoading(false)
     }
@@ -257,19 +231,36 @@ export default function LettersManagePage() {
 
   const loadStats = async () => {
     try {
-      // TODO: 替换为实际API调用
-      const mockStats: LetterStats = {
-        total_letters: 5678,
-        pending_letters: 234,
-        in_transit_letters: 156,
-        delivered_letters: 5234,
-        failed_letters: 54,
-        today_letters: 89,
-        this_month_letters: 1456
+      const response = await AdminService.getDashboardStats()
+      
+      if (response.success && response.data) {
+        const systemStats = response.data
+        // Map SystemStats to LetterStats format
+        const letterStats: LetterStats = {
+          total_letters: systemStats.letters.total,
+          pending_letters: systemStats.letters.by_status?.pending || 0,
+          in_transit_letters: systemStats.letters.by_status?.in_transit || 0,
+          delivered_letters: systemStats.letters.by_status?.delivered || 0,
+          failed_letters: systemStats.letters.by_status?.failed || 0,
+          today_letters: systemStats.letters.sent_today,
+          this_month_letters: systemStats.letters.sent_this_week * 4 // 估算月度
+        }
+        setStats(letterStats)
+      } else {
+        console.error('Failed to load stats: Invalid response format')
       }
-      setStats(mockStats)
     } catch (error) {
       console.error('Failed to load stats:', error)
+      // 设置默认值以避免UI错误
+      setStats({
+        total_letters: 0,
+        pending_letters: 0,
+        in_transit_letters: 0,
+        delivered_letters: 0,
+        failed_letters: 0,
+        today_letters: 0,
+        this_month_letters: 0
+      })
     }
   }
 
@@ -324,9 +315,27 @@ export default function LettersManagePage() {
     console.log('Download letter:', letterId)
   }
 
-  const handleFlagLetter = (letterId: string) => {
-    // TODO: 实现信件标记功能
-    console.log('Flag letter:', letterId)
+  const handleFlagLetter = async (letterId: string) => {
+    try {
+      const response = await AdminService.moderateLetter(letterId, {
+        action: 'flag',
+        reason: '需要审核',
+        auto_notification: true
+      })
+      
+      if (response.success) {
+        // 更新本地状态
+        setLetters(prev => prev.map(letter => 
+          letter.id === letterId 
+            ? { ...letter, flags: [...letter.flags, 'flagged'] }
+            : letter
+        ))
+        console.log('Letter flagged successfully')
+      }
+    } catch (error) {
+      console.error('Failed to flag letter:', error)
+      alert('标记信件失败')
+    }
   }
 
   if (loading) {
@@ -339,16 +348,22 @@ export default function LettersManagePage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      
+      <Breadcrumb items={ADMIN_BREADCRUMBS.letters} />
+      
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Mail className="w-8 h-8" />
-            信件管理
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            监控和管理平台上的所有信件投递状态
-          </p>
+        <div className="flex items-center gap-4">
+          <BackButton href="/admin" />
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Mail className="w-8 h-8" />
+              信件管理
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              监控和管理平台上的所有信件投递状态
+            </p>
+          </div>
         </div>
         <Button>
           <Download className="w-4 h-4 mr-2" />
@@ -433,6 +448,49 @@ export default function LettersManagePage() {
             </TabsList>
 
             <TabsContent value={currentTab} className="space-y-4">
+              {/* 快速筛选按钮 */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Button 
+                  variant={statusFilter === 'all' && priorityFilter === 'all' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter('all')
+                    setPriorityFilter('all')
+                    setSchoolFilter('all')
+                  }}
+                >
+                  全部信件
+                </Button>
+                <Button 
+                  variant={statusFilter === 'in_transit' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setStatusFilter('in_transit')}
+                >
+                  运输中
+                </Button>
+                <Button 
+                  variant={statusFilter === 'delivered' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setStatusFilter('delivered')}
+                >
+                  已送达
+                </Button>
+                <Button 
+                  variant={priorityFilter === 'urgent' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setPriorityFilter('urgent')}
+                >
+                  紧急信件
+                </Button>
+                <Button 
+                  variant={statusFilter === 'failed' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setStatusFilter('failed')}
+                >
+                  失败信件
+                </Button>
+              </div>
+              
               {/* 搜索和筛选 */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1">
@@ -517,7 +575,12 @@ export default function LettersManagePage() {
                               <AvatarFallback>{letter.sender.nickname.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="text-sm font-medium">{letter.sender.nickname}</div>
+                              <a 
+                                href={`/admin/users?search=${letter.sender.username}`}
+                                className="text-sm font-medium hover:text-blue-600 transition-colors cursor-pointer"
+                              >
+                                {letter.sender.nickname}
+                              </a>
                               <div className="text-xs text-muted-foreground">
                                 {letter.sender.school_name}
                               </div>
@@ -563,6 +626,21 @@ export default function LettersManagePage() {
                                 <Download className="mr-2 h-4 w-4" />
                                 下载信件
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem asChild>
+                                <a href={`/admin/users?search=${letter.sender.username}`} className="flex items-center">
+                                  <User className="mr-2 h-4 w-4" />
+                                  查看发送者资料
+                                </a>
+                              </DropdownMenuItem>
+                              {letter.courier && (
+                                <DropdownMenuItem asChild>
+                                  <a href={`/admin/couriers?search=${letter.courier.name}`} className="flex items-center">
+                                    <Truck className="mr-2 h-4 w-4" />
+                                    查看信使资料
+                                  </a>
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleFlagLetter(letter.id)}>
                                 <Flag className="mr-2 h-4 w-4" />

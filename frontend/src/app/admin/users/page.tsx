@@ -20,7 +20,8 @@ import {
   Ban,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Truck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,6 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -62,6 +64,7 @@ import {
 } from '@/components/ui/dialog'
 import { usePermission, PERMISSIONS } from '@/hooks/use-permission'
 import { BackButton } from '@/components/ui/back-button'
+import { Breadcrumb, ADMIN_BREADCRUMBS } from '@/components/ui/breadcrumb'
 import { 
   getRoleDisplayName, 
   getRoleColors, 
@@ -70,6 +73,7 @@ import {
 } from '@/constants/roles'
 import { BaseUser } from '@/types'
 import { FeatureErrorBoundary, ComponentErrorBoundary } from '@/components/error-boundary'
+import AdminService from '@/lib/services/admin-service'
 
 interface AdminUser extends BaseUser {
   role: UserRole
@@ -114,6 +118,10 @@ export default function UsersManagePage() {
     school_code: '',
     is_active: true
   })
+  
+  // 批量选择状态
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  const [showBulkActions, setShowBulkActions] = useState(false)
 
   if (!user || !hasPermission(PERMISSIONS.MANAGE_USERS)) {
     return (
@@ -142,70 +150,35 @@ export default function UsersManagePage() {
   const loadUsers = useCallback(async () => {
     setLoading(true)
     try {
-      const mockUsers: AdminUser[] = [
-        {
-          id: '1',
-          username: 'student001',
-          email: 'student001@pku.edu.cn',
-          nickname: '北大小明',
-          role: 'user',
-          school_code: 'BJDX01',
-          school_name: '北京大学',
-          is_active: true,
-          is_verified: true,
-          last_login_at: '2024-01-20T10:30:00Z',
-          created_at: '2024-01-15T08:00:00Z',
-          updated_at: '2024-01-20T10:30:00Z',
-          status: 'active',
+      const response = await AdminService.getUsers({
+        page: 1,
+        limit: 50,
+        sort_by: 'created_at',
+        sort_order: 'desc'
+      })
+      
+      if (response.success && response.data?.users) {
+        // Map API response to local AdminUser type
+        const mappedUsers: AdminUser[] = response.data.users.map((user: any) => ({
+          ...user,
+          school_name: user.school_name || '未知学校',
           stats: {
-            letters_sent: 25,
-            letters_received: 18
+            letters_sent: user.activity_summary?.letters_sent || 0,
+            letters_received: user.activity_summary?.letters_received || 0,
+            courier_tasks: user.activity_summary?.courier_tasks,
+            rating: user.activity_summary?.rating
           }
-        },
-        {
-          id: '2',
-          username: 'courier002',
-          email: 'courier002@pku.edu.cn',
-          nickname: '快递小王',
-          role: 'courier_level1',
-          school_code: 'BJDX01',
-          school_name: '北京大学',
-          is_active: true,
-          is_verified: true,
-          last_login_at: '2024-01-21T14:20:00Z',
-          created_at: '2024-01-10T08:00:00Z',
-          updated_at: '2024-01-21T14:20:00Z',
-          status: 'active',
-          stats: {
-            letters_sent: 45,
-            letters_received: 32,
-            courier_tasks: 156,
-            rating: 4.8
-          }
-        },
-        {
-          id: '3',
-          username: 'admin003',
-          email: 'admin003@pku.edu.cn',
-          nickname: '管理员李',
-          role: 'platform_admin',
-          school_code: 'BJDX01',
-          school_name: '北京大学',
-          is_active: true,
-          is_verified: true,
-          last_login_at: '2024-01-21T16:45:00Z',
-          created_at: '2024-01-01T08:00:00Z',
-          updated_at: '2024-01-21T16:45:00Z',
-          status: 'active',
-          stats: {
-            letters_sent: 12,
-            letters_received: 8
-          }
-        }
-      ]
-      setUsers(mockUsers)
+        }))
+        setUsers(mappedUsers)
+      } else {
+        // Fallback to empty array if API fails
+        setUsers([])
+        console.error('Failed to load users: Invalid response format')
+      }
     } catch (error) {
       console.error('Failed to load users', error)
+      setUsers([])
+      // TODO: 显示错误提示给用户
     } finally {
       setLoading(false)
     }
@@ -213,27 +186,32 @@ export default function UsersManagePage() {
 
   const loadStats = useCallback(async () => {
     try {
-      const mockStats: UserStats = {
-        total_users: 1234,
-        active_users: 1156,
-        new_users_this_month: 89,
-        by_role: {
-          'user': 1000,
-          'courier': 180,
-          'senior_courier': 35,
-          'courier_coordinator': 12,
-          'school_admin': 6,
-          'platform_admin': 1
-        },
-        by_school: {
-          'BJDX01': 450,
-          'QHDX01': 420,
-          'FDDX01': 364
+      const response = await AdminService.getDashboardStats()
+      
+      if (response.success && response.data) {
+        const systemStats = response.data
+        // Map SystemStats to UserStats format
+        const userStats: UserStats = {
+          total_users: systemStats.users.total,
+          active_users: systemStats.users.active,
+          new_users_this_month: systemStats.users.new_this_week * 4, // 估算月度新增
+          by_role: systemStats.users.by_role || {},
+          by_school: systemStats.users.by_school || {}
         }
+        setStats(userStats)
+      } else {
+        console.error('Failed to load stats: Invalid response format')
       }
-      setStats(mockStats)
     } catch (error) {
       console.error('Failed to load stats', error)
+      // 设置默认值以避免UI错误
+      setStats({
+        total_users: 0,
+        active_users: 0,
+        new_users_this_month: 0,
+        by_role: {},
+        by_school: {}
+      })
     }
   }, [])
 
@@ -271,23 +249,41 @@ export default function UsersManagePage() {
     if (!selectedUser) return
     
     try {
-      setUsers(prev => prev.map(u => 
-        u.id === selectedUser.id ? { ...u, is_active: false } : u
-      ))
-      setShowBanDialog(false)
-      setSelectedUser(null)
+      const response = await AdminService.updateUserStatus(
+        selectedUser.id, 
+        'inactive',
+        '管理员禁用'
+      )
+      
+      if (response.success) {
+        setUsers(prev => prev.map(u => 
+          u.id === selectedUser.id ? { ...u, is_active: false, status: 'inactive' } : u
+        ))
+        setShowBanDialog(false)
+        setSelectedUser(null)
+      }
     } catch (error) {
       console.error('Failed to ban user', error)
+      alert('禁用用户失败')
     }
   }, [selectedUser])
 
   const handleUnbanUser = useCallback(async (userId: string) => {
     try {
-      setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, is_active: true } : u
-      ))
+      const response = await AdminService.updateUserStatus(
+        userId,
+        'active',
+        '管理员解除禁用'
+      )
+      
+      if (response.success) {
+        setUsers(prev => prev.map(u => 
+          u.id === userId ? { ...u, is_active: true, status: 'active' } : u
+        ))
+      }
     } catch (error) {
       console.error('Failed to unban user', error)
+      alert('解除禁用失败')
     }
   }, [])
 
@@ -307,35 +303,22 @@ export default function UsersManagePage() {
     if (!selectedUser) return
     
     try {
-      // Call the API to update the user
-      const response = await fetch(`/api/v1/admin/users/${selectedUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(editFormData)
+      const response = await AdminService.updateUser(selectedUser.id, {
+        nickname: editFormData.nickname,
+        email: editFormData.email,
+        role: editFormData.role,
+        school_code: editFormData.school_code,
+        is_active: editFormData.is_active
       })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || '更新用户失败')
-      }
-
-      const result = await response.json()
       
-      if (result.success) {
+      if (response.success && response.data) {
         // Update the user in the local state
         setUsers(prev => prev.map(u => 
           u.id === selectedUser.id 
             ? { 
                 ...u, 
-                nickname: editFormData.nickname,
-                email: editFormData.email,
-                role: editFormData.role as UserRole,
-                school_code: editFormData.school_code,
-                is_active: editFormData.is_active,
-                updated_at: new Date().toISOString()
+                ...response.data,
+                stats: u.stats // Preserve stats
               } 
             : u
         ))
@@ -343,17 +326,84 @@ export default function UsersManagePage() {
         setShowEditDialog(false)
         setSelectedUser(null)
         
-        // Show success message (you can add a toast notification here)
+        // TODO: 显示成功提示
         console.log('用户信息更新成功')
       } else {
-        throw new Error(result.message || '更新失败')
+        throw new Error(response.message || '更新失败')
       }
     } catch (error) {
       console.error('Failed to update user', error)
-      // You can show an error message to the user here
+      // TODO: 显示错误提示
       alert(error instanceof Error ? error.message : '更新用户信息失败')
     }
   }, [selectedUser, editFormData])
+
+  // 批量选择功能
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev => {
+      const newSelected = new Set(prev)
+      if (newSelected.has(userId)) {
+        newSelected.delete(userId)
+      } else {
+        newSelected.add(userId)
+      }
+      setShowBulkActions(newSelected.size > 0)
+      return newSelected
+    })
+  }
+
+  const selectAllUsers = () => {
+    const allUserIds = new Set(filteredUsers.map(u => u.id))
+    setSelectedUsers(allUserIds)
+    setShowBulkActions(allUserIds.size > 0)
+  }
+
+  const clearSelection = () => {
+    setSelectedUsers(new Set())
+    setShowBulkActions(false)
+  }
+
+  const handleBulkActivate = async () => {
+    try {
+      const response = await AdminService.batchOperateUsers({
+        user_ids: Array.from(selectedUsers),
+        action: 'activate'
+      })
+      
+      if (response.success) {
+        // Update local state for successful operations
+        setUsers(prev => prev.map(u => 
+          selectedUsers.has(u.id) ? { ...u, is_active: true } : u
+        ))
+        clearSelection()
+        console.log(`成功激活 ${response.data?.success_count} 个用户`)
+      }
+    } catch (error) {
+      console.error('Failed to bulk activate users:', error)
+      alert('批量激活用户失败')
+    }
+  }
+
+  const handleBulkDeactivate = async () => {
+    try {
+      const response = await AdminService.batchOperateUsers({
+        user_ids: Array.from(selectedUsers),
+        action: 'deactivate'
+      })
+      
+      if (response.success) {
+        // Update local state for successful operations
+        setUsers(prev => prev.map(u => 
+          selectedUsers.has(u.id) ? { ...u, is_active: false } : u
+        ))
+        clearSelection()
+        console.log(`成功禁用 ${response.data?.success_count} 个用户`)
+      }
+    } catch (error) {
+      console.error('Failed to bulk deactivate users:', error)
+      alert('批量禁用用户失败')
+    }
+  }
 
   if (loading) {
     return (
@@ -366,6 +416,9 @@ export default function UsersManagePage() {
   return (
     <FeatureErrorBoundary>
       <div className="container mx-auto p-6 space-y-6">
+      
+      <Breadcrumb items={ADMIN_BREADCRUMBS.users} />
+      
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -420,10 +473,13 @@ export default function UsersManagePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {(stats.by_role.courier || 0) + (stats.by_role.senior_courier || 0)}
+                {(stats.by_role.courier_level1 || 0) + 
+                 (stats.by_role.courier_level2 || 0) + 
+                 (stats.by_role.courier_level3 || 0) + 
+                 (stats.by_role.courier_level4 || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
-                含高级信使 {stats.by_role.senior_courier || 0} 人
+                含各级信使
               </p>
             </CardContent>
           </Card>
@@ -452,6 +508,75 @@ export default function UsersManagePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* 快速筛选按钮 */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Button 
+              variant={statusFilter === 'all' && roleFilter === 'all' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => {
+                setStatusFilter('all')
+                setRoleFilter('all')
+                setSchoolFilter('all')
+              }}
+            >
+              全部用户
+            </Button>
+            <Button 
+              variant={statusFilter === 'active' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setStatusFilter('active')}
+            >
+              活跃用户
+            </Button>
+            <Button 
+              variant={roleFilter.includes('courier') ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setRoleFilter(roleFilter.includes('courier') ? 'all' : 'courier_level1')}
+            >
+              信使用户
+            </Button>
+            <Button 
+              variant={roleFilter === 'platform_admin' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setRoleFilter('platform_admin')}
+            >
+              管理员
+            </Button>
+            <Button 
+              variant={statusFilter === 'unverified' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => setStatusFilter('unverified')}
+            >
+              未验证
+            </Button>
+          </div>
+          
+          {/* 批量操作栏 */}
+          {showBulkActions && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    已选择 {selectedUsers.size} 个用户
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={clearSelection}>
+                    取消选择
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleBulkActivate}>
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    批量激活
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={handleBulkDeactivate}>
+                    <Ban className="w-4 h-4 mr-1" />
+                    批量禁用
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -506,6 +631,18 @@ export default function UsersManagePage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          selectAllUsers()
+                        } else {
+                          clearSelection()
+                        }
+                      }}
+                    />
+                  </TableHead>
                   <TableHead>用户</TableHead>
                   <TableHead>角色</TableHead>
                   <TableHead>学校</TableHead>
@@ -518,6 +655,12 @@ export default function UsersManagePage() {
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedUsers.has(user.id)}
+                        onCheckedChange={() => toggleUserSelection(user.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
@@ -590,6 +733,21 @@ export default function UsersManagePage() {
                             <Edit className="mr-2 h-4 w-4" />
                             编辑信息
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <a href={`/admin/letters?user=${user.id}`} className="flex items-center">
+                              <Mail className="mr-2 h-4 w-4" />
+                              查看用户信件
+                            </a>
+                          </DropdownMenuItem>
+                          {user.role.includes('courier') && (
+                            <DropdownMenuItem asChild>
+                              <a href={`/admin/couriers?user=${user.id}`} className="flex items-center">
+                                <Truck className="mr-2 h-4 w-4" />
+                                查看信使任务
+                              </a>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           {user.is_active ? (
                             <DropdownMenuItem 

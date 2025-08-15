@@ -187,6 +187,17 @@ export default function CourierPage() {
         color: 'bg-amber-600 hover:bg-amber-700'
       })
     }
+    
+    // L2+ 信使可以访问积分管理
+    if (courierInfo && courierInfo.level >= 2) {
+      quickActions.push({
+        title: '积分管理',
+        description: '管理团队积分和奖励',
+        href: '/courier/credit-manage',
+        icon: Award,
+        color: 'bg-purple-600 hover:bg-purple-700'
+      })
+    }
   }
 
   const CourierDashboard = () => (

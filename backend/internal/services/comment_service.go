@@ -18,6 +18,7 @@ type CommentService struct {
 	letterSvc     *LetterService
 	creditSvc     *CreditService
 	moderationSvc *ModerationService
+	securitySvc   *ContentSecurityService
 }
 
 func NewCommentService(db *gorm.DB, config *config.Config) *CommentService {
@@ -42,6 +43,11 @@ func (s *CommentService) SetModerationService(moderationSvc *ModerationService) 
 	s.moderationSvc = moderationSvc
 }
 
+// SetContentSecurityService 设置内容安全服务（避免循环依赖）
+func (s *CommentService) SetContentSecurityService(securitySvc *ContentSecurityService) {
+	s.securitySvc = securitySvc
+}
+
 // CreateComment 创建评论
 func (s *CommentService) CreateComment(ctx context.Context, userID string, req *models.CommentCreateRequest) (*models.CommentResponse, error) {
 	// 验证信件是否存在
@@ -64,13 +70,39 @@ func (s *CommentService) CreateComment(ctx context.Context, userID string, req *
 		}
 	}
 
-	// 内容审核
+	// 1. 优先进行内容安全检查（XSS防护和内容清理）
+	var cleanedContent string = req.Content
+	if s.securitySvc != nil {
+		securityResult, err := s.securitySvc.ValidateCommentContent(req.Content, userID)
+		if err != nil {
+			return nil, fmt.Errorf("content security validation failed: %w", err)
+		}
+		
+		// 如果检测到XSS或高风险内容，直接拒绝
+		if securityResult.XSSDetected || !securityResult.IsSafe {
+			return nil, fmt.Errorf("comment content contains security violations: %s", 
+				fmt.Sprintf("Risk level: %s, Violations: %v", securityResult.RiskLevel, securityResult.ViolationType))
+		}
+		
+		// 使用清理后的内容
+		if securityResult.HTMLCleaned {
+			cleanedContent = securityResult.SanitizedContent
+		}
+		
+		// 如果需要人工审核，记录但允许创建（待审核状态）
+		if securityResult.RequiresModeration {
+			// 内容将以pending状态创建，等待人工审核
+		}
+	}
+
+	// 2. 内容审核（传统审核流程）
+	var commentStatus models.CommentStatus = models.CommentStatusActive
 	if s.moderationSvc != nil {
 		moderationReq := &models.ModerationRequest{
 			UserID:      userID,
 			ContentType: models.ContentTypeComment,
 			ContentID:   uuid.New().String(), // 临时ID，将在创建后更新
-			Content:     req.Content,
+			Content:     cleanedContent, // 使用安全清理后的内容
 		}
 		response, err := s.moderationSvc.ModerateContent(ctx, moderationReq)
 		if err != nil {
@@ -83,16 +115,21 @@ func (s *CommentService) CreateComment(ctx context.Context, userID string, req *
 			}
 			return nil, fmt.Errorf("comment content rejected: %s", reasons)
 		}
+		
+		// 如果审核结果需要等待，设置为pending状态
+		if response.NeedReview {
+			commentStatus = models.CommentStatusPending
+		}
 	}
 
-	// 创建评论
+	// 创建评论（使用安全清理后的内容和状态）
 	comment := &models.Comment{
 		ID:         uuid.New().String(),
 		LetterID:   req.LetterID,
 		UserID:     userID,
 		ParentID:   req.ParentID,
-		Content:    req.Content,
-		Status:     models.CommentStatusActive,
+		Content:    cleanedContent, // 使用安全清理后的内容
+		Status:     commentStatus,  // 使用安全检查后确定的状态
 		LikeCount:  0,
 		ReplyCount: 0,
 		IsTop:      false,

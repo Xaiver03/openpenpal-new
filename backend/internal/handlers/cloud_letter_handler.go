@@ -307,6 +307,134 @@ func (h *CloudLetterHandler) GetPersonaTypes(c *gin.Context) {
 	})
 }
 
+// GetPendingReviews 获取待审核的云信件列表（L3/L4信使专用）
+// @Summary 获取待审核的云信件列表
+// @Description L3/L4信使获取分配给自己的待审核云信件
+// @Tags CloudLetter
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param limit query int false "每页数量" default(20)
+// @Success 200 {object} object{letters=[]services.CloudLetter,total=int}
+// @Router /api/v1/cloud-letters/pending-reviews [get]
+func (h *CloudLetterHandler) GetPendingReviews(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not authenticated")
+		return
+	}
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		utils.InternalServerErrorResponse(c, "Invalid user ID format", nil)
+		return
+	}
+
+	// 检查用户是否为L3/L4信使
+	userRole, roleExists := c.Get("user_role")
+	if !roleExists {
+		utils.ForbiddenResponse(c, "Role not found")
+		return
+	}
+
+	// 验证是否为L3或L4信使
+	if !isAuthorizedReviewer(userRole.(string)) {
+		utils.ForbiddenResponse(c, "Only L3/L4 couriers can access pending reviews")
+		return
+	}
+
+	// 解析分页参数
+	page := utils.ParseIntQuery(c, "page", 1)
+	limit := utils.ParseIntQuery(c, "limit", 20)
+
+	letters, total, err := h.cloudLetterSvc.GetPendingReviews(c.Request.Context(), userIDStr, page, limit)
+	if err != nil {
+		log.Printf("❌ [CloudLetterHandler] Failed to get pending reviews: %v", err)
+		utils.InternalServerErrorResponse(c, "Failed to get pending reviews", err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Pending reviews retrieved successfully", gin.H{
+		"letters": letters,
+		"total":   total,
+		"page":    page,
+		"limit":   limit,
+	})
+}
+
+// ReviewCloudLetter 审核云信件
+// @Summary 审核云信件
+// @Description L3/L4信使审核云信件，可以批准、拒绝或要求修改
+// @Tags CloudLetter
+// @Accept json
+// @Produce json
+// @Param letter_id path string true "信件ID"
+// @Param request body CloudLetterReviewRequest true "审核请求"
+// @Success 200 {object} object{message=string}
+// @Router /api/v1/cloud-letters/{letter_id}/review [post]
+func (h *CloudLetterHandler) ReviewCloudLetter(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not authenticated")
+		return
+	}
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		utils.InternalServerErrorResponse(c, "Invalid user ID format", nil)
+		return
+	}
+
+	// 检查用户是否为L3/L4信使
+	userRole, roleExists := c.Get("user_role")
+	if !roleExists {
+		utils.ForbiddenResponse(c, "Role not found")
+		return
+	}
+
+	if !isAuthorizedReviewer(userRole.(string)) {
+		utils.ForbiddenResponse(c, "Only L3/L4 couriers can review cloud letters")
+		return
+	}
+
+	letterID := c.Param("letter_id")
+	if letterID == "" {
+		utils.BadRequestResponse(c, "Letter ID is required", nil)
+		return
+	}
+
+	var req CloudLetterReviewRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequestResponse(c, "Invalid request format", err)
+		return
+	}
+
+	// 验证审核决定
+	if req.Decision != "approved" && req.Decision != "rejected" && req.Decision != "revision_needed" {
+		utils.BadRequestResponse(c, "Invalid decision. Must be: approved, rejected, or revision_needed", nil)
+		return
+	}
+
+	err := h.cloudLetterSvc.ReviewCloudLetter(c.Request.Context(), userIDStr, letterID, req.Decision, req.Comments)
+	if err != nil {
+		log.Printf("❌ [CloudLetterHandler] Failed to review cloud letter: %v", err)
+		utils.InternalServerErrorResponse(c, "Failed to review cloud letter", err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Cloud letter reviewed successfully", nil)
+}
+
+// CloudLetterReviewRequest 云信件审核请求
+type CloudLetterReviewRequest struct {
+	Decision string `json:"decision" binding:"required"` // approved, rejected, revision_needed
+	Comments string `json:"comments,omitempty"`          // 审核意见
+}
+
+// isAuthorizedReviewer 检查用户是否为授权的审核员
+func isAuthorizedReviewer(role string) bool {
+	return role == "courier_level3" || role == "courier_level4" || role == "super_admin"
+}
+
 // GetLetterStatusOptions 获取信件状态选项
 // @Summary 获取信件状态选项
 // @Description 获取云信件的所有可能状态及其描述

@@ -35,8 +35,8 @@ type DelayQueueTask struct {
 	MaxRetries   int                    `json:"max_retries"`
 }
 
-// AIReplyTask AI回信任务数据
-type AIReplyTask struct {
+// DelayedAIReplyTask AI回信任务数据
+type DelayedAIReplyTask struct {
 	UserID         string `json:"user_id"`
 	PersonaID      string `json:"persona_id"`
 	OriginalLetter string `json:"original_letter"`
@@ -186,14 +186,14 @@ func (s *DelayQueueService) processDelayedTasks() {
 func (s *DelayQueueService) processTask(task *DelayQueueTask) error {
 	switch task.Type {
 	case "ai_reply":
-		return s.processAIReplyTask(task)
+		return s.processDelayedAIReplyTask(task)
 	default:
 		return fmt.Errorf("unknown task type: %s", task.Type)
 	}
 }
 
-// processAIReplyTask 处理AI回信任务
-func (s *DelayQueueService) processAIReplyTask(task *DelayQueueTask) error {
+// processDelayedAIReplyTask 处理AI回信任务
+func (s *DelayQueueService) processDelayedAIReplyTask(task *DelayQueueTask) error {
 	// 从payload中提取数据
 	userID, _ := task.Payload["user_id"].(string)
 	personaID, _ := task.Payload["persona_id"].(string)

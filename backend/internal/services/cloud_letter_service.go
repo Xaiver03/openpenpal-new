@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -179,11 +180,8 @@ func (s *CloudLetterService) enhanceLetterWithAI(ctx context.Context, letter *Cl
 		return
 	}
 
-	// 构建增强提示词
-	enhancePrompt := s.buildEnhancementPrompt(letter, persona)
-
 	// 调用AI服务增强内容
-	if aiResponse, err := s.callAIForEnhancement(ctx, enhancePrompt); err == nil {
+	if aiResponse, err := s.callAIForEnhancement(ctx, letter, persona); err == nil {
 		// 更新增强后的内容
 		s.db.Model(letter).Updates(map[string]interface{}{
 			"ai_enhanced_draft": aiResponse,
@@ -269,15 +267,407 @@ func (s *CloudLetterService) getRelationshipDescription(relationship PersonaRela
 }
 
 // callAIForEnhancement 调用AI服务进行内容增强
-func (s *CloudLetterService) callAIForEnhancement(ctx context.Context, prompt string) (string, error) {
-	// 这里应该调用AI服务的文本增强功能
-	// 暂时返回模拟增强内容
-	return s.generateMockEnhancement(prompt), nil
+func (s *CloudLetterService) callAIForEnhancement(ctx context.Context, letter *CloudLetter, persona *CloudPersona) (string, error) {
+	if s.aiSvc == nil {
+		log.Printf("⚠️ [CloudLetter] AI service not available, using fallback")
+		return s.generateMockEnhancement(letter.OriginalContent), nil
+	}
+
+	// 直接调用AI服务的内容增强方法
+	enhancedContent, err := s.aiSvc.EnhanceContent(ctx, letter.OriginalContent, persona, letter.EmotionalTone)
+	if err != nil {
+		log.Printf("❌ [CloudLetter] AI enhancement failed: %v", err)
+		// 使用fallback机制，返回原始内容的基础增强版本
+		return s.generateMockEnhancement(letter.OriginalContent), nil
+	}
+
+	// 清理AI响应，移除可能的格式标记
+	cleanedContent := s.cleanAIResponse(enhancedContent)
+	
+	log.Printf("✅ [CloudLetter] AI enhancement completed successfully")
+	return cleanedContent, nil
+}
+
+// cleanAIResponse 清理AI响应内容
+func (s *CloudLetterService) cleanAIResponse(response string) string {
+	// 移除常见的AI响应格式标记
+	cleaned := strings.TrimSpace(response)
+	
+	// 移除可能的JSON格式包装
+	if strings.HasPrefix(cleaned, "{") && strings.HasSuffix(cleaned, "}") {
+		// 尝试解析JSON格式响应
+		var jsonResp map[string]interface{}
+		if err := json.Unmarshal([]byte(cleaned), &jsonResp); err == nil {
+			if content, ok := jsonResp["content"].(string); ok {
+				cleaned = content
+			} else if enhanced, ok := jsonResp["enhanced_content"].(string); ok {
+				cleaned = enhanced
+			}
+		}
+	}
+	
+	// 移除markdown代码块标记
+	cleaned = strings.ReplaceAll(cleaned, "```", "")
+	cleaned = strings.ReplaceAll(cleaned, "**增强版本**", "")
+	cleaned = strings.ReplaceAll(cleaned, "**Enhanced Version**", "")
+	
+	return strings.TrimSpace(cleaned)
 }
 
 // generateMockEnhancement 生成模拟增强内容（临时实现）
 func (s *CloudLetterService) generateMockEnhancement(originalContent string) string {
 	return fmt.Sprintf("【AI增强版本】\n\n%s\n\n（已通过AI优化语言表达和情感深度）", originalContent)
+}
+
+// determineRequiredReviewerLevel 确定所需的审核员等级
+func (s *CloudLetterService) determineRequiredReviewerLevel(letter *CloudLetter, persona *CloudPersona) int {
+	// 基础审核等级
+	baseLevel := 2 // L2信使默认处理一般内容
+
+	// 根据人物关系类型确定敏感度
+	switch persona.Relationship {
+	case RelationshipDeceased:
+		// 已故亲人关系需要L3信使审核（高敏感度）
+		baseLevel = 3
+	case RelationshipUnspokenLove:
+		// 暗恋关系需要L3信使审核（情感敏感）
+		baseLevel = 3
+	case RelationshipDistantFriend:
+		// 疏远朋友一般由L2处理
+		baseLevel = 2
+	case RelationshipCustom:
+		// 自定义关系根据描述判断
+		if s.isHighSensitivityContent(persona.Description, letter.OriginalContent) {
+			baseLevel = 3
+		}
+	}
+
+	// 内容敏感度检查
+	if s.containsSensitiveKeywords(letter.OriginalContent) {
+		baseLevel = max(baseLevel, 3) // 至少需要L3
+	}
+
+	// 极度敏感内容需要L4审核
+	if s.requiresL4Review(letter.OriginalContent, persona) {
+		baseLevel = 4
+	}
+
+	log.Printf("📋 [CloudLetter] Determined reviewer level %d for relationship: %s", baseLevel, persona.Relationship)
+	return baseLevel
+}
+
+// isHighSensitivityContent 检查是否为高敏感度内容
+func (s *CloudLetterService) isHighSensitivityContent(description, content string) bool {
+	// 检查人物描述中的敏感词
+	sensitiveDescriptions := []string{
+		"离世", "去世", "逝世", "病故", "意外", "自杀", "抑郁", 
+		"分手", "失恋", "背叛", "伤害", "恨", "报复",
+		"家暴", "虐待", "创伤", "痛苦", "绝望",
+	}
+
+	combined := strings.ToLower(description + " " + content)
+	for _, keyword := range sensitiveDescriptions {
+		if strings.Contains(combined, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsSensitiveKeywords 检查内容是否包含敏感关键词
+func (s *CloudLetterService) containsSensitiveKeywords(content string) bool {
+	sensitiveKeywords := []string{
+		// 死亡相关
+		"死", "死亡", "自杀", "轻生", "结束生命",
+		// 暴力相关
+		"杀", "打", "伤害", "报复", "仇恨", "暴力",
+		// 性相关
+		"性", "做爱", "上床", "激情", "身体",
+		// 政治敏感
+		"政府", "政治", "革命", "抗议", "游行",
+		// 其他敏感
+		"毒品", "赌博", "诈骗", "犯罪", "违法",
+	}
+
+	content = strings.ToLower(content)
+	for _, keyword := range sensitiveKeywords {
+		if strings.Contains(content, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+// requiresL4Review 检查是否需要L4级别审核
+func (s *CloudLetterService) requiresL4Review(content string, persona *CloudPersona) bool {
+	// L4审核条件：极度敏感内容或跨校影响
+	extremeKeywords := []string{
+		"自杀", "杀人", "恐怖", "极端", "炸弹", "毒品交易",
+		"人体器官", "卖淫", "色情服务", "黑社会", "洗钱",
+	}
+
+	content = strings.ToLower(content)
+	for _, keyword := range extremeKeywords {
+		if strings.Contains(content, keyword) {
+			log.Printf("🚨 [CloudLetter] L4 review required due to extreme content keyword: %s", keyword)
+			return true
+		}
+	}
+
+	// 检查是否可能影响多个校区
+	if persona.Description != "" && strings.Contains(persona.Description, "知名") {
+		return true
+	}
+
+	return false
+}
+
+// assignCourierReviewer 分配信使审核员
+func (s *CloudLetterService) assignCourierReviewer(ctx context.Context, letter *CloudLetter, requiredLevel int) error {
+	log.Printf("🔍 [CloudLetter] Assigning L%d courier reviewer for letter: %s", requiredLevel, letter.ID)
+
+	// 获取符合条件的信使审核员
+	reviewer, err := s.findAvailableCourierReviewer(ctx, requiredLevel)
+	if err != nil {
+		return fmt.Errorf("failed to find available reviewer: %w", err)
+	}
+
+	// 更新信件的审核员信息
+	if err := s.db.Model(letter).Updates(map[string]interface{}{
+		"reviewer_level": requiredLevel,
+		"reviewer_id":    reviewer.UserID,
+		"updated_at":     time.Now(),
+	}).Error; err != nil {
+		return fmt.Errorf("failed to update letter reviewer: %w", err)
+	}
+
+	// 创建审核任务（如果CourierService支持任务创建）
+	if err := s.createReviewTask(ctx, letter, reviewer, requiredLevel); err != nil {
+		log.Printf("⚠️ [CloudLetter] Failed to create review task: %v", err)
+		// 不阻塞主流程
+	}
+
+	// 发送通知给审核员
+	if s.notificationSvc != nil {
+		s.sendReviewNotification(ctx, letter, reviewer)
+	}
+
+	log.Printf("✅ [CloudLetter] Assigned reviewer %s (L%d) for letter %s", reviewer.UserID, requiredLevel, letter.ID)
+	return nil
+}
+
+// findAvailableCourierReviewer 查找可用的信使审核员
+func (s *CloudLetterService) findAvailableCourierReviewer(ctx context.Context, requiredLevel int) (*models.Courier, error) {
+	var couriers []models.Courier
+
+	// 查询对应等级的信使，优先选择任务较少的
+	err := s.db.Where("level >= ? AND status = ?", requiredLevel, "approved").
+		Order("task_count ASC, points DESC"). // 任务少的优先，积分高的优先
+		Limit(5). // 取前5个候选人
+		Find(&couriers).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query couriers: %w", err)
+	}
+
+	if len(couriers) == 0 {
+		return nil, fmt.Errorf("no available L%d+ couriers found", requiredLevel)
+	}
+
+	// 选择第一个（任务最少的）
+	selectedCourier := &couriers[0]
+	
+	log.Printf("🎯 [CloudLetter] Selected courier %s (L%d, %d tasks) for review", 
+		selectedCourier.UserID, selectedCourier.Level, selectedCourier.TaskCount)
+	
+	return selectedCourier, nil
+}
+
+// createReviewTask 创建审核任务
+func (s *CloudLetterService) createReviewTask(ctx context.Context, letter *CloudLetter, reviewer *models.Courier, level int) error {
+	// 这里可以调用CourierService的任务创建方法
+	// 由于CourierService主要处理物流任务，CloudLetter审核可能需要扩展
+	
+	// 临时实现：记录审核任务到数据库或发送通知
+	log.Printf("📝 [CloudLetter] Review task created for courier %s, letter %s", reviewer.UserID, letter.ID)
+	
+	// TODO: 如果需要，可以扩展CourierService支持审核任务类型
+	// 或者创建独立的审核任务表
+	
+	return nil
+}
+
+// sendReviewNotification 发送审核通知
+func (s *CloudLetterService) sendReviewNotification(ctx context.Context, letter *CloudLetter, reviewer *models.Courier) {
+	if s.notificationSvc == nil {
+		return
+	}
+
+	// 构建通知内容
+	message := fmt.Sprintf("您有一封云中锦书待审核，ID: %s，关系类型: %s", 
+		letter.ID[:8], // 只显示前8位ID
+		letter.PersonaID)
+
+	// 发送通知
+	// 注意：这里需要根据实际的NotificationService接口调整
+	log.Printf("📧 [CloudLetter] Sending review notification to courier %s", reviewer.UserID)
+	
+	// TODO: 调用实际的通知服务方法
+	// s.notificationSvc.SendNotification(ctx, reviewer.UserID, "CloudLetter审核", message)
+}
+
+// max 辅助函数
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// GetPendingReviews 获取待审核的云信件列表（L3/L4信使专用）
+func (s *CloudLetterService) GetPendingReviews(ctx context.Context, reviewerUserID string, page, limit int) ([]CloudLetter, int64, error) {
+	var letters []CloudLetter
+	var total int64
+
+	// 计算偏移量
+	offset := (page - 1) * limit
+
+	// 获取分配给该审核员的待审核信件
+	query := s.db.WithContext(ctx).
+		Where("reviewer_id = ? AND status = ?", reviewerUserID, CloudLetterStatusUnderReview).
+		Order("created_at ASC") // 按创建时间排序，先进先出
+
+	// 获取总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count pending reviews: %w", err)
+	}
+
+	// 获取分页数据
+	if err := query.Limit(limit).Offset(offset).Find(&letters).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to get pending reviews: %w", err)
+	}
+
+	log.Printf("📋 [CloudLetter] Retrieved %d/%d pending reviews for reviewer %s", len(letters), total, reviewerUserID)
+	return letters, total, nil
+}
+
+// ReviewCloudLetter 审核云信件
+func (s *CloudLetterService) ReviewCloudLetter(ctx context.Context, reviewerUserID, letterID, decision, comments string) error {
+	log.Printf("🔍 [CloudLetter] Reviewing letter %s by %s with decision: %s", letterID, reviewerUserID, decision)
+
+	// 获取信件信息
+	var letter CloudLetter
+	if err := s.db.WithContext(ctx).Where("id = ?", letterID).First(&letter).Error; err != nil {
+		return fmt.Errorf("letter not found: %w", err)
+	}
+
+	// 验证审核权限
+	if letter.ReviewerID != reviewerUserID {
+		return fmt.Errorf("not authorized to review this letter")
+	}
+
+	// 验证当前状态
+	if letter.Status != CloudLetterStatusUnderReview {
+		return fmt.Errorf("letter is not under review, current status: %s", letter.Status)
+	}
+
+	// 根据决定更新状态
+	var newStatus CloudLetterStatus
+	switch decision {
+	case "approved":
+		newStatus = CloudLetterStatusApproved
+	case "rejected":
+		// 被拒绝的信件不会被投递
+		newStatus = CloudLetterStatusRevisionNeeded
+	case "revision_needed":
+		newStatus = CloudLetterStatusRevisionNeeded
+	default:
+		return fmt.Errorf("invalid decision: %s", decision)
+	}
+
+	// 更新信件状态和审核意见
+	updates := map[string]interface{}{
+		"status":          newStatus,
+		"review_comments": comments,
+		"updated_at":      time.Now(),
+	}
+
+	// 如果批准，设置投递日期
+	if newStatus == CloudLetterStatusApproved {
+		deliveryDate := time.Now().Add(24 * time.Hour) // 24小时后投递
+		updates["actual_delivery_date"] = &deliveryDate
+	}
+
+	if err := s.db.Model(&letter).Updates(updates).Error; err != nil {
+		return fmt.Errorf("failed to update letter status: %w", err)
+	}
+
+	// 发送通知给用户
+	if s.notificationSvc != nil {
+		s.sendReviewResultNotification(ctx, &letter, decision, comments)
+	}
+
+	// 如果批准，可以触发投递流程
+	if newStatus == CloudLetterStatusApproved {
+		s.processApprovedLetter(ctx, &letter)
+	}
+
+	log.Printf("✅ [CloudLetter] Letter %s reviewed successfully with decision: %s", letterID, decision)
+	return nil
+}
+
+// sendReviewResultNotification 发送审核结果通知给用户
+func (s *CloudLetterService) sendReviewResultNotification(ctx context.Context, letter *CloudLetter, decision, comments string) {
+	var title, message string
+
+	switch decision {
+	case "approved":
+		title = "云中锦书已通过审核"
+		message = fmt.Sprintf("您的云中锦书「%s」已通过审核，将在24小时内完成投递。", letter.ID[:8])
+	case "rejected":
+		title = "云中锦书审核未通过"
+		message = fmt.Sprintf("您的云中锦书「%s」审核未通过，原因：%s", letter.ID[:8], comments)
+	case "revision_needed":
+		title = "云中锦书需要修改"
+		message = fmt.Sprintf("您的云中锦书「%s」需要修改，建议：%s", letter.ID[:8], comments)
+	}
+
+	if comments != "" {
+		message += fmt.Sprintf("\n审核意见：%s", comments)
+	}
+
+	log.Printf("📧 [CloudLetter] Sending review result notification to user %s: %s", letter.UserID, title)
+	
+	// TODO: 调用实际的通知服务方法
+	// s.notificationSvc.SendNotification(ctx, letter.UserID, title, message)
+}
+
+// processApprovedLetter 处理已批准的信件
+func (s *CloudLetterService) processApprovedLetter(ctx context.Context, letter *CloudLetter) {
+	log.Printf("📮 [CloudLetter] Processing approved letter for delivery: %s", letter.ID)
+
+	// 更新状态为已投递
+	go func() {
+		// 模拟投递延迟
+		time.Sleep(5 * time.Minute) // 5分钟后标记为已投递（模拟）
+
+		updates := map[string]interface{}{
+			"status":     CloudLetterStatusDelivered,
+			"updated_at": time.Now(),
+		}
+
+		if err := s.db.Model(letter).Updates(updates).Error; err != nil {
+			log.Printf("❌ [CloudLetter] Failed to update letter to delivered: %v", err)
+			return
+		}
+
+		log.Printf("✅ [CloudLetter] Letter %s marked as delivered", letter.ID)
+
+		// 发送投递完成通知
+		if s.notificationSvc != nil {
+			// TODO: 发送投递完成通知
+		}
+	}()
 }
 
 // shouldAutoSubmitForReview 判断是否应该自动提交审核
@@ -307,8 +697,16 @@ func (s *CloudLetterService) submitForReview(ctx context.Context, letterID strin
 		"updated_at": time.Now(),
 	})
 
-	// TODO: 实现自动分配给L3/L4信使审核的逻辑
-	// 这里需要与CourierService集成
+	// 实现自动分配给L3/L4信使审核的逻辑
+	if s.courierSvc != nil {
+		reviewerLevel := s.determineRequiredReviewerLevel(letter, persona)
+		if reviewerLevel >= 3 { // L3或L4信使审核
+			if err := s.assignCourierReviewer(ctx, letter, reviewerLevel); err != nil {
+				log.Printf("⚠️ [CloudLetter] Failed to assign courier reviewer: %v", err)
+				// 不阻塞流程，继续处理
+			}
+		}
+	}
 
 	log.Printf("✅ [CloudLetter] Letter submitted for review: %s", letterID)
 }

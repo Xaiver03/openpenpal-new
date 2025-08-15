@@ -52,6 +52,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { usePermission, PERMISSIONS } from '@/hooks/use-permission'
 import { BackButton } from '@/components/ui/back-button'
+import { Breadcrumb, ADMIN_BREADCRUMBS } from '@/components/ui/breadcrumb'
 import { courierApi, type Courier, type CourierTask, type CourierStats } from '@/lib/api/courier'
 
 // 常量定义
@@ -157,133 +158,50 @@ export default function CouriersPage() {
       
       // 处理API响应
       if (couriersRes.data && typeof couriersRes.data === 'object' && 'couriers' in couriersRes.data) {
-        setCouriers((couriersRes.data as any).couriers)
+        setCouriers((couriersRes.data as any).couriers || [])
+      } else {
+        setCouriers([])
       }
       
       if (tasksRes.data && typeof tasksRes.data === 'object' && 'tasks' in tasksRes.data) {
-        setTasks((tasksRes.data as any).tasks)
+        setTasks((tasksRes.data as any).tasks || [])
+      } else {
+        setTasks([])
       }
       
       if (statsRes.data) {
-        setStats(statsRes.data as any)
+        setStats(statsRes.data as CourierStats)
+      } else {
+        // 设置默认统计数据
+        setStats({
+          total_couriers: 0,
+          active_couriers: 0,
+          pending_couriers: 0,
+          level_distribution: {},
+          total_tasks: 0,
+          completed_tasks: 0,
+          pending_tasks: 0,
+          average_success_rate: 0
+        })
       }
     } catch (error) {
       console.error('Failed to load courier data:', error)
       
-      // 如果API调用失败，使用模拟数据作为后备
-      const mockCouriers: Courier[] = [
-        {
-          id: '1',
-          user_id: 'user_001',
-          username: 'courier_level4_city',
-          nickname: '城市总代-张三',
-          email: 'zhang.san@example.com',
-          level: 4,
-          status: 'active',
-          zone: 'BEIJING',
-          zone_name: '北京市',
-          points: 2850,
-          task_count: 125,
-          success_rate: 98.5,
-          created_at: '2024-01-15T10:30:00Z',
-          last_active_at: '2024-01-21T09:45:00Z'
-        },
-        {
-          id: '2',
-          user_id: 'user_002',
-          username: 'courier_level3_school',
-          nickname: '校级信使-李四',
-          email: 'li.si@bjdx.edu.cn',
-          level: 3,
-          status: 'active',
-          zone: 'BJDX',
-          zone_name: '北京大学',
-          points: 1820,
-          task_count: 89,
-          success_rate: 96.2,
-          created_at: '2024-01-16T14:20:00Z',
-          last_active_at: '2024-01-21T08:30:00Z'
-        },
-        {
-          id: '3',
-          user_id: 'user_003',
-          username: 'courier_level2_zone',
-          nickname: '片区信使-王五',
-          email: 'wang.wu@bjdx.edu.cn',
-          level: 2,
-          status: 'active',
-          zone: 'BJDX-A',
-          zone_name: '北京大学A区',
-          points: 1240,
-          task_count: 67,
-          success_rate: 94.8,
-          created_at: '2024-01-17T16:45:00Z',
-          last_active_at: '2024-01-21T07:15:00Z'
-        },
-        {
-          id: '4',
-          user_id: 'user_004',
-          username: 'courier_level1_building',
-          nickname: '楼栋信使-赵六',
-          email: 'zhao.liu@bjdx.edu.cn',
-          level: 1,
-          status: 'pending',
-          zone: 'BJDX-A-101',
-          zone_name: '北京大学A区101楼',
-          points: 350,
-          task_count: 23,
-          success_rate: 91.3,
-          created_at: '2024-01-20T11:00:00Z',
-          last_active_at: '2024-01-20T18:20:00Z'
-        }
-      ]
-
-      const mockTasks: CourierTask[] = [
-        {
-          id: 'task_001',
-          courier_id: '1',
-          letter_code: 'LTR-20240121-001',
-          status: 'delivered',
-          priority: 'high',
-          reward: 25,
-          pickup_address: '北京大学图书馆',
-          delivery_address: '北京大学宿舍A区',
-          created_at: '2024-01-21T08:00:00Z',
-          updated_at: '2024-01-21T09:30:00Z'
-        },
-        {
-          id: 'task_002',
-          courier_id: '2',
-          letter_code: 'LTR-20240121-002',
-          status: 'in_transit',
-          priority: 'normal',
-          reward: 15,
-          pickup_address: '北京大学教学楼',
-          delivery_address: '北京大学宿舍B区',
-          created_at: '2024-01-21T09:00:00Z',
-          updated_at: '2024-01-21T09:45:00Z'
-        }
-      ]
-
-      const mockStats: CourierStats = {
-        total_couriers: 4,
-        active_couriers: 3,
-        pending_couriers: 1,
-        level_distribution: {
-          '1': 1,
-          '2': 1,
-          '3': 1,
-          '4': 1
-        },
-        total_tasks: 248,
-        completed_tasks: 231,
-        pending_tasks: 17,
-        average_success_rate: 95.2
-      }
-
-      setCouriers(mockCouriers)
-      setTasks(mockTasks)
-      setStats(mockStats)
+      // 出错时设置空数据而不是mock数据
+      setCouriers([])
+      setTasks([])
+      setStats({
+        total_couriers: 0,
+        active_couriers: 0,
+        pending_couriers: 0,
+        level_distribution: {},
+        total_tasks: 0,
+        completed_tasks: 0,
+        pending_tasks: 0,
+        average_success_rate: 0
+      })
+      
+      // TODO: 显示错误提示给用户
     } finally {
       setLoading(false)
     }
@@ -350,6 +268,9 @@ export default function CouriersPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      
+      <Breadcrumb items={ADMIN_BREADCRUMBS.couriers} />
+      
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

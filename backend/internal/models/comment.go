@@ -141,3 +141,77 @@ func (c *Comment) GetDepth() int {
 	// 这里可以实现递归查询深度，但为了性能考虑，限制最大深度为3
 	return 1
 }
+
+// CommentReportStatus 举报状态
+type CommentReportStatus string
+
+const (
+	CommentReportStatusPending  CommentReportStatus = "pending"  // 待处理
+	CommentReportStatusHandled  CommentReportStatus = "handled"  // 已处理
+	CommentReportStatusRejected CommentReportStatus = "rejected" // 已拒绝
+)
+
+// CommentReportReason 举报原因
+type CommentReportReason string
+
+const (
+	CommentReportReasonSpam       CommentReportReason = "spam"       // 垃圾信息
+	CommentReportReasonAbusive    CommentReportReason = "abusive"    // 恶意辱骂
+	CommentReportReasonHateful    CommentReportReason = "hateful"    // 仇恨言论
+	CommentReportReasonInappropriate CommentReportReason = "inappropriate" // 不当内容
+	CommentReportReasonOther      CommentReportReason = "other"      // 其他
+)
+
+// CommentReport 评论举报模型
+type CommentReport struct {
+	ID          string              `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	CommentID   string              `json:"comment_id" gorm:"type:varchar(36);not null;index"`
+	ReporterID  string              `json:"reporter_id" gorm:"type:varchar(36);not null;index"`
+	Reason      CommentReportReason `json:"reason" gorm:"type:varchar(50);not null"`
+	Description string              `json:"description" gorm:"type:text"`
+	Status      CommentReportStatus `json:"status" gorm:"type:varchar(20);not null;default:'pending'"`
+	HandlerID   *string             `json:"handler_id" gorm:"type:varchar(36);index"`
+	HandledAt   *time.Time          `json:"handled_at"`
+	CreatedAt   time.Time           `json:"created_at"`
+	UpdatedAt   time.Time           `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt      `json:"-" gorm:"index"`
+
+	// 关联关系
+	Comment  *Comment `json:"comment,omitempty" gorm:"foreignKey:CommentID;references:ID;constraint:OnDelete:CASCADE;"`
+	Reporter *User    `json:"reporter,omitempty" gorm:"foreignKey:ReporterID;references:ID;constraint:OnDelete:CASCADE;"`
+	Handler  *User    `json:"handler,omitempty" gorm:"foreignKey:HandlerID;references:ID;constraint:OnDelete:SET NULL;"`
+}
+
+// CommentReportRequest 举报评论请求
+type CommentReportRequest struct {
+	Reason      CommentReportReason `json:"reason" binding:"required" validate:"oneof=spam abusive hateful inappropriate other"`
+	Description string              `json:"description" binding:"max=500" validate:"max=500"`
+}
+
+// CommentType 评论目标类型
+type CommentType string
+
+const (
+	CommentTypeLetter  CommentType = "letter"  // 信件评论
+	CommentTypeProfile CommentType = "profile" // 个人资料评论
+	CommentTypeMuseum  CommentType = "museum"  // 博物馆展品评论
+)
+
+// CommentListResponse 评论列表响应
+type CommentListResponse struct {
+	Comments     []CommentResponse `json:"comments"`
+	TotalCount   int               `json:"total_count"`
+	TotalPages   int               `json:"total_pages"`
+	CurrentPage  int               `json:"current_page"`
+	HasNext      bool              `json:"has_next"`
+	HasPrevious  bool              `json:"has_previous"`
+}
+
+// CommentStats 评论统计
+type CommentStats struct {
+	TotalCount     int `json:"total_count"`
+	LikedCount     int `json:"liked_count"`
+	RepliedCount   int `json:"replied_count"`
+	TopComments    int `json:"top_comments"`
+	RecentComments int `json:"recent_comments"`
+}

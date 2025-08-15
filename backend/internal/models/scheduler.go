@@ -21,16 +21,16 @@ const (
 	TaskTypeStatisticsUpdate    TaskType = "statistics_update"    // 统计数据更新
 )
 
-// TaskStatus 任务状态
-type TaskStatus string
+// SchedulerTaskStatus 定时任务状态
+type SchedulerTaskStatus string
 
 const (
-	TaskStatusPending   TaskStatus = "pending"   // 待执行
-	TaskStatusRunning   TaskStatus = "running"   // 执行中
-	TaskStatusCompleted TaskStatus = "completed" // 已完成
-	TaskStatusFailed    TaskStatus = "failed"    // 执行失败
-	TaskStatusCanceled  TaskStatus = "canceled"  // 已取消
-	TaskStatusSkipped   TaskStatus = "skipped"   // 已跳过
+	SchedulerTaskStatusPending   SchedulerTaskStatus = "pending"   // 待执行
+	SchedulerTaskStatusRunning   SchedulerTaskStatus = "running"   // 执行中
+	SchedulerTaskStatusCompleted SchedulerTaskStatus = "completed" // 已完成
+	SchedulerTaskStatusFailed    SchedulerTaskStatus = "failed"    // 执行失败
+	SchedulerTaskStatusCanceled  SchedulerTaskStatus = "canceled"  // 已取消
+	SchedulerTaskStatusSkipped   SchedulerTaskStatus = "skipped"   // 已跳过
 )
 
 // TaskPriority 任务优先级
@@ -50,7 +50,7 @@ type ScheduledTask struct {
 	Description string       `json:"description" gorm:"type:text"`
 	TaskType    TaskType     `json:"task_type" gorm:"size:50;not null"`
 	Priority    TaskPriority `json:"priority" gorm:"size:20;default:'normal'"`
-	Status      TaskStatus   `json:"status" gorm:"size:20;default:'pending'"`
+	Status      SchedulerTaskStatus   `json:"status" gorm:"size:20;default:'pending'"`
 
 	// 调度配置
 	CronExpression string    `json:"cron_expression" gorm:"size:100"` // Cron表达式
@@ -59,7 +59,7 @@ type ScheduledTask struct {
 
 	// 执行记录
 	LastRunAt    *time.Time `json:"last_run_at"`   // 上次执行时间
-	LastStatus   TaskStatus `json:"last_status"`   // 上次执行状态
+	LastStatus   SchedulerTaskStatus `json:"last_status"`   // 上次执行状态
 	RunCount     int        `json:"run_count"`     // 执行次数
 	FailureCount int        `json:"failure_count"` // 失败次数
 
@@ -91,7 +91,7 @@ type TaskExecution struct {
 	TaskID string        `json:"task_id" gorm:"not null;index"`
 	Task   ScheduledTask `json:"task" gorm:"foreignKey:TaskID"`
 
-	Status    TaskStatus `json:"status" gorm:"size:20;default:'pending'"`
+	Status    SchedulerTaskStatus `json:"status" gorm:"size:20;default:'pending'"`
 	StartedAt time.Time  `json:"started_at"`
 	EndedAt   *time.Time `json:"ended_at"`
 	Duration  int        `json:"duration"` // 执行时长（毫秒）
@@ -186,7 +186,7 @@ type CreateTaskRequest struct {
 type TaskQuery struct {
 	TaskType  TaskType     `json:"task_type" form:"task_type"`
 	Priority  TaskPriority `json:"priority" form:"priority"`
-	Status    TaskStatus   `json:"status" form:"status"`
+	Status    SchedulerTaskStatus   `json:"status" form:"status"`
 	IsActive  *bool        `json:"is_active" form:"is_active"`
 	StartDate *time.Time   `json:"start_date" form:"start_date"`
 	EndDate   *time.Time   `json:"end_date" form:"end_date"`

@@ -66,8 +66,10 @@ type SensitiveWord struct {
 	Category  string          `json:"category" gorm:"type:varchar(50)"` // 政治、色情、暴力、广告等
 	Level     ModerationLevel `json:"level" gorm:"type:varchar(20);not null"`
 	IsActive  bool            `json:"is_active" gorm:"default:true"`
+	Reason    string          `json:"reason" gorm:"type:text"`         // 添加原因说明
 	CreatedBy string          `json:"created_by" gorm:"type:varchar(36)"`
 	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"` // 添加更新时间
 }
 
 // ModerationRule 审核规则
@@ -157,4 +159,36 @@ type ModerationRuleRequest struct {
 	Pattern     string      `json:"pattern" binding:"required"`
 	Action      string      `json:"action" binding:"required"`
 	Priority    int         `json:"priority"`
+}
+
+// =============== 新增：安全事件和统计模型 ===============
+
+// SecurityEvent 安全事件记录 - 用于XSS攻击等安全事件记录
+type SecurityEvent struct {
+	ID          string    `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	UserID      string    `json:"user_id" gorm:"type:varchar(36);not null;index"`
+	EventType   string    `json:"event_type" gorm:"type:varchar(50);not null"` // content_security_violation, xss_attempt, etc.
+	ContentType string    `json:"content_type" gorm:"type:varchar(20)"`         // comment, letter, etc.
+	Content     string    `json:"content" gorm:"type:text"`                     // 触发事件的内容
+	RiskScore   int       `json:"risk_score" gorm:"default:0"`                  // 风险分数 0-100
+	Violations  int       `json:"violations" gorm:"default:0"`                  // 违规数量
+	IPAddress   string    `json:"ip_address" gorm:"type:varchar(45)"`           // IP地址
+	UserAgent   string    `json:"user_agent" gorm:"type:varchar(500)"`          // 用户代理
+	Details     string    `json:"details" gorm:"type:text"`                     // JSON格式的详细信息
+	Handled     bool      `json:"handled" gorm:"default:false"`                 // 是否已处理
+	HandledBy   *string   `json:"handled_by" gorm:"type:varchar(36)"`           // 处理人ID
+	HandledAt   *time.Time `json:"handled_at"`                                  // 处理时间
+	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
+}
+
+// SecurityStats 安全统计信息
+type SecurityStats struct {
+	TotalEvents       int64 `json:"total_events"`
+	HighRiskEvents    int64 `json:"high_risk_events"`
+	BlockedContent    int64 `json:"blocked_content"`
+	AverageRiskScore  int   `json:"average_risk_score"`
+	XSSAttempts       int64 `json:"xss_attempts"`
+	PendingReview     int64 `json:"pending_review"`
+	AutoBlocked       int64 `json:"auto_blocked"`
+	ManualReviews     int64 `json:"manual_reviews"`
 }

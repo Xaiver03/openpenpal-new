@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,20 @@ import {
   Star, Award
 } from 'lucide-react';
 import Link from 'next/link';
+import { useCreditInfo, useCreditStore } from '@/stores/credit-store';
+import { formatPoints } from '@/lib/api/credit';
+import { CreditLevelBadge } from '@/components/credit/credit-level-badge';
 
 export function CourierDashboard() {
+  // 获取积分信息
+  const { userCredit, creditSummary } = useCreditInfo();
+  const { refreshAll } = useCreditStore();
+
+  // 初始化时刷新积分数据
+  useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
+
   // 获取信使状态
   const { data: courierStatus } = useQuery({
     queryKey: ['courier-status'],
@@ -56,21 +68,22 @@ export function CourierDashboard() {
     },
     {
       title: '累计积分',
-      value: growthProgress?.total_points || 0,
+      value: formatPoints(userCredit?.total || 0),
       icon: Star,
       color: 'text-yellow-600',
+      subtitle: userCredit ? `等级 ${userCredit.level}` : '',
     },
     {
-      title: '获得徽章',
-      value: growthProgress?.badges_earned || 0,
-      icon: Award,
-      color: 'text-purple-600',
-    },
-    {
-      title: '完成率',
-      value: `${courierStatus?.taskCount ? Math.round((courierStatus.points / courierStatus.taskCount) * 100) : 0}%`,
-      icon: Target,
+      title: '本周获得',
+      value: formatPoints(creditSummary?.week_earned || 0),
+      icon: TrendingUp,
       color: 'text-blue-600',
+    },
+    {
+      title: '待处理任务',
+      value: creditSummary?.pending_tasks || 0,
+      icon: Target,
+      color: 'text-purple-600',
     },
   ];
 
@@ -80,7 +93,19 @@ export function CourierDashboard() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>信使中心</CardTitle>
+            <div>
+              <CardTitle>信使中心</CardTitle>
+              {userCredit && (
+                <div className="mt-2">
+                  <CreditLevelBadge
+                    level={userCredit.level}
+                    totalPoints={userCredit.total}
+                    showTooltip={true}
+                    size="sm"
+                  />
+                </div>
+              )}
+            </div>
             <Badge className={levelColors[courierStatus?.level || 1]}>
               {levelNames[courierStatus?.level || 1]}
             </Badge>
@@ -93,8 +118,11 @@ export function CourierDashboard() {
                 <stat.icon className={`h-8 w-8 mx-auto mb-2 ${stat.color}`} />
                 <p className="text-2xl font-bold">{stat.value}</p>
                 <p className="text-sm text-muted-foreground">{stat.title}</p>
-                {stat.total > 0 && (
+                {stat.total && stat.total > 0 && (
                   <p className="text-xs text-muted-foreground">共 {stat.total}</p>
+                )}
+                {stat.subtitle && (
+                  <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
                 )}
               </div>
             ))}
@@ -185,10 +213,10 @@ export function CourierDashboard() {
               </Link>
             )}
             
-            <Link href="/courier/leaderboard">
+            <Link href="/courier/points">
               <Button variant="outline" className="w-full justify-start">
                 <Trophy className="mr-2 h-4 w-4" />
-                排行榜
+                积分中心
               </Button>
             </Link>
             

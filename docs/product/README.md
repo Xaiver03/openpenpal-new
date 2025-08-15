@@ -62,7 +62,7 @@ product/
 | **User Management** | • [User System](./fsd/infrastructure/user-system-fsd.md)<br>• [Credit & Incentive System](./fsd/infrastructure/credit-incentive-system-fsd.md) | User profiles, credit system |
 | **Data Analytics** | • [Data Analytics System](./fsd/infrastructure/data-analytics-system-fsd.md)<br>• [Operation Logging System](./fsd/infrastructure/operation-logging-system-fsd.md) | Data reports, audit logs |
 | **Operations** | • [Platform Config Center](./fsd/infrastructure/platform-config-center-fsd.md)<br>• [Task Scheduler & Automation](./fsd/infrastructure/task-scheduler-automation-system-fsd.md) | Config management, scheduled tasks |
-| **Content Safety** | • [Moderation System](./fsd/infrastructure/moderation-system-fsd.md)<br>• [Moderation Implementation Summary](./fsd/infrastructure/moderation-system-implementation-summary.md) | Content filtering, manual review |
+| **Content Safety** | • [Moderation System](./fsd/infrastructure/moderation-system-fsd.md)<br>• [Moderation Implementation Summary](./fsd/infrastructure/moderation-system-implementation-summary.md)<br>• [Content Security System (XSS & Sensitive Words)](./fsd/infrastructure/content-security-system-fsd.md) | Content filtering, manual review, XSS protection |
 | **Communication** | • [Notification System](./fsd/infrastructure/notification-system-fsd.md)<br>• [Asset Storage System](./fsd/infrastructure/asset-storage-system-fsd.md) | Message push, file storage |
 
 ## 🔗 Document Relationships
@@ -104,8 +104,8 @@ Infrastructure Systems (Auth, User, Data, Notification, etc.)
 | **Core PRD** | 4 | Including V1.0, V2.0 and English version |
 | **Subsystem PRD** | 9 | 7 main + 2 English versions |
 | **Business FSD** | 7 | Complete functional specifications |
-| **Infrastructure FSD** | 12 | Infrastructure system specs |
-| **Total** | 32 | Complete product-technical documentation system |
+| **Infrastructure FSD** | 13 | Infrastructure system specs |
+| **Total** | 33 | Complete product-technical documentation system |
 
 ## 🎯 Usage Guide
 

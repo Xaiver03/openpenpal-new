@@ -182,8 +182,8 @@ type FollowStatsResponse struct {
 	PopularFollowing     []FollowUser `json:"popular_following"`
 }
 
-// UserStats 用户统计信息（用于API返回）
-type UserStats struct {
+// UserFollowStats 用户关注统计信息（用于API返回）
+type UserFollowStats struct {
 	UserID         string    `json:"user_id"`
 	FollowingCount int       `json:"following_count"`
 	FollowersCount int       `json:"followers_count"`

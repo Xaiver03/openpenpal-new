@@ -26,7 +26,25 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
-		c.Header("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+		
+		// 完善的权限策略 - 业界最佳实践
+		c.Header("Permissions-Policy", 
+			"geolocation=(), "+
+			"microphone=(), "+
+			"camera=(), "+
+			"usb=(), "+
+			"bluetooth=(), "+
+			"gyroscope=(), "+
+			"accelerometer=(), "+
+			"magnetometer=(), "+
+			"payment=(), "+
+			"midi=(), "+
+			"sync-xhr=(self), "+
+			"autoplay=(self), "+
+			"encrypted-media=(self), "+
+			"picture-in-picture=(self), "+
+			"fullscreen=(self), "+
+			"interest-cohort=()")
 
 		// HSTS - 仅在生产环境启用
 		if !isDev {
@@ -65,18 +83,53 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 					"frame-ancestors 'none'; "+
 					"base-uri 'self'; "+
 					"form-action 'self'; "+
-					"upgrade-insecure-requests;")
+					"block-all-mixed-content; "+
+					"upgrade-insecure-requests; "+
+					"require-trusted-types-for 'script';")
 
 			// 将nonce传递给模板引擎（如果使用）
 			c.Header("X-CSP-Nonce", nonce)
 		}
 
-		// 添加其他推荐的安全头
+		// 添加其他推荐的安全头 - 加强版
 		c.Header("X-Permitted-Cross-Domain-Policies", "none")
 		c.Header("X-Download-Options", "noopen")
 		c.Header("X-DNS-Prefetch-Control", "off")
-
+		c.Header("X-Robots-Tag", "noindex, nofollow, nosnippet, noarchive")
+		c.Header("Cross-Origin-Embedder-Policy", "require-corp")
+		c.Header("Cross-Origin-Opener-Policy", "same-origin")
+		c.Header("Cross-Origin-Resource-Policy", "same-origin")
+		
+		// 防止缓存敏感信息
+		if c.Request.URL.Path == "/api/v1/auth/login" || 
+		   c.Request.URL.Path == "/api/v1/auth/refresh" ||
+		   c.Request.URL.Path == "/api/v1/admin/sensitive-words" {
+			c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
+			c.Header("Pragma", "no-cache")
+			c.Header("Expires", "0")
+		}
+		
+		// 防止点击劫持的额外保护
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Content-Security-Policy", c.GetHeader("Content-Security-Policy")+"; frame-ancestors 'none';")
+		
 		c.Next()
+	}
+}
+
+// CSPViolationHandler 处理CSP违规报告
+func CSPViolationHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var violation map[string]interface{}
+		if err := c.ShouldBindJSON(&violation); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid CSP violation report"})
+			return
+		}
+		
+		// 记录CSP违规（可以发送到日志系统或监控）
+		// log.Printf("CSP Violation: %+v", violation)
+		
+		c.Status(204) // No Content
 	}
 }
 

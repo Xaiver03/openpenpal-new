@@ -25,6 +25,7 @@ type LetterService struct {
 	courierTaskSvc  *CourierTaskService
 	notificationSvc *NotificationService
 	creditSvc       *CreditService
+	creditTaskSvc   *CreditTaskService // 积分任务服务
 	aiSvc           *AIService
 	wsService       *websocket.WebSocketService
 	opcodeService   *OPCodeService // OP Code验证服务
@@ -51,6 +52,11 @@ func (s *LetterService) SetNotificationService(notificationSvc *NotificationServ
 // SetCreditService 设置积分服务（避免循环依赖）
 func (s *LetterService) SetCreditService(creditSvc *CreditService) {
 	s.creditSvc = creditSvc
+}
+
+// SetCreditTaskService 设置积分任务服务（避免循环依赖）
+func (s *LetterService) SetCreditTaskService(creditTaskSvc *CreditTaskService) {
+	s.creditTaskSvc = creditTaskSvc
 }
 
 // SetWebSocketService 设置WebSocket服务（避免循环依赖）
@@ -124,11 +130,11 @@ func (s *LetterService) CreateDraft(userID string, req *models.CreateLetterReque
 		return nil, fmt.Errorf("failed to create draft: %w", err)
 	}
 
-	// 奖励创建信件积分
-	if s.creditSvc != nil {
+	// 使用模块化积分任务系统奖励创建信件 - FSD规格
+	if s.creditTaskSvc != nil {
 		go func() {
-			if err := s.creditSvc.RewardLetterCreated(userID, letter.ID); err != nil {
-				fmt.Printf("Failed to reward letter created: %v\n", err)
+			if err := s.creditTaskSvc.TriggerLetterCreatedReward(userID, letter.ID); err != nil {
+				fmt.Printf("Failed to trigger letter created reward: %v\n", err)
 			}
 		}()
 	}
@@ -241,10 +247,17 @@ func (s *LetterService) GenerateCode(letterID string) (*models.LetterCode, error
 			})
 		}
 
-		// 奖励生成编号积分
-		if s.creditSvc != nil {
-			if err := s.creditSvc.RewardLetterGenerated(letter.UserID, letterID); err != nil {
-				fmt.Printf("Failed to reward letter generated: %v\n", err)
+		// 使用模块化积分任务系统奖励生成编号 - FSD规格
+		if s.creditTaskSvc != nil {
+			// 创建积分任务而不是直接奖励，支持更好的管理和监控
+			if _, err := s.creditTaskSvc.CreateTask(
+				models.TaskTypeLetterGenerated,
+				letter.UserID,
+				10, // FSD规格：成功写信并绑定条码 +10 积分
+				"成功写信并绑定条码",
+				letterID,
+			); err != nil {
+				fmt.Printf("Failed to create letter generation reward task: %v\n", err)
 			}
 		}
 	}()
@@ -1107,6 +1120,15 @@ func (s *LetterService) LikeLetter(ctx context.Context, letterID, userID string)
 			CreatedAt: time.Now(),
 		}
 		s.db.Create(&like) // 忽略错误，避免重复点赞
+	}
+
+	// 触发公开信点赞积分奖励 - FSD规格
+	if letter.Visibility == models.VisibilityPublic && s.creditTaskSvc != nil && letter.UserID != userID {
+		go func() {
+			if err := s.creditTaskSvc.TriggerPublicLetterLikeReward(letter.UserID, letterID); err != nil {
+				fmt.Printf("Failed to trigger public letter like reward: %v\n", err)
+			}
+		}()
 	}
 
 	// 发送通知

@@ -25,6 +25,7 @@ type AIService struct {
 	client          *http.Client
 	usageService    *UserUsageService
 	securityService *ContentSecurityService
+	creditTaskSvc   *CreditTaskService // 积分任务服务
 }
 
 // NewAIService 创建AI服务实例
@@ -42,6 +43,11 @@ func NewAIService(db *gorm.DB, config *config.Config) *AIService {
 	service.securityService = NewContentSecurityService(db, config, service)
 
 	return service
+}
+
+// SetCreditTaskService 设置积分任务服务（避免循环依赖）
+func (s *AIService) SetCreditTaskService(creditTaskSvc *CreditTaskService) {
+	s.creditTaskSvc = creditTaskSvc
 }
 
 // GetActiveProvider 获取当前激活的AI提供商配置
@@ -214,6 +220,15 @@ func (s *AIService) MatchPenPal(ctx context.Context, req *models.AIMatchRequest)
 		log.Printf("Failed to record penpal match usage for user %s: %v", letter.UserID, err)
 	}
 
+	// 触发AI互动积分奖励 - FSD规格
+	if s.creditTaskSvc != nil {
+		go func() {
+			if err := s.creditTaskSvc.TriggerAIInteractionReward(letter.UserID, req.LetterID); err != nil {
+				log.Printf("Failed to trigger AI interaction reward for user %s: %v", letter.UserID, err)
+			}
+		}()
+	}
+
 	return matches, nil
 }
 
@@ -278,6 +293,15 @@ func (s *AIService) ScheduleDelayedReply(ctx context.Context, req *models.AIRepl
 	// 记录使用量
 	if err := s.usageService.UseAIReply(originalLetter.UserID); err != nil {
 		log.Printf("Failed to record AI reply usage for user %s: %v", originalLetter.UserID, err)
+	}
+
+	// 触发AI互动积分奖励 - FSD规格
+	if s.creditTaskSvc != nil {
+		go func() {
+			if err := s.creditTaskSvc.TriggerAIInteractionReward(originalLetter.UserID, conversationID); err != nil {
+				log.Printf("Failed to trigger AI interaction reward for user %s: %v", originalLetter.UserID, err)
+			}
+		}()
 	}
 
 	return conversationID, nil
@@ -364,6 +388,15 @@ func (s *AIService) GenerateReply(ctx context.Context, req *models.AIReplyReques
 	// 记录使用日志
 	s.logAIUsage(originalLetter.UserID, models.TaskTypeReply, reply.ID, aiConfig, 300, 400, "success", "")
 
+	// 触发AI互动积分奖励 - FSD规格
+	if s.creditTaskSvc != nil {
+		go func() {
+			if err := s.creditTaskSvc.TriggerAIInteractionReward(originalLetter.UserID, aiReply.ID); err != nil {
+				log.Printf("Failed to trigger AI interaction reward for user %s: %v", originalLetter.UserID, err)
+			}
+		}()
+	}
+
 	return reply, nil
 }
 
@@ -412,6 +445,20 @@ func (s *AIService) GetInspirationWithLimit(ctx context.Context, userID string, 
 	if err := s.usageService.UseInspiration(userID); err != nil {
 		log.Printf("Failed to record inspiration usage for user %s: %v", userID, err)
 		// 不返回错误，因为灵感已经生成了
+	}
+
+	// 触发AI互动积分奖励 - FSD规格
+	if s.creditTaskSvc != nil {
+		go func() {
+			// 使用灵感ID作为会话引用
+			sessionID := ""
+			if len(response.Inspirations) > 0 {
+				sessionID = response.Inspirations[0].ID
+			}
+			if err := s.creditTaskSvc.TriggerAIInteractionReward(userID, sessionID); err != nil {
+				log.Printf("Failed to trigger AI interaction reward for user %s: %v", userID, err)
+			}
+		}()
 	}
 
 	return response, nil
@@ -1475,4 +1522,168 @@ func (s *AIService) GetAIUsageStats(userID string) (map[string]interface{}, erro
 			"curations":    3,
 		},
 	}, nil
+}
+
+// EnhanceContent 增强文本内容 - 专门为CloudLetter等场景设计
+func (s *AIService) EnhanceContent(ctx context.Context, content string, persona *CloudPersona, emotionalTone string) (string, error) {
+	log.Printf("🤖 [AIService] Starting content enhancement")
+
+	// 获取AI配置
+	aiConfig, err := s.GetActiveProvider()
+	if err != nil {
+		return "", fmt.Errorf("failed to get AI provider: %w", err)
+	}
+
+	// 构建增强提示词
+	prompt := s.buildContentEnhancementPrompt(content, persona, emotionalTone)
+
+	// 调用AI API
+	enhancedContent, err := s.callAIAPI(ctx, aiConfig, prompt, models.TaskTypeCurate)
+	if err != nil {
+		return "", fmt.Errorf("AI API call failed: %w", err)
+	}
+
+	// 记录使用日志
+	if persona != nil {
+		s.logAIUsage(persona.UserID, models.TaskTypeCurate, "", aiConfig, 200, 300, "success", "")
+	}
+
+	log.Printf("✅ [AIService] Content enhancement completed")
+	return enhancedContent, nil
+}
+
+// buildContentEnhancementPrompt 构建内容增强提示词
+func (s *AIService) buildContentEnhancementPrompt(content string, persona *CloudPersona, emotionalTone string) string {
+	var prompt strings.Builder
+
+	prompt.WriteString("作为专业的情感文字编辑，请帮助改善这封信件的表达方式。\n\n")
+
+	// 如果有人物角色信息，添加上下文
+	if persona != nil {
+		prompt.WriteString("收信人信息：\n")
+		prompt.WriteString(fmt.Sprintf("- 姓名：%s\n", persona.Name))
+		prompt.WriteString(fmt.Sprintf("- 关系：%s\n", persona.Relationship))
+		
+		if persona.Description != "" {
+			prompt.WriteString(fmt.Sprintf("- 描述：%s\n", persona.Description))
+		}
+		
+		if persona.Personality != "" {
+			prompt.WriteString(fmt.Sprintf("- 性格：%s\n", persona.Personality))
+		}
+		
+		if persona.Memories != "" {
+			prompt.WriteString(fmt.Sprintf("- 共同回忆：%s\n", persona.Memories))
+		}
+		prompt.WriteString("\n")
+	}
+
+	// 情感色调指导
+	if emotionalTone != "" {
+		prompt.WriteString(fmt.Sprintf("期望情感色调：%s\n\n", emotionalTone))
+	}
+
+	// 原始内容
+	prompt.WriteString(fmt.Sprintf("原始信件内容：\n%s\n\n", content))
+
+	// 增强指导原则
+	prompt.WriteString("请根据以下要求改善信件：\n")
+	prompt.WriteString("1. 保持原作者的真实情感和意图，不改变核心表达\n")
+	prompt.WriteString("2. 优化语言表达，增加文字的美感和感染力\n")
+	prompt.WriteString("3. 根据收信人关系调整语调和措辞的亲密程度\n")
+	prompt.WriteString("4. 增强情感深度，让表达更加真挚动人\n")
+	prompt.WriteString("5. 确保内容适合这种特殊关系，避免不合适的表达\n")
+	prompt.WriteString("6. 保持中文表达习惯，语句通顺自然\n\n")
+
+	// 根据关系类型添加特定指导
+	if persona != nil {
+		switch persona.Relationship {
+		case RelationshipDeceased:
+			prompt.WriteString("7. 体现对已故亲人的深切思念和爱意\n")
+			prompt.WriteString("8. 表达感恩之情和美好回忆\n")
+		case RelationshipDistantFriend:
+			prompt.WriteString("7. 表达久别重逢的喜悦和友谊的珍贵\n")
+			prompt.WriteString("8. 适当回忆共同的美好时光\n")
+		case RelationshipUnspokenLove:
+			prompt.WriteString("7. 保持含蓄而深情的表达方式\n")
+			prompt.WriteString("8. 避免过于直接的表白，保持美感和意境\n")
+		}
+	}
+
+	prompt.WriteString("\n请直接返回改善后的信件内容，不需要额外说明或格式标记。")
+
+	return prompt.String()
+}
+
+// ProcessDelayedReplies processes delayed AI replies from the delay queue
+func (s *AIService) ProcessDelayedReplies(ctx context.Context) (int, error) {
+	log.Printf("[AIService] Processing delayed AI replies")
+	
+	// Query the delay queue database for ready-to-process AI reply tasks
+	var delayRecords []models.DelayQueueRecord
+	err := s.db.Where("task_type = ? AND status = ? AND execute_at <= ?", 
+		"ai_reply", "pending", time.Now()).Find(&delayRecords).Error
+	if err != nil {
+		return 0, fmt.Errorf("failed to query delayed AI reply tasks: %w", err)
+	}
+	
+	processedCount := 0
+	for _, record := range delayRecords {
+		// Parse task payload
+		var aiReplyTask AIReplyTask
+		if err := json.Unmarshal([]byte(record.Payload), &aiReplyTask); err != nil {
+			log.Printf("Failed to unmarshal AI reply task %s: %v", record.ID, err)
+			continue
+		}
+		
+		// Process the AI reply
+		if err := s.processDelayedAIReply(ctx, &aiReplyTask); err != nil {
+			log.Printf("Failed to process delayed AI reply %s: %v", record.ID, err)
+			// Mark as failed and increment retry count
+			record.Status = "failed"
+			record.RetryCount++
+			s.db.Save(&record)
+			continue
+		}
+		
+		// Mark as completed
+		record.Status = "completed"
+		record.CompletedAt = time.Now()
+		if err := s.db.Save(&record).Error; err != nil {
+			log.Printf("Failed to update delay record status: %v", err)
+		}
+		
+		processedCount++
+	}
+	
+	log.Printf("[AIService] Successfully processed %d delayed AI replies", processedCount)
+	return processedCount, nil
+}
+
+// processDelayedAIReply processes a single delayed AI reply task
+func (s *AIService) processDelayedAIReply(ctx context.Context, task *AIReplyTask) error {
+	// Create AI reply request
+	aiReq := &models.AIReplyRequest{
+		UserID:         task.UserID,
+		PersonaID:      task.PersonaID,
+		OriginalLetter: task.OriginalLetter,
+	}
+	
+	// Generate the AI reply
+	replyLetter, err := s.GenerateReply(ctx, aiReq)
+	if err != nil {
+		return fmt.Errorf("failed to generate AI reply: %w", err)
+	}
+	
+	// The reply letter is already saved in GenerateReply method
+	log.Printf("Successfully generated delayed AI reply for user %s", task.UserID)
+	return nil
+}
+
+// AIReplyTask represents data structure for delayed AI reply tasks
+type AIReplyTask struct {
+	UserID         string `json:"user_id"`
+	PersonaID      string `json:"persona_id"`
+	OriginalLetter string `json:"original_letter"`
+	ConversationID string `json:"conversation_id"`
 }

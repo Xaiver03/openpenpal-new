@@ -105,6 +105,7 @@ func autoMigrate(db *gorm.DB) error {
 		&models.ModerationRule{},
 		&models.ModerationQueue{},
 		&models.ModerationStats{},
+		&models.SecurityEvent{},
 		// 通知相关模型
 		&models.Notification{},
 		&models.EmailTemplate{},

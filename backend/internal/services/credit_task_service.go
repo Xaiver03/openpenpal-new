@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"openpenpal-backend/internal/models"
+	"openpenpal/internal/models"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,16 +14,18 @@ import (
 
 // CreditTaskService 积分任务服务 - 模块化积分奖励系统
 type CreditTaskService struct {
-	db         *gorm.DB
-	creditSvc  *CreditService
-	workerPool chan struct{} // 工作池，控制并发执行数量
+	db           *gorm.DB
+	creditSvc    *CreditService
+	limiterSvc   *CreditLimiterService
+	workerPool   chan struct{} // 工作池，控制并发执行数量
 }
 
 // NewCreditTaskService 创建积分任务服务
-func NewCreditTaskService(db *gorm.DB, creditSvc *CreditService) *CreditTaskService {
+func NewCreditTaskService(db *gorm.DB, creditSvc *CreditService, limiterSvc *CreditLimiterService) *CreditTaskService {
 	service := &CreditTaskService{
 		db:         db,
 		creditSvc:  creditSvc,
+		limiterSvc: limiterSvc,
 		workerPool: make(chan struct{}, 10), // 最多10个并发任务
 	}
 	
@@ -33,8 +35,46 @@ func NewCreditTaskService(db *gorm.DB, creditSvc *CreditService) *CreditTaskServ
 	return service
 }
 
-// CreateTask 创建积分任务
+// CreateTask 创建积分任务 (with limit checking)
 func (s *CreditTaskService) CreateTask(taskType models.CreditTaskType, userID string, points int, description, reference string) (*models.CreditTask, error) {
+	return s.CreateTaskWithMetadata(taskType, userID, points, description, reference, nil)
+}
+
+// CreateTaskWithMetadata 创建积分任务（带元数据）
+func (s *CreditTaskService) CreateTaskWithMetadata(taskType models.CreditTaskType, userID string, points int, description, reference string, metadata map[string]string) (*models.CreditTask, error) {
+	// 1. 检查用户是否被封禁
+	if s.limiterSvc != nil {
+		if blocked, err := s.limiterSvc.IsUserBlocked(userID); err != nil {
+			log.Printf("Failed to check user block status: %v", err)
+		} else if blocked {
+			return nil, fmt.Errorf("user is blocked from earning credits")
+		}
+	}
+
+	// 2. 检查积分限制
+	actionType := string(taskType)
+	if s.limiterSvc != nil {
+		limitStatus, err := s.limiterSvc.CheckLimit(userID, actionType, points)
+		if err != nil {
+			log.Printf("Failed to check limit: %v", err)
+		} else if limitStatus.IsLimited {
+			return nil, fmt.Errorf("credit limit exceeded: %s (current: %d/%d)", 
+				limitStatus.Period, limitStatus.CurrentCount, limitStatus.MaxCount)
+		}
+	}
+
+	// 3. 检查作弊风险
+	if s.limiterSvc != nil && metadata != nil {
+		if alert, err := s.limiterSvc.DetectAnomalous(userID, actionType, metadata); err != nil {
+			log.Printf("Failed to detect fraud: %v", err)
+		} else if alert != nil && alert.Severity == models.SeverityHigh {
+			// 高风险行为，暂时拒绝
+			log.Printf("High risk behavior detected for user %s: %s", userID, alert.Description)
+			return nil, fmt.Errorf("suspicious activity detected, please try again later")
+		}
+	}
+
+	// 4. 创建任务
 	task := &models.CreditTask{
 		ID:          uuid.New().String(),
 		TaskType:    taskType,
@@ -112,13 +152,23 @@ func (s *CreditTaskService) ExecuteTask(taskID string) error {
 
 // executeReward 执行具体的积分奖励
 func (s *CreditTaskService) executeReward(task *models.CreditTask) error {
-	// 再次检查每日限制
-	canExecute, err := s.creditSvc.CheckDailyLimit(task.UserID, string(task.TaskType))
-	if err != nil {
-		return fmt.Errorf("failed to check daily limit: %w", err)
-	}
-	if !canExecute {
-		return fmt.Errorf("daily limit exceeded for task type: %s", task.TaskType)
+	// 1. 使用新的限制系统检查（如果可用）
+	if s.limiterSvc != nil {
+		limitStatus, err := s.limiterSvc.CheckLimit(task.UserID, string(task.TaskType), task.Points)
+		if err != nil {
+			log.Printf("Failed to check limit in executeReward: %v", err)
+		} else if limitStatus.IsLimited {
+			return fmt.Errorf("credit limit exceeded during execution: %s", limitStatus.Period)
+		}
+	} else {
+		// 2. 回退到旧的每日限制检查
+		canExecute, err := s.creditSvc.CheckDailyLimit(task.UserID, string(task.TaskType))
+		if err != nil {
+			return fmt.Errorf("failed to check daily limit: %w", err)
+		}
+		if !canExecute {
+			return fmt.Errorf("daily limit exceeded for task type: %s", task.TaskType)
+		}
 	}
 	
 	// 根据任务类型执行相应的奖励方法
@@ -158,6 +208,21 @@ func (s *CreditTaskService) executeReward(task *models.CreditTask) error {
 	default:
 		return fmt.Errorf("unknown task type: %s", task.TaskType)
 	}
+	
+	// 3. 记录用户行为到限制系统（在奖励执行成功后）
+	if s.limiterSvc != nil {
+		metadata := map[string]string{
+			"reference": task.Reference,
+			"task_id":   task.ID,
+		}
+		
+		if err := s.limiterSvc.RecordAction(task.UserID, string(task.TaskType), task.Points, metadata); err != nil {
+			log.Printf("Failed to record action to limiter: %v", err)
+			// 不返回错误，因为积分已经发放成功
+		}
+	}
+	
+	return nil
 }
 
 // taskProcessor 任务处理器 - 后台处理积分任务
@@ -460,5 +525,23 @@ func (s *CreditTaskService) TriggerPublicLetterLikeReward(userID, letterID strin
 // TriggerAIInteractionReward 触发AI互动奖励
 func (s *CreditTaskService) TriggerAIInteractionReward(userID, sessionID string) error {
 	_, err := s.CreateTask(models.TaskTypeAIInteraction, userID, PointsAIInteraction, "使用AI笔友并留下评价", sessionID)
+	return err
+}
+
+// TriggerMuseumSubmitReward 触发博物馆提交奖励
+func (s *CreditTaskService) TriggerMuseumSubmitReward(userID, itemID string) error {
+	_, err := s.CreateTask(models.TaskTypeMuseumSubmit, userID, PointsMuseumSubmit, "提交作品到博物馆", itemID)
+	return err
+}
+
+// TriggerMuseumApprovedReward 触发博物馆审核通过奖励
+func (s *CreditTaskService) TriggerMuseumApprovedReward(userID, itemID string) error {
+	_, err := s.CreateTask(models.TaskTypeMuseumApproved, userID, PointsMuseumApproved, "博物馆作品审核通过", itemID)
+	return err
+}
+
+// TriggerMuseumLikedReward 触发博物馆作品被点赞奖励
+func (s *CreditTaskService) TriggerMuseumLikedReward(userID, itemID string) error {
+	_, err := s.CreateTask(models.TaskTypeMuseumLiked, userID, PointsMuseumLiked, "博物馆作品获得点赞", itemID)
 	return err
 }

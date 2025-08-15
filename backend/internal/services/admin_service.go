@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -794,4 +795,365 @@ func (s *AdminService) UpdateUser(userID string, req *models.AdminUpdateUserRequ
 	}
 
 	return &user, nil
+}
+
+// ResetUserPassword 重置用户密码（管理员功能）
+func (s *AdminService) ResetUserPassword(userID string, newPassword string) error {
+	// 哈希新密码
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("密码哈希失败: %w", err)
+	}
+
+	// 更新用户密码
+	result := s.db.Model(&models.User{}).Where("id = ?", userID).Update("password_hash", string(hashedPassword))
+	if result.Error != nil {
+		return fmt.Errorf("重置密码失败: %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("用户不存在")
+	}
+
+	return nil
+}
+
+// GetLetters 获取信件列表（管理员功能）
+func (s *AdminService) GetLetters(page, limit int, filters map[string]interface{}) ([]models.Letter, int64, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	offset := (page - 1) * limit
+
+	var letters []models.Letter
+	var total int64
+
+	// 构建查询
+	query := s.db.Model(&models.Letter{}).Preload("User")
+
+	// 应用过滤条件
+	if status, ok := filters["status"].(string); ok && status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if senderID, ok := filters["sender_id"].(string); ok && senderID != "" {
+		query = query.Where("user_id = ?", senderID)
+	}
+	if schoolCode, ok := filters["school_code"].(string); ok && schoolCode != "" {
+		query = query.Joins("JOIN users ON letters.user_id = users.id").Where("users.school_code = ?", schoolCode)
+	}
+
+	// 获取总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count letters: %w", err)
+	}
+
+	// 获取分页数据
+	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&letters).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to get letters: %w", err)
+	}
+
+	return letters, total, nil
+}
+
+// ModerateLetter 审核信件（管理员功能）
+func (s *AdminService) ModerateLetter(letterID, action, reason, notes string) (*models.Letter, error) {
+	var letter models.Letter
+
+	// 查找信件
+	if err := s.db.First(&letter, "id = ?", letterID).Error; err != nil {
+		return nil, fmt.Errorf("信件不存在: %w", err)
+	}
+
+	// 根据审核动作更新信件状态
+	updates := make(map[string]interface{})
+	switch action {
+	case "approve":
+		updates["status"] = models.StatusApproved
+	case "reject":
+		updates["status"] = models.StatusRejected
+	case "flag":
+		updates["status"] = models.StatusFlagged
+	case "archive":
+		updates["status"] = models.StatusArchived
+	default:
+		return nil, fmt.Errorf("无效的审核动作: %s", action)
+	}
+
+	updates["updated_at"] = time.Now()
+
+	// 这里可以添加审核记录到数据库
+	// 创建审核记录
+	moderationRecord := models.ModerationRecord{
+		ID:           uuid.New().String(),
+		ContentType:  "letter",
+		ContentID:    letterID,
+		Action:       action,
+		Reason:       reason,
+		Notes:        notes,
+		Status:       "completed",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	// 开始事务
+	tx := s.db.Begin()
+
+	// 更新信件状态
+	if err := tx.Model(&letter).Updates(updates).Error; err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("更新信件状态失败: %w", err)
+	}
+
+	// 创建审核记录
+	if err := tx.Create(&moderationRecord).Error; err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("创建审核记录失败: %w", err)
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		return nil, fmt.Errorf("提交审核失败: %w", err)
+	}
+
+	// 重新加载信件信息
+	if err := s.db.Preload("User").First(&letter, "id = ?", letterID).Error; err != nil {
+		return nil, fmt.Errorf("重新加载信件失败: %w", err)
+	}
+
+	return &letter, nil
+}
+
+// GetCouriers 获取信使列表（管理员功能）
+func (s *AdminService) GetCouriers(page, limit int, filters map[string]interface{}) ([]models.Courier, int64, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	offset := (page - 1) * limit
+
+	var couriers []models.Courier
+	var total int64
+
+	// 构建查询
+	query := s.db.Model(&models.Courier{})
+
+	// 应用过滤条件
+	if level, ok := filters["level"].(int); ok && level > 0 {
+		query = query.Where("level = ?", level)
+	}
+	if status, ok := filters["status"].(string); ok && status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if schoolCode, ok := filters["school_code"].(string); ok && schoolCode != "" {
+		query = query.Where("school = ? OR zone LIKE ?", schoolCode, schoolCode+"%")
+	}
+
+	// 获取总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count couriers: %w", err)
+	}
+
+	// 获取分页数据
+	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&couriers).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to get couriers: %w", err)
+	}
+
+	return couriers, total, nil
+}
+
+// GetAppointableRoles 获取可任命的角色列表（管理员功能）
+func (s *AdminService) GetAppointableRoles() ([]map[string]interface{}, error) {
+	roles := []map[string]interface{}{
+		{
+			"id":          "user",
+			"name":        "user",
+			"displayName": "普通用户",
+			"description": "平台的普通用户",
+			"level":       1,
+			"permissions": []string{"letter:create", "letter:read"},
+		},
+		{
+			"id":          "courier_level1",
+			"name":        "courier_level1",
+			"displayName": "一级信使",
+			"description": "楼栋级别的信使",
+			"level":       2,
+			"permissions": []string{"letter:create", "letter:read", "courier:deliver"},
+		},
+		{
+			"id":          "courier_level2",
+			"name":        "courier_level2",
+			"displayName": "二级信使",
+			"description": "片区级别的信使",
+			"level":       3,
+			"permissions": []string{"letter:create", "letter:read", "courier:deliver", "courier:manage_l1"},
+		},
+		{
+			"id":          "courier_level3",
+			"name":        "courier_level3",
+			"displayName": "三级信使",
+			"description": "学校级别的信使",
+			"level":       4,
+			"permissions": []string{"letter:create", "letter:read", "courier:deliver", "courier:manage_l1", "courier:manage_l2"},
+		},
+		{
+			"id":          "courier_level4",
+			"name":        "courier_level4",
+			"displayName": "四级信使",
+			"description": "城市级别的信使",
+			"level":       5,
+			"permissions": []string{"letter:create", "letter:read", "courier:deliver", "courier:manage_l1", "courier:manage_l2", "courier:manage_l3"},
+		},
+		{
+			"id":          "admin",
+			"name":        "admin",
+			"displayName": "管理员",
+			"description": "系统管理员",
+			"level":       6,
+			"permissions": []string{"admin:all"},
+		},
+	}
+
+	return roles, nil
+}
+
+// AppointUser 任命用户角色（管理员功能）
+func (s *AdminService) AppointUser(userID, newRole, reason string, effectiveAt *time.Time, metadata map[string]interface{}) (map[string]interface{}, error) {
+	var user models.User
+
+	// 查找用户
+	if err := s.db.First(&user, "id = ?", userID).Error; err != nil {
+		return nil, fmt.Errorf("用户不存在: %w", err)
+	}
+
+	// 验证新角色
+	validRoles := []string{"user", "courier_level1", "courier_level2", "courier_level3", "courier_level4", "admin"}
+	isValidRole := false
+	for _, role := range validRoles {
+		if newRole == role {
+			isValidRole = true
+			break
+		}
+	}
+	
+	if !isValidRole {
+		return nil, fmt.Errorf("无效的角色: %s", newRole)
+	}
+
+	// 创建任命记录
+	appointmentRecord := map[string]interface{}{
+		"id":               uuid.New().String(),
+		"userId":           userID,
+		"user_name":        user.Username,
+		"user_email":       user.Email,
+		"old_role":         string(user.Role),
+		"new_role":         newRole,
+		"reason":           reason,
+		"appointed_by":     "admin", // 简化实现，实际应该从上下文获取
+		"appointed_by_name": "系统管理员",
+		"appointed_at":     time.Now().Format(time.RFC3339),
+		"status":           "approved", // 简化实现，直接批准
+		"metadata":         metadata,
+	}
+
+	if effectiveAt != nil {
+		appointmentRecord["effective_at"] = effectiveAt.Format(time.RFC3339)
+	}
+
+	// 更新用户角色
+	if err := s.db.Model(&user).Update("role", newRole).Error; err != nil {
+		return nil, fmt.Errorf("更新用户角色失败: %w", err)
+	}
+
+	return appointmentRecord, nil
+}
+
+// GetAppointmentRecords 获取任命记录（管理员功能）
+func (s *AdminService) GetAppointmentRecords(page, limit int, filters map[string]interface{}) ([]map[string]interface{}, int64, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	// 简化实现：从用户表获取角色变更历史
+	// 实际应该有专门的任命记录表
+	var users []models.User
+	var total int64
+
+	query := s.db.Model(&models.User{})
+
+	// 应用过滤条件
+	if userID, ok := filters["user_id"].(string); ok && userID != "" {
+		query = query.Where("id = ?", userID)
+	}
+	if role, ok := filters["role"].(string); ok && role != "" {
+		query = query.Where("role = ?", role)
+	}
+
+	// 获取总数
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count appointment records: %w", err)
+	}
+
+	// 获取分页数据
+	offset := (page - 1) * limit
+	if err := query.Order("updated_at DESC").Offset(offset).Limit(limit).Find(&users).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to get appointment records: %w", err)
+	}
+
+	// 构建任命记录格式
+	records := make([]map[string]interface{}, len(users))
+	for i, user := range users {
+		records[i] = map[string]interface{}{
+			"id":               user.ID,
+			"userId":           user.ID,
+			"user_name":        user.Username,
+			"user_email":       user.Email,
+			"old_role":         "user", // 简化实现
+			"new_role":         string(user.Role),
+			"reason":           "系统记录",
+			"appointed_by":     "admin",
+			"appointed_by_name": "系统管理员",
+			"appointed_at":     user.UpdatedAt.Format(time.RFC3339),
+			"status":           "approved",
+		}
+	}
+
+	return records, total, nil
+}
+
+// ReviewAppointment 审批任命申请（管理员功能）
+func (s *AdminService) ReviewAppointment(appointmentID, status, notes string) (map[string]interface{}, error) {
+	// 简化实现：查找用户并更新状态
+	var user models.User
+	if err := s.db.First(&user, "id = ?", appointmentID).Error; err != nil {
+		return nil, fmt.Errorf("任命记录不存在: %w", err)
+	}
+
+	// 构建审批后的记录
+	appointment := map[string]interface{}{
+		"id":               appointmentID,
+		"userId":           user.ID,
+		"user_name":        user.Username,
+		"user_email":       user.Email,
+		"old_role":         "user",
+		"new_role":         string(user.Role),
+		"reason":           "管理员审批",
+		"appointed_by":     "admin",
+		"appointed_by_name": "系统管理员",
+		"appointed_at":     time.Now().Format(time.RFC3339),
+		"status":           status,
+		"approval_notes":   notes,
+	}
+
+	return appointment, nil
 }

@@ -66,6 +66,7 @@ func main() {
 	opcodeService := services.NewOPCodeService(db)       // OP Code服务 - 重新启用
 	scanEventService := services.NewScanEventService(db) // 扫描事件服务 - PRD要求
 	cloudLetterService := services.NewCloudLetterService(db, cfg) // 云中锦书服务 - 自定义现实角色
+	contentSecurityService := services.NewContentSecurityService(db, cfg, aiService) // 内容安全服务 - XSS防护和敏感词管理
 
 	// 初始化延迟队列服务
 	delayQueueService, err := services.NewDelayQueueService(db, cfg)
@@ -86,15 +87,18 @@ func main() {
 
 	// Configure service dependencies with credit system integration
 	letterService.SetCreditService(creditService)
+	letterService.SetCreditTaskService(creditTaskService) // 新增：积分任务服务依赖
 	letterService.SetCourierTaskService(courierTaskService)
 	letterService.SetNotificationService(notificationService)
 	letterService.SetWebSocketService(wsService)
 	letterService.SetAIService(aiService)
 	letterService.SetOPCodeService(opcodeService) // PRD要求：集成OP Code验证
+	aiService.SetCreditTaskService(creditTaskService) // 新增：AI服务积分任务依赖
 	letterService.SetUserService(userService)     // 添加用户服务依赖
 	envelopeService.SetCreditService(creditService)
 	envelopeService.SetUserService(userService) // FSD增强：OP Code区域验证
 	museumService.SetCreditService(creditService)
+	museumService.SetCreditTaskService(creditTaskService) // 新增：博物馆服务积分任务依赖
 	museumService.SetNotificationService(notificationService)
 	museumService.SetAIService(aiService)
 	courierTaskService.SetNotificationService(notificationService)
@@ -103,6 +107,7 @@ func main() {
 	commentService.SetLetterService(letterService)
 	commentService.SetCreditService(creditService)
 	commentService.SetModerationService(moderationService)
+	commentService.SetContentSecurityService(contentSecurityService)
 	// 配置云中锦书服务依赖
 	cloudLetterService.SetLetterService(letterService)
 	cloudLetterService.SetAIService(aiService)
@@ -114,6 +119,23 @@ func main() {
 		log.Printf("Warning: Failed to start scheduler service: %v", err)
 	} else {
 		log.Println("Scheduler service started successfully")
+	}
+
+	// 注册默认调度任务
+	futureLetterService := services.NewFutureLetterService(db, letterService, notificationService)
+	schedulerTasks := services.NewSchedulerTasks(
+		futureLetterService,
+		letterService,
+		aiService,
+		notificationService,
+		envelopeService,
+		courierService,
+	)
+	
+	if err := schedulerTasks.RegisterDefaultTasks(schedulerService); err != nil {
+		log.Printf("Warning: Failed to register default scheduler tasks: %v", err)
+	} else {
+		log.Println("Default scheduler tasks registered successfully")
 	}
 
 	// 初始化处理器
@@ -144,10 +166,12 @@ func main() {
 	followHandler := handlers.NewFollowHandler(followService) // 关注系统处理器
 	privacyHandler := handlers.NewPrivacyHandler(privacyService) // 隐私设置处理器
 	userProfileHandler := handlers.NewUserProfileHandler(db) // 用户档案处理器
+	sensitiveWordHandler := handlers.NewSensitiveWordHandler(contentSecurityService) // 敏感词管理处理器
 
-	// QR扫描服务和处理器 - SOTA集成：复用现有依赖 - Temporarily disabled
-	// qrScanService := services.NewQRScanService(db, letterService, courierService, wsAdapter)
-	// qrScanHandler := handlers.NewQRScanHandler(qrScanService, middleware.NewAuthMiddleware(cfg, db)) - Temporarily disabled
+	// QR扫描服务和处理器 - SOTA集成：复用现有依赖
+	qrScanService := services.NewQRScanService(db, letterService, courierService, wsAdapter)
+	qrScanService.SetCreditTaskService(creditTaskService) // 新增：积分任务服务依赖
+	qrScanHandler := handlers.NewQRScanHandler(qrScanService, middleware.NewAuthMiddleware(cfg, db))
 	wsHandler := wsService.GetHandler()
 
 	// SOTA管理API适配器 - 兼容Java前端
@@ -182,7 +206,11 @@ func main() {
 	// 2. 安全中间件
 	router.Use(middleware.SecurityHeadersMiddleware())                                  // 安全头
 	router.Use(middleware.CORSMiddleware())                                             // CORS
+	router.Use(middleware.InputValidation())                                           // 输入验证
+	router.Use(middleware.ContentLengthValidation(10 * 1024 * 1024))                  // 内容长度限制 (10MB)
 	router.Use(middleware.RequestSizeLimitMiddleware(middleware.DefaultMaxRequestSize)) // 请求大小限制
+	router.Use(middleware.SecurityMonitoringMiddleware())                              // 安全监控
+	router.Use(middleware.ThreatDetectionMiddleware())                                 // 威胁检测
 
 	// 3. 频率限制（IP级别作为默认）
 	router.Use(middleware.RateLimitMiddleware())
@@ -190,6 +218,9 @@ func main() {
 	// 4. API转换中间件 - SOTA实现
 	router.Use(middleware.RequestTransformMiddleware())  // 请求转换 (camelCase -> snake_case)
 	router.Use(middleware.ResponseTransformMiddleware()) // 响应转换 (snake_case -> camelCase)
+
+	// CSP 违规报告端点
+	router.POST("/csp-report", middleware.CSPViolationHandler())
 
 	// 健康检查
 	router.GET("/health", func(c *gin.Context) {
@@ -402,6 +433,10 @@ func main() {
 			cloudLetters.GET("/", cloudLetterHandler.GetCloudLetters)                 // 获取用户的云信件列表
 			cloudLetters.GET("/:letter_id", cloudLetterHandler.GetCloudLetter)        // 获取云信件详情
 			cloudLetters.GET("/status-options", cloudLetterHandler.GetLetterStatusOptions) // 获取信件状态选项
+			
+			// L3/L4信使审核功能
+			cloudLetters.GET("/pending-reviews", cloudLetterHandler.GetPendingReviews)  // 获取待审核的云信件（L3/L4专用）
+			cloudLetters.POST("/:letter_id/review", cloudLetterHandler.ReviewCloudLetter) // 审核云信件（L3/L4专用）
 		}
 
 		// 信使相关
@@ -567,6 +602,17 @@ func main() {
 			credits.GET("/me/stats", creditHandler.GetCreditStats)     // 获取积分统计
 			credits.GET("/leaderboard", creditHandler.GetLeaderboard)  // 获取排行榜
 			credits.GET("/rules", creditHandler.GetCreditRules)        // 获取积分规则
+			
+			// 积分任务系统 - 模块化积分奖励
+			credits.GET("/me/tasks", creditTaskHandler.GetUserTasks)                        // 获取用户积分任务
+			credits.GET("/me/summary", creditTaskHandler.GetUserCreditSummary)              // 获取用户积分摘要
+			credits.GET("/task-rules", creditTaskHandler.GetCreditTaskRules)                // 获取积分任务规则
+			
+			// 快速触发积分奖励 - FSD规格实现
+			credits.POST("/trigger/letter/:letter_id", creditTaskHandler.TriggerLetterCreatedReward)    // 触发写信奖励
+			credits.POST("/trigger/like", creditTaskHandler.TriggerPublicLetterLikeReward)              // 触发点赞奖励
+			credits.POST("/trigger/ai-interaction", creditTaskHandler.TriggerAIInteractionReward)       // 触发AI互动奖励
+			credits.POST("/trigger/courier/:task_id", creditTaskHandler.TriggerCourierDeliveryReward)   // 触发信使送达奖励
 		}
 
 		// 文件存储相关
@@ -733,6 +779,7 @@ func main() {
 	})
 	{
 		// 管理后台仪表盘
+		admin.GET("/dashboard", adminHandler.GetDashboardStats)                      // 前端期望的主要仪表盘接口
 		admin.GET("/dashboard/stats", adminHandler.GetDashboardStats)
 		admin.GET("/dashboard/activities", adminHandler.GetRecentActivities)
 		admin.GET("/dashboard/analytics", adminHandler.GetAnalyticsData)
@@ -746,14 +793,39 @@ func main() {
 		// 用户管理
 		adminUsers := admin.Group("/users")
 		{
-			adminUsers.GET("/", adminHandler.GetUserManagement)
+			adminUsers.GET("/", adminHandler.GetUsers)                                    // 获取用户列表 (前端期望的格式)
+			adminUsers.GET("/management", adminHandler.GetUserManagement)                // 保留原有的管理接口
 			adminUsers.GET("/:id", userHandler.AdminGetUser)
 			adminUsers.PUT("/:id", adminHandler.UpdateUser)
+			adminUsers.PUT("/:id/status", adminHandler.UpdateUserStatus)                 // 新增：更新用户状态
+			adminUsers.POST("/:id/reset-password", adminHandler.ResetUserPassword)       // 新增：重置用户密码
 			adminUsers.DELETE("/:id", userHandler.AdminDeactivateUser)
 			adminUsers.POST("/:id/reactivate", userHandler.AdminReactivateUser)
 		}
 
+		// 角色和任命管理
+		admin.GET("/roles", adminHandler.GetAppointableRoles)                     // 获取可任命角色列表
+		adminAppointments := admin.Group("/appointments")
+		{
+			adminAppointments.GET("/", adminHandler.GetAppointmentRecords)       // 获取任命记录
+			adminAppointments.POST("/", adminHandler.AppointUser)                // 任命用户角色
+			adminAppointments.PUT("/:id", adminHandler.ReviewAppointment)        // 审批任命申请
+		}
+
+		// 信件管理
+		adminLetters := admin.Group("/letters")
+		{
+			adminLetters.GET("/", adminHandler.GetLetters)                            // 获取信件列表
+			adminLetters.POST("/:id/moderate", adminHandler.ModerateLetter)          // 审核信件
+		}
+
 		// 信使管理
+		adminCouriers := admin.Group("/couriers")
+		{
+			adminCouriers.GET("/", adminHandler.GetCouriers)                         // 获取信使列表
+		}
+
+		// 信使申请管理（保留原有功能）
 		adminCourier := admin.Group("/courier")
 		{
 			adminCourier.GET("/applications", courierHandler.GetPendingApplications)
@@ -793,11 +865,12 @@ func main() {
 			adminModeration.GET("/queue", moderationHandler.GetModerationQueue)
 			adminModeration.GET("/stats", moderationHandler.GetModerationStats)
 
-			// 敏感词管理
-			adminModeration.GET("/sensitive-words", moderationHandler.GetSensitiveWords)
-			adminModeration.POST("/sensitive-words", moderationHandler.AddSensitiveWord)
-			adminModeration.PUT("/sensitive-words/:id", moderationHandler.UpdateSensitiveWord)
-			adminModeration.DELETE("/sensitive-words/:id", moderationHandler.DeleteSensitiveWord)
+			// 敏感词管理（通过审核模块访问）
+			adminModeration.GET("/sensitive-words", func(c *gin.Context) {
+				// 转发到专门的敏感词管理处理器（需要四级信使或平台管理员权限）
+				c.Request.URL.Path = "/api/v1/admin/sensitive-words"
+				router.HandleContext(c)
+			})
 
 			// 审核规则管理
 			adminModeration.GET("/rules", moderationHandler.GetModerationRules)
@@ -814,6 +887,12 @@ func main() {
 			adminCredits.POST("/users/spend-points", creditHandler.AdminSpendPoints) // 给用户扣除积分
 			adminCredits.GET("/leaderboard", creditHandler.GetLeaderboard)           // 积分排行榜（管理员视图）
 			adminCredits.GET("/rules", creditHandler.GetCreditRules)                 // 积分规则管理
+			
+			// 积分任务管理 - 模块化积分系统
+			adminCredits.POST("/tasks", creditTaskHandler.CreateTask)                      // 创建积分任务
+			adminCredits.POST("/tasks/:task_id/execute", creditTaskHandler.ExecuteTask)    // 手动执行任务
+			adminCredits.GET("/tasks/statistics", creditTaskHandler.GetTaskStatistics)     // 获取任务统计
+			adminCredits.POST("/tasks/batch", creditTaskHandler.CreateBatchTasks)          // 批量创建任务
 		}
 
 		// AI管理
@@ -837,6 +916,62 @@ func main() {
 			adminShop.DELETE("/products/:id", shopHandler.DeleteProduct)       // 删除商品
 			adminShop.PUT("/orders/:id/status", shopHandler.UpdateOrderStatus) // 更新订单状态
 			adminShop.GET("/stats", shopHandler.GetShopStatistics)             // 获取商店统计
+		}
+
+		// 安全监控管理（需要平台管理员或超级管理员权限）
+		adminSecurity := admin.Group("/security")
+		adminSecurity.Use(func(c *gin.Context) {
+			userInterface, exists := c.Get("user")
+			if !exists {
+				c.JSON(401, gin.H{"error": "用户未认证"})
+				c.Abort()
+				return
+			}
+			user := userInterface.(*models.User)
+			if user.Role == models.RolePlatformAdmin || user.Role == models.RoleSuperAdmin {
+				c.Next()
+				return
+			}
+			c.JSON(403, gin.H{"error": "需要平台管理员或超级管理员权限"})
+			c.Abort()
+		})
+		{
+			securityHandler := handlers.NewSecurityHandler()
+			adminSecurity.GET("/events", securityHandler.GetSecurityEvents)       // 获取安全事件
+			adminSecurity.GET("/stats", securityHandler.GetSecurityStats)         // 获取安全统计
+			adminSecurity.GET("/dashboard", securityHandler.GetSecurityDashboard) // 安全仪表板
+			adminSecurity.POST("/events", securityHandler.RecordCustomSecurityEvent) // 记录自定义安全事件
+		}
+
+		// 敏感词管理（独立路由组，需要四级信使或平台管理员权限）
+		adminSensitiveWords := admin.Group("/sensitive-words")
+		adminSensitiveWords.Use(func(c *gin.Context) {
+			userInterface, exists := c.Get("user")
+			if !exists {
+				c.JSON(401, gin.H{"error": "用户未认证"})
+				c.Abort()
+				return
+			}
+			user := userInterface.(*models.User)
+			// 只允许四级信使和平台管理员访问
+			if user.Role == models.RoleCourierLevel4 || 
+			   user.Role == models.RolePlatformAdmin || 
+			   user.Role == models.RoleSuperAdmin {
+				c.Next()
+				return
+			}
+			c.JSON(403, gin.H{"error": "需要四级信使或平台管理员权限", "user_role": string(user.Role)})
+			c.Abort()
+		})
+		{
+			adminSensitiveWords.GET("", sensitiveWordHandler.ListSensitiveWords)         // 获取敏感词列表
+			adminSensitiveWords.POST("", sensitiveWordHandler.CreateSensitiveWord)       // 创建敏感词
+			adminSensitiveWords.PUT("/:id", sensitiveWordHandler.UpdateSensitiveWord)    // 更新敏感词
+			adminSensitiveWords.DELETE("/:id", sensitiveWordHandler.DeleteSensitiveWord) // 删除敏感词
+			adminSensitiveWords.POST("/batch-import", sensitiveWordHandler.BatchImportSensitiveWords) // 批量导入
+			adminSensitiveWords.GET("/export", sensitiveWordHandler.ExportSensitiveWords)            // 导出敏感词
+			adminSensitiveWords.POST("/refresh", sensitiveWordHandler.RefreshSensitiveWords)         // 刷新敏感词库
+			adminSensitiveWords.GET("/stats", sensitiveWordHandler.GetSensitiveWordStats)            // 获取统计信息
 		}
 
 		// ==================== SOTA 管理API适配路由 ====================

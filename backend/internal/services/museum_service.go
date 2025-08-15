@@ -19,6 +19,7 @@ type MuseumService struct {
 	creditSvc       *CreditService
 	notificationSvc *NotificationService
 	aiSvc           *AIService
+	creditTaskSvc   *CreditTaskService // 积分任务服务
 }
 
 func NewMuseumService(db *gorm.DB) *MuseumService {
@@ -40,6 +41,11 @@ func (s *MuseumService) SetNotificationService(notificationSvc *NotificationServ
 // SetAIService 设置AI服务
 func (s *MuseumService) SetAIService(aiSvc *AIService) {
 	s.aiSvc = aiSvc
+}
+
+// SetCreditTaskService 设置积分任务服务
+func (s *MuseumService) SetCreditTaskService(creditTaskSvc *CreditTaskService) {
+	s.creditTaskSvc = creditTaskSvc
 }
 
 // GenerateItemDescription 使用AI生成博物馆物品描述
@@ -198,10 +204,10 @@ func (s *MuseumService) ApproveMuseumItem(ctx context.Context, itemID, approverI
 					"approver_id": approverID,
 				})
 
-				// 奖励审核通过积分
-				if s.creditSvc != nil {
-					if err := s.creditSvc.RewardMuseumApproved(item.SubmittedBy, itemID); err != nil {
-						// 记录错误但不影响主流程
+				// 触发博物馆审核通过积分奖励 - FSD规格
+				if s.creditTaskSvc != nil {
+					if err := s.creditTaskSvc.TriggerMuseumApprovedReward(item.SubmittedBy, itemID); err != nil {
+						fmt.Printf("Failed to trigger museum approved reward: %v\n", err)
 					}
 				}
 			}
@@ -246,11 +252,11 @@ func (s *MuseumService) SubmitLetterToMuseum(ctx context.Context, letterID, user
 		return nil, err
 	}
 
-	// 奖励提交积分和发送通知
-	if s.creditSvc != nil {
+	// 触发博物馆提交积分奖励 - FSD规格
+	if s.creditTaskSvc != nil {
 		go func() {
-			if err := s.creditSvc.RewardMuseumSubmit(userID, item.ID); err != nil {
-				// 记录错误但不影响主流程
+			if err := s.creditTaskSvc.TriggerMuseumSubmitReward(userID, item.ID); err != nil {
+				fmt.Printf("Failed to trigger museum submit reward: %v\n", err)
 			}
 		}()
 	}
@@ -305,11 +311,11 @@ func (s *MuseumService) LikeMuseumItem(ctx context.Context, itemID, userID strin
 			}()
 		}
 
-		// 奖励被点赞积分
-		if s.creditSvc != nil {
+		// 触发博物馆作品被点赞积分奖励 - FSD规格
+		if s.creditTaskSvc != nil {
 			go func() {
-				if err := s.creditSvc.RewardMuseumLiked(item.SubmittedBy, itemID); err != nil {
-					// 记录错误但不影响主流程
+				if err := s.creditTaskSvc.TriggerMuseumLikedReward(item.SubmittedBy, itemID); err != nil {
+					fmt.Printf("Failed to trigger museum liked reward: %v\n", err)
 				}
 			}()
 		}

@@ -1,8 +1,6 @@
 package docs
 
 import (
-	"encoding/json"
-
 	"github.com/swaggo/swag"
 )
 

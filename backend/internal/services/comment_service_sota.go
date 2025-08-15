@@ -191,19 +191,40 @@ func (s *CommentService) CreateCommentSOTA(ctx context.Context, userID string, r
 		}
 	}
 
-	// SOTA垃圾内容检测
-	if s.isSpamContent(req.Content) {
+	// 1. 优先进行内容安全检查（XSS防护和内容清理）- SOTA版本
+	var cleanedContent string = req.Content
+	if s.securitySvc != nil {
+		securityResult, err := s.securitySvc.ValidateCommentContent(req.Content, userID)
+		if err != nil {
+			return nil, fmt.Errorf("content security validation failed: %w", err)
+		}
+		
+		// 如果检测到XSS或高风险内容，直接拒绝
+		if securityResult.XSSDetected || !securityResult.IsSafe {
+			return nil, fmt.Errorf("comment content contains security violations: %s", 
+				fmt.Sprintf("Risk level: %s, Violations: %v", securityResult.RiskLevel, securityResult.ViolationType))
+		}
+		
+		// 使用清理后的内容
+		if securityResult.HTMLCleaned {
+			cleanedContent = securityResult.SanitizedContent
+		}
+	}
+
+	// 2. SOTA垃圾内容检测（基于清理后的内容）
+	if s.isSpamContent(cleanedContent) {
 		return nil, fmt.Errorf("detected spam content, comment rejected")
 	}
 
-	// 内容审核
+	// 3. 内容审核（传统审核流程）
 	commentID := uuid.New().String()
+	var commentStatus models.CommentStatus = models.CommentStatusActive
 	if s.moderationSvc != nil {
 		moderationReq := &models.ModerationRequest{
 			UserID:      userID,
 			ContentType: models.ContentTypeComment,
 			ContentID:   commentID,
-			Content:     req.Content,
+			Content:     cleanedContent, // 使用安全清理后的内容
 		}
 		response, err := s.moderationSvc.ModerateContent(ctx, moderationReq)
 		if err != nil {
@@ -216,22 +237,27 @@ func (s *CommentService) CreateCommentSOTA(ctx context.Context, userID string, r
 			}
 			return nil, fmt.Errorf("comment content rejected: %s", reasons)
 		}
+		
+		// 如果审核结果需要等待，设置为pending状态
+		if response.NeedReview {
+			commentStatus = models.CommentStatusPending
+		}
 	}
 
-	// 创建评论 - SOTA增强版
+	// 创建评论 - SOTA增强版（使用安全清理后的内容）
 	comment := &models.Comment{
 		ID:          commentID,
 		TargetID:    req.TargetID,
 		TargetType:  req.TargetType,
 		UserID:      userID,
 		ParentID:    req.ParentID,
-		Content:     req.Content,
-		Status:      models.CommentStatusActive,
+		Content:     cleanedContent,  // 使用安全清理后的内容
+		Status:      commentStatus,   // 使用安全检查后确定的状态
 		IsAnonymous: req.IsAnonymous,
 		LikeCount:   0,
 		ReplyCount:  0,
 		ReportCount: 0,
-		Language:    s.detectLanguage(req.Content),
+		Language:    s.detectLanguage(cleanedContent), // 基于清理后的内容检测语言
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}

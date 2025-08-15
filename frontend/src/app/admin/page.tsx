@@ -2,11 +2,12 @@
 
 import { usePermission } from '@/hooks/use-permission'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Mail, BarChart, Settings, Shield, Brain, Truck } from 'lucide-react'
+import { Users, Mail, BarChart, Settings, Shield, Brain, Truck, Award } from 'lucide-react'
 import Link from 'next/link'
 import { WelcomeBanner } from '@/components/ui/welcome-banner'
 import { useEffect, useState } from 'react'
 import adminService from '@/lib/services/admin-service'
+import { Breadcrumb, ADMIN_BREADCRUMBS } from '@/components/ui/breadcrumb'
 
 interface DashboardStats {
   totalUsers: number
@@ -103,6 +104,13 @@ export default function AdminDashboard() {
       icon: Brain,
       href: '/admin/ai',
       color: 'bg-indigo-600'
+    },
+    {
+      title: '积分管理',
+      description: '管理积分系统和规则',
+      icon: Award,
+      href: '/admin/credits',
+      color: 'bg-purple-600'
     }
   ]
 
@@ -110,6 +118,8 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <WelcomeBanner />
+        
+        <Breadcrumb items={ADMIN_BREADCRUMBS.dashboard} showHome={false} />
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">管理控制台</h1>

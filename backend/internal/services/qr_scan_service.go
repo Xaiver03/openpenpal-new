@@ -15,6 +15,7 @@ type QRScanService struct {
 	letterService  *LetterService
 	courierService *CourierService
 	wsService      WebSocketNotifier
+	creditTaskSvc  *CreditTaskService // 积分任务服务
 }
 
 // Use the WebSocketNotifier interface from courier_service.go to avoid redeclaration
@@ -27,6 +28,11 @@ func NewQRScanService(db *gorm.DB, letterService *LetterService, courierService 
 		courierService: courierService,
 		wsService:      wsService,
 	}
+}
+
+// SetCreditTaskService 设置积分任务服务（避免循环依赖）
+func (s *QRScanService) SetCreditTaskService(creditTaskSvc *CreditTaskService) {
+	s.creditTaskSvc = creditTaskSvc
 }
 
 // QRScanRequest - Clean API contract
@@ -287,6 +293,14 @@ func (s *QRScanService) completeCourierTask(letterID string, req *QRScanRequest)
 }
 
 func (s *QRScanService) updateCourierStats(courierID string, success bool) {
+	// Get current courier stats before update
+	var courier models.Courier
+	err := s.db.Where("user_id = ?", courierID).First(&courier).Error
+	if err != nil {
+		fmt.Printf("Failed to get courier stats for rewards: %v\n", err)
+		return
+	}
+
 	// Update courier statistics - elegant increment
 	updates := map[string]interface{}{
 		"task_count": gorm.Expr("task_count + 1"),
@@ -297,6 +311,24 @@ func (s *QRScanService) updateCourierStats(courierID string, success bool) {
 	}
 
 	s.db.Model(&models.Courier{}).Where("user_id = ?", courierID).Updates(updates)
+
+	// 触发积分任务奖励 - FSD规格
+	if success && s.creditTaskSvc != nil {
+		go func() {
+			// 检查是否为首次完成任务（原来任务数为0）
+			if courier.TaskCount == 0 {
+				// 首次任务完成奖励 - 20积分
+				if err := s.creditTaskSvc.TriggerCourierFirstTask(courierID, "first_task_"+courierID); err != nil {
+					fmt.Printf("Failed to trigger courier first task reward: %v\n", err)
+				}
+			}
+			
+			// 正常投递奖励 - 5积分
+			if err := s.creditTaskSvc.TriggerCourierDeliveryReward(courierID, "delivery_"+time.Now().Format("20060102150405")); err != nil {
+				fmt.Printf("Failed to trigger courier delivery reward: %v\n", err)
+			}
+		}()
+	}
 }
 
 func (s *QRScanService) recordScanHistory(req *QRScanRequest, letter *models.Letter, action string) {

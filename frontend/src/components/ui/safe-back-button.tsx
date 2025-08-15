@@ -1,62 +1,88 @@
 'use client'
 
-import { Button } from './button'
-import { ArrowLeft } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { BackButton } from './back-button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface SafeBackButtonProps {
   href?: string
-  children?: React.ReactNode
+  label?: string
   className?: string
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
-  size?: "default" | "sm" | "lg" | "icon"
-  onBeforeBack?: () => Promise<boolean> | boolean
+  variant?: 'default' | 'outline' | 'ghost' | 'link'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
   hasUnsavedChanges?: boolean
-  unsavedMessage?: string
+  onConfirmLeave?: () => void
+  confirmTitle?: string
+  confirmDescription?: string
 }
 
-export function SafeBackButton({ 
-  href, 
-  children = '返回上一级', 
-  className = '',
-  variant = 'outline',
+export function SafeBackButton({
+  href,
+  label = '返回上一级',
+  className,
+  variant = 'ghost',
   size = 'sm',
-  onBeforeBack,
   hasUnsavedChanges = false,
-  unsavedMessage = '您有未保存的更改。确定要离开吗？'
+  onConfirmLeave,
+  confirmTitle = '确认离开',
+  confirmDescription = '您有未保存的更改，确定要离开吗？所有未保存的更改将会丢失。'
 }: SafeBackButtonProps) {
-  const router = useRouter()
-  
-  const handleBack = async () => {
-    // 如果有未保存更改，显示确认对话框
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+
+  const handleBackClick = () => {
     if (hasUnsavedChanges) {
-      const shouldLeave = window.confirm(unsavedMessage)
-      if (!shouldLeave) return
-    }
-    
-    // 如果有自定义的前置检查
-    if (onBeforeBack) {
-      const canProceed = await onBeforeBack()
-      if (!canProceed) return
-    }
-    
-    // 执行导航
-    if (href) {
-      router.push(href)
+      setShowConfirmDialog(true)
     } else {
-      router.back()
+      onConfirmLeave?.()
     }
   }
-  
+
+  const handleConfirmLeave = () => {
+    setShowConfirmDialog(false)
+    onConfirmLeave?.()
+  }
+
   return (
-    <Button
-      variant={variant}
-      size={size}
-      onClick={handleBack}
-      className={`flex items-center gap-2 ${className}`}
-    >
-      <ArrowLeft className="w-4 h-4" />
-      {children}
-    </Button>
+    <>
+      <BackButton
+        href={hasUnsavedChanges ? undefined : href}
+        label={label}
+        className={className}
+        variant={variant}
+        size={size}
+        onClick={hasUnsavedChanges ? handleBackClick : undefined}
+      />
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDescription}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowConfirmDialog(false)}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmLeave}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              确认离开
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
