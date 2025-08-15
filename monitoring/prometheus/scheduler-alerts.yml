@@ -1,0 +1,158 @@
+groups:
+  - name: scheduler_alerts
+    interval: 30s
+    rules:
+      # Task execution alerts
+      - alert: HighTaskFailureRate
+        expr: |
+          (
+            sum(rate(scheduler_task_executions_total{status="failed"}[5m]))
+            /
+            sum(rate(scheduler_task_executions_total[5m]))
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High task failure rate detected"
+          description: "Task failure rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+          
+      - alert: CriticalTaskFailureRate
+        expr: |
+          (
+            sum(rate(scheduler_task_executions_total{status="failed"}[5m]))
+            /
+            sum(rate(scheduler_task_executions_total[5m]))
+          ) > 0.25
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Critical task failure rate"
+          description: "Task failure rate is {{ $value | humanizePercentage }} - immediate action required"
+          
+      # Future letter alerts
+      - alert: FutureLetterBacklog
+        expr: scheduler_future_letters_pending > 1000
+        for: 10m
+        labels:
+          severity: warning
+          team: content
+        annotations:
+          summary: "Large backlog of future letters"
+          description: "{{ $value }} future letters are pending unlock"
+          
+      - alert: FutureLetterProcessingStalled
+        expr: rate(scheduler_future_letters_unlocked_total[10m]) == 0 AND scheduler_future_letters_pending > 0
+        for: 20m
+        labels:
+          severity: critical
+          team: content
+        annotations:
+          summary: "Future letter processing has stalled"
+          description: "No future letters have been unlocked in the last 20 minutes despite pending letters"
+          
+      # Task duration alerts
+      - alert: SlowTaskExecution
+        expr: histogram_quantile(0.95, rate(scheduler_task_duration_bucket[5m])) > 30000
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Tasks are executing slowly"
+          description: "95th percentile task duration is {{ $value | humanizeDuration }}"
+          
+      # Distributed lock alerts
+      - alert: HighLockContention
+        expr: |
+          (
+            rate(scheduler_distributed_locks_failed_total[5m])
+            /
+            rate(scheduler_distributed_locks_acquired_total[5m])
+          ) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High distributed lock contention"
+          description: "{{ $value | humanizePercentage }} of lock acquisitions are failing"
+          
+      - alert: DistributedLockTimeout
+        expr: rate(scheduler_distributed_locks_timeout_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Distributed locks are timing out"
+          description: "Lock timeouts detected - possible deadlock condition"
+          
+      # Worker health alerts
+      - alert: SchedulerWorkerDown
+        expr: up{job="scheduler"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Scheduler worker is down"
+          description: "Scheduler instance {{ $labels.instance }} has been down for 2 minutes"
+          
+      - alert: NoActiveSchedulerWorkers
+        expr: sum(up{job="scheduler"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          page: true
+        annotations:
+          summary: "No active scheduler workers"
+          description: "All scheduler workers are down - no tasks are being processed!"
+          
+      # Specific task alerts
+      - alert: AIReplyBacklog
+        expr: scheduler_ai_replies_pending > 500
+        for: 15m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "AI reply backlog growing"
+          description: "{{ $value }} AI replies are pending processing"
+          
+      - alert: CourierTimeoutTaskFailure
+        expr: |
+          sum(rate(scheduler_task_executions_total{task_type="courier_timeout_check", status="failed"}[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+          team: logistics
+        annotations:
+          summary: "Courier timeout checks are failing"
+          description: "Courier timeout task has been failing for 10 minutes"
+          
+      # Event signature alerts
+      - alert: EventSignatureVerificationFailures
+        expr: rate(scheduler_event_signature_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "Event signature verification failures"
+          description: "{{ $value | humanize }} signature verification failures per second"
+          
+      - alert: EventReplayAttackDetected
+        expr: rate(scheduler_event_replay_attempts_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+          page: true
+        annotations:
+          summary: "Potential replay attack detected"
+          description: "{{ $value | humanize }} replay attempts per second detected"
