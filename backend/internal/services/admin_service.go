@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"openpenpal-backend/internal/config"
 	"openpenpal-backend/internal/models"
@@ -468,10 +469,216 @@ func (s *AdminService) InjectSeedData() error {
 		}
 	}
 
+	// 创建分析数据种子 - 缺失的关键数据
+	if err := s.createAnalyticsSeedData(tx, users); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create analytics seed data: %w", err)
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("failed to commit seed data: %w", err)
 	}
 
+	return nil
+}
+
+// Analytics seed data constants - 修复硬编码问题
+const (
+	AnalyticsDaysHistory = 30
+	PerformanceMetricsCount = 100
+	MaxLettersSentPerDay = 5
+	MaxLettersReceivedPerDay = 3
+	MaxSessionDurationMinutes = 70
+	MinSessionDurationMinutes = 10
+	BaseEngagementScore = 25
+	MaxEngagementBonus = 50
+	CourierEngagementBonus = 20
+)
+
+// createAnalyticsSeedData 创建分析数据种子 - 解决分析表空数据问题
+func (s *AdminService) createAnalyticsSeedData(tx *gorm.DB, users []models.User) error {
+	log.Printf("Creating analytics seed data...")
+	
+	// 修复：初始化随机种子确保数据随机性
+	rand.Seed(time.Now().UnixNano())
+	
+	// 修复：检查是否已存在分析数据
+	var existingCount int64
+	if err := tx.Model(&models.UserAnalytics{}).Count(&existingCount).Error; err != nil {
+		return fmt.Errorf("failed to check existing analytics data: %w", err)
+	}
+	if existingCount > 0 {
+		log.Printf("Analytics data already exists (%d records), skipping creation", existingCount)
+		return nil
+	}
+
+	// 创建过去30天的用户分析数据
+	now := time.Now()
+	totalLettersSent := 0
+	totalLettersReceived := 0
+	
+	for i := 0; i < AnalyticsDaysHistory; i++ {
+		date := now.AddDate(0, 0, -i)
+		dayLettersSent := 0
+		dayLettersReceived := 0
+		
+		for _, user := range users {
+			// 修复：更真实的数据生成逻辑
+			lettersSent := rand.Intn(MaxLettersSentPerDay) + 1
+			lettersReceived := rand.Intn(MaxLettersReceivedPerDay) + 1
+			lettersRead := rand.Intn(lettersReceived + 1) // 读取数不能超过接收数
+			
+			dayLettersSent += lettersSent
+			dayLettersReceived += lettersReceived
+			
+			// 修复：基于实际活动计算参与度分数
+			engagementScore := float64(BaseEngagementScore)
+			engagementScore += float64(lettersSent) * 5.0    // 发信件加分
+			engagementScore += float64(lettersReceived) * 3.0 // 收信件加分
+			engagementScore += float64(lettersRead) * 2.0     // 读信件加分
+			
+			userAnalytics := models.UserAnalytics{
+				ID:              uuid.New().String(),
+				UserID:          user.ID,
+				Date:            date.Truncate(24 * time.Hour),
+				LettersSent:     lettersSent,
+				LettersReceived: lettersReceived,
+				LettersRead:     lettersRead,
+				LoginCount:      rand.Intn(2) + 1,
+				SessionDuration: rand.Intn((MaxSessionDurationMinutes-MinSessionDurationMinutes)*60) + MinSessionDurationMinutes*60,
+				CourierTasks:    0,
+				MuseumVisits:    rand.Intn(2),
+				EngagementScore: engagementScore,
+				RetentionDays:   i + 1,
+				CreatedAt:       date,
+				UpdatedAt:       date,
+			}
+			
+			// 为信使用户添加信使任务
+			if user.Role == "courier" || user.Role == "admin" {
+				courierTasks := rand.Intn(10) + 2
+				userAnalytics.CourierTasks = courierTasks
+				userAnalytics.EngagementScore += CourierEngagementBonus + float64(courierTasks)*2.0
+			}
+			
+			if err := tx.Create(&userAnalytics).Error; err != nil {
+				return fmt.Errorf("failed to create user analytics for %s: %w", user.Username, err)
+			}
+		}
+		
+		totalLettersSent += dayLettersSent
+		totalLettersReceived += dayLettersReceived
+	}
+
+	// 修复：创建过去30天的系统分析数据，基于真实用户活动
+	for i := 0; i < AnalyticsDaysHistory; i++ {
+		date := now.AddDate(0, 0, -i)
+		
+		// 修复：基于当天实际用户分析数据计算系统指标
+		var dayUserAnalytics []models.UserAnalytics
+		if err := tx.Where("date = ?", date.Truncate(24*time.Hour)).Find(&dayUserAnalytics).Error; err != nil {
+			log.Printf("Warning: Could not fetch user analytics for date %s: %v", date.Format("2006-01-02"), err)
+		}
+		
+		// 基于实际用户活动计算系统指标
+		activeUsers := len(dayUserAnalytics)
+		if activeUsers == 0 {
+			activeUsers = rand.Intn(len(users)) + 1 // 后备方案
+		}
+		
+		totalLettersForDay := 0
+		totalTasksForDay := 0
+		for _, ua := range dayUserAnalytics {
+			totalLettersForDay += ua.LettersSent
+			totalTasksForDay += ua.CourierTasks
+		}
+		
+		systemAnalytics := models.SystemAnalytics{
+			ID:                    uuid.New().String(),
+			Date:                  date.Truncate(24 * time.Hour),
+			ActiveUsers:           activeUsers,
+			NewUsers:              rand.Intn(3),                        // 0-2个新用户
+			TotalUsers:            len(users) + (AnalyticsDaysHistory - i), // 历史递增
+			LettersCreated:        totalLettersForDay,                  // 基于实际用户活动
+			LettersDelivered:      int(float64(totalLettersForDay) * 0.85), // 85%送达率
+			CourierTasksCompleted: totalTasksForDay,                    // 基于实际信使活动
+			MuseumItemsAdded:      rand.Intn(2),                        // 0-1个博物馆物品
+			AvgResponseTime:       float64(rand.Intn(200) + 100),       // 100-300ms
+			ErrorRate:             float64(rand.Intn(5)) / 10.0,        // 0-0.5%
+			ServerUptime:          float64(rand.Intn(5)+995) / 10.0,    // 99.5-99.9%
+			CreatedAt:             date,
+			UpdatedAt:             date,
+		}
+		
+		if err := tx.Create(&systemAnalytics).Error; err != nil {
+			return fmt.Errorf("failed to create system analytics: %w", err)
+		}
+	}
+
+	// 修复：创建性能指标样本数据，更真实的API端点和方法组合
+	type EndpointConfig struct {
+		Path   string
+		Method string
+		AvgResponseTime float64
+	}
+	
+	endpoints := []EndpointConfig{
+		{"/api/v1/auth/login", "POST", 150.0},
+		{"/api/v1/auth/me", "GET", 80.0},
+		{"/api/v1/letters", "GET", 120.0},
+		{"/api/v1/letters", "POST", 200.0},
+		{"/api/v1/admin/dashboard/stats", "GET", 250.0},
+		{"/api/v1/museum/entries", "GET", 180.0},
+		{"/api/v1/courier/tasks", "GET", 160.0},
+		{"/api/v1/notifications", "GET", 90.0},
+	}
+	
+	// 修复：分批创建性能指标，避免事务过大
+	batchSize := 20
+	for batch := 0; batch < PerformanceMetricsCount/batchSize; batch++ {
+		for i := 0; i < batchSize; i++ {
+			endpointConfig := endpoints[rand.Intn(len(endpoints))]
+			
+			// 修复：基于端点类型生成更真实的响应时间
+			baseResponseTime := endpointConfig.AvgResponseTime
+			responseTime := baseResponseTime + float64(rand.Intn(100)) - 50.0 // ±50ms变化
+			if responseTime < 10 {
+				responseTime = 10 // 最小响应时间
+			}
+			
+			statusCode := 200
+			errorMultiplier := 1.0
+			
+			// 修复：更真实的错误率分布（5%错误率）
+			if rand.Intn(20) == 0 {
+				statusCode = []int{400, 401, 403, 404, 500}[rand.Intn(5)]
+				errorMultiplier = 2.0 + rand.Float64() // 错误请求响应时间2-3倍
+			}
+			
+			performanceMetric := models.PerformanceMetric{
+				ID:           uuid.New().String(),
+				Endpoint:     endpointConfig.Path,
+				Method:       endpointConfig.Method,
+				ResponseTime: responseTime * errorMultiplier,
+				StatusCode:   statusCode,
+				UserAgent:    "Mozilla/5.0 (OpenPenPal Client/1.0)",
+				IPAddress:    fmt.Sprintf("192.168.1.%d", rand.Intn(254)+1),
+				UserID:       &users[rand.Intn(len(users))].ID,
+				Timestamp:    now.Add(-time.Duration(rand.Intn(86400*AnalyticsDaysHistory)) * time.Second),
+				CreatedAt:    now,
+			}
+			
+			if err := tx.Create(&performanceMetric).Error; err != nil {
+				return fmt.Errorf("failed to create performance metric: %w", err)
+			}
+		}
+	}
+
+	log.Printf("✅ Analytics seed data created successfully:")
+	log.Printf("   - User analytics: %d users × %d days = %d records", len(users), AnalyticsDaysHistory, len(users)*AnalyticsDaysHistory)
+	log.Printf("   - System analytics: %d daily records", AnalyticsDaysHistory)
+	log.Printf("   - Performance metrics: %d records", PerformanceMetricsCount)
+	log.Printf("   - Total analytics records: %d", len(users)*AnalyticsDaysHistory + AnalyticsDaysHistory + PerformanceMetricsCount)
 	return nil
 }
 

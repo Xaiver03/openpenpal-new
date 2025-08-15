@@ -147,6 +147,7 @@ export const useLetterStore = create<LetterStore>()(
               created_at: new Date(),
               updated_at: new Date(),
               status: 'bound' as any,
+              scan_count: 0,
             }
 
             // 这里应该调用实际的API
@@ -299,6 +300,27 @@ export const useLetterStore = create<LetterStore>()(
               in_transit: sentLetters.filter(l => l.status === 'in_transit').length,
               delivered: sentLetters.filter(l => l.status === 'delivered').length,
               drafts: savedDrafts.length,
+              
+              // 按可见性统计
+              public_letters: sentLetters.filter(l => l.visibility === 'public').length,
+              private_letters: sentLetters.filter(l => l.visibility === 'private').length,
+              friends_letters: sentLetters.filter(l => l.visibility === 'friends').length,
+              
+              // 按OP Code统计
+              op_code_letters: sentLetters.filter(l => l.recipient_op_code).length,
+              
+              // FSD条码系统统计
+              unactivated_barcodes: 0,
+              bound_barcodes: 0,
+              in_transit_barcodes: 0,
+              delivered_barcodes: 0,
+              expired_barcodes: 0,
+              cancelled_barcodes: 0,
+              
+              // 交互统计
+              total_likes: sentLetters.reduce((sum, l) => sum + l.like_count, 0),
+              total_shares: sentLetters.reduce((sum, l) => sum + l.share_count, 0),
+              total_views: sentLetters.reduce((sum, l) => sum + l.view_count, 0),
             }
             
             set((state) => {

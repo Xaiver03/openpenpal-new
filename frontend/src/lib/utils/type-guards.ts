@@ -351,7 +351,7 @@ export function sanitizeString(input: string, options: {
   return sanitized
 }
 
-export default {
+const typeGuards = {
   isValidUserRole,
   isValidCourierLevel,
   isValidPermission,
@@ -365,3 +365,5 @@ export default {
   isEmpty,
   sanitizeString
 }
+
+export default typeGuards

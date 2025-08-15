@@ -74,7 +74,7 @@ export interface CommentFormData {
 }
 
 export interface CommentAction {
-  type: 'reply' | 'edit' | 'delete' | 'like';
+  type: 'reply' | 'edit' | 'delete' | 'like' | 'report';
   comment_id: string;
   data?: any;
 }

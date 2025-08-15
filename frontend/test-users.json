@@ -1,0 +1,17 @@
+{
+  "user1": {
+    "username": "testuser_1755179486984",
+    "password": "Test@123456",
+    "email": "test1755179486984@example.com",
+    "id": null,
+    "token": null
+  },
+  "user2": {
+    "username": "testuser2_1755179486984",
+    "password": "Test@123456",
+    "email": "test21755179486984@example.com",
+    "id": null,
+    "token": null
+  },
+  "timestamp": "2025-08-14T13:51:27.023Z"
+}

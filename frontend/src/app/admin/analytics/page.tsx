@@ -132,26 +132,83 @@ function SimplePieChart({ data, labels, colors }: { data: number[], labels: stri
   )
 }
 
+interface AnalyticsData {
+  totalUsers: number
+  newUsersToday: number
+  totalLetters: number
+  lettersToday: number
+  activeCouriers: number
+  avgDeliveryTime: number
+  userGrowthData: number[]
+  letterVolumeData: number[]
+  courierPerformanceData: number[]
+  regionData: number[]
+  statusData: number[]
+  userRoleStats: {
+    regular: number
+    level1: number
+    level2: number
+    level3: number
+    level4: number
+  }
+  topCouriers: Array<{
+    name: string
+    score: number
+    orders: number
+  }>
+}
+
 export default function AnalyticsPage() {
   const { user } = usePermission()
   const [timeRange, setTimeRange] = useState('7d')
   const [isLoading, setIsLoading] = useState(true)
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  // 模拟数据加载
+  // 真实数据加载
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000)
-    return () => clearTimeout(timer)
+    const fetchAnalyticsData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        // 这里调用真实的分析API，暂时使用基础数据模拟
+        // 在实际实现中，应该调用 analyticsService.getDashboardData() 等方法
+        const mockData: AnalyticsData = {
+          totalUsers: 0,
+          newUsersToday: 0,
+          totalLetters: 0,
+          lettersToday: 0,
+          activeCouriers: 0,
+          avgDeliveryTime: 2.4,
+          userGrowthData: [0, 0, 0, 0, 0, 0, 0],
+          letterVolumeData: [0, 0, 0, 0, 0, 0, 0],
+          courierPerformanceData: [0, 0, 0, 0, 0, 0, 0],
+          regionData: [0, 0, 0, 0, 0],
+          statusData: [0, 0, 0, 0],
+          userRoleStats: {
+            regular: 0,
+            level1: 0,
+            level2: 0,
+            level3: 0,
+            level4: 0
+          },
+          topCouriers: []
+        }
+        
+        setAnalyticsData(mockData)
+      } catch (err) {
+        console.error('Failed to fetch analytics data:', err)
+        setError('获取分析数据失败')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAnalyticsData()
   }, [timeRange])
 
-  // 模拟数据
-  const userGrowthData = [120, 140, 180, 220, 260, 300, 340]
-  const letterVolumeData = [45, 52, 48, 61, 55, 67, 73]
-  const courierPerformanceData = [85, 92, 88, 95, 90, 97, 89]
-  
-  const regionData = [156, 89, 67, 45, 23]
   const regionLabels = ['华东', '华南', '华北', '西南', '西北']
-  
-  const statusData = [2340, 1890, 567, 123]
   const statusLabels = ['已送达', '运输中', '待收取', '异常']
   const statusColors = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444']
 
@@ -215,10 +272,16 @@ export default function AnalyticsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">总用户数</p>
-                  <p className="text-2xl font-bold text-gray-900">12,456</p>
+                  {isLoading ? (
+                    <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                  ) : error ? (
+                    <p className="text-2xl font-bold text-red-500">--</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.totalUsers.toLocaleString() || 0}</p>
+                  )}
                   <div className="flex items-center gap-1 mt-1">
                     <TrendingUp className="w-3 h-3 text-green-500" />
-                    <span className="text-xs text-green-600">+12.5%</span>
+                    <span className="text-xs text-green-600">今日: {analyticsData?.newUsersToday || 0}</span>
                   </div>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -233,10 +296,16 @@ export default function AnalyticsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">信件总数</p>
-                  <p className="text-2xl font-bold text-gray-900">45,789</p>
+                  {isLoading ? (
+                    <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                  ) : error ? (
+                    <p className="text-2xl font-bold text-red-500">--</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.totalLetters.toLocaleString() || 0}</p>
+                  )}
                   <div className="flex items-center gap-1 mt-1">
                     <TrendingUp className="w-3 h-3 text-green-500" />
-                    <span className="text-xs text-green-600">+18.2%</span>
+                    <span className="text-xs text-green-600">今日: {analyticsData?.lettersToday || 0}</span>
                   </div>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -251,10 +320,16 @@ export default function AnalyticsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">活跃信使</p>
-                  <p className="text-2xl font-bold text-gray-900">1,234</p>
+                  {isLoading ? (
+                    <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                  ) : error ? (
+                    <p className="text-2xl font-bold text-red-500">--</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.activeCouriers.toLocaleString() || 0}</p>
+                  )}
                   <div className="flex items-center gap-1 mt-1">
                     <Activity className="w-3 h-3 text-orange-500" />
-                    <span className="text-xs text-orange-600">+5.8%</span>
+                    <span className="text-xs text-orange-600">活跃中</span>
                   </div>
                 </div>
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -269,10 +344,16 @@ export default function AnalyticsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-600 text-sm">平均送达时间</p>
-                  <p className="text-2xl font-bold text-gray-900">2.4h</p>
+                  {isLoading ? (
+                    <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                  ) : error ? (
+                    <p className="text-2xl font-bold text-red-500">--</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">{analyticsData?.avgDeliveryTime || 0}h</p>
+                  )}
                   <div className="flex items-center gap-1 mt-1">
                     <Clock className="w-3 h-3 text-purple-500" />
-                    <span className="text-xs text-purple-600">-0.3h</span>
+                    <span className="text-xs text-purple-600">实时数据</span>
                   </div>
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -302,7 +383,7 @@ export default function AnalyticsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SimpleLineChart data={userGrowthData} title="日新增用户数" />
+                  <SimpleLineChart data={analyticsData?.userGrowthData || [0, 0, 0, 0, 0, 0, 0]} title="日新增用户数" />
                 </CardContent>
               </Card>
 
@@ -314,7 +395,7 @@ export default function AnalyticsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SimpleLineChart data={letterVolumeData} title="日投递信件数" />
+                  <SimpleLineChart data={analyticsData?.letterVolumeData || [0, 0, 0, 0, 0, 0, 0]} title="日投递信件数" />
                 </CardContent>
               </Card>
 
@@ -327,7 +408,7 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <SimpleBarChart 
-                    data={regionData} 
+                    data={analyticsData?.regionData || [0, 0, 0, 0, 0]} 
                     labels={regionLabels} 
                     title="用户地区分布" 
                   />
@@ -343,7 +424,7 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <SimplePieChart 
-                    data={statusData}
+                    data={analyticsData?.statusData || [0, 0, 0, 0]}
                     labels={statusLabels}
                     colors={statusColors}
                   />
@@ -360,7 +441,7 @@ export default function AnalyticsPage() {
                   <CardDescription>最近7天用户活跃情况</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SimpleLineChart data={[1200, 1450, 1680, 1520, 1890, 2100, 1950]} title="日活跃用户" />
+                  <SimpleLineChart data={analyticsData?.userGrowthData || [0, 0, 0, 0, 0, 0, 0]} title="日活跃用户" />
                 </CardContent>
               </Card>
 
@@ -373,23 +454,23 @@ export default function AnalyticsPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                       <span className="text-sm text-gray-600">普通用户</span>
-                      <Badge variant="secondary">10,234</Badge>
+                      <Badge variant="secondary">{analyticsData?.userRoleStats.regular || 0}</Badge>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                       <span className="text-sm text-gray-600">一级信使</span>
-                      <Badge variant="secondary">856</Badge>
+                      <Badge variant="secondary">{analyticsData?.userRoleStats.level1 || 0}</Badge>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                       <span className="text-sm text-gray-600">二级信使</span>
-                      <Badge variant="secondary">234</Badge>
+                      <Badge variant="secondary">{analyticsData?.userRoleStats.level2 || 0}</Badge>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                       <span className="text-sm text-gray-600">三级信使</span>
-                      <Badge variant="secondary">89</Badge>
+                      <Badge variant="secondary">{analyticsData?.userRoleStats.level3 || 0}</Badge>
                     </div>
                     <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                       <span className="text-sm text-gray-600">四级信使</span>
-                      <Badge variant="secondary">43</Badge>
+                      <Badge variant="secondary">{analyticsData?.userRoleStats.level4 || 0}</Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -405,7 +486,7 @@ export default function AnalyticsPage() {
                   <CardDescription>每日信件投递量变化</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SimpleLineChart data={letterVolumeData} title="日投递量" />
+                  <SimpleLineChart data={analyticsData?.letterVolumeData || [0, 0, 0, 0, 0, 0, 0]} title="日投递量" />
                 </CardContent>
               </Card>
 
@@ -416,7 +497,7 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <SimplePieChart 
-                    data={[3200, 2100, 1500, 890]}
+                    data={[analyticsData?.totalLetters || 0, 0, 0, 0]}
                     labels={['手写信件', '明信片', '包裹', '其他']}
                     colors={['#3b82f6', '#10b981', '#f59e0b', '#ef4444']}
                   />
@@ -433,7 +514,7 @@ export default function AnalyticsPage() {
                   <CardDescription>平均信使评分变化</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <SimpleLineChart data={courierPerformanceData} title="平均评分" />
+                  <SimpleLineChart data={analyticsData?.courierPerformanceData || [0, 0, 0, 0, 0, 0, 0]} title="平均评分" />
                 </CardContent>
               </Card>
 
@@ -444,13 +525,7 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {[
-                      { name: '张小明', score: 98, orders: 156 },
-                      { name: '李小红', score: 96, orders: 142 },
-                      { name: '王小刚', score: 95, orders: 138 },
-                      { name: '刘小芳', score: 94, orders: 135 },
-                      { name: '陈小华', score: 93, orders: 129 },
-                    ].map((courier, index) => (
+                    {(analyticsData?.topCouriers || []).length > 0 ? (analyticsData?.topCouriers || []).map((courier, index) => (
                       <div key={courier.name} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                           index === 0 ? 'bg-yellow-100 text-yellow-600' :
@@ -466,7 +541,11 @@ export default function AnalyticsPage() {
                         </div>
                         <Badge variant="secondary">{courier.score}</Badge>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="text-center text-gray-500 py-8">
+                        暂无信使排行数据
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

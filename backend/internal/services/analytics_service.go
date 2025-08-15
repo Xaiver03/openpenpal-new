@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"openpenpal-backend/internal/models"
 	"time"
 
@@ -676,8 +677,45 @@ func (s *AnalyticsService) getSystemPerformanceData(startDate, endDate time.Time
 }
 
 func (s *AnalyticsService) calculateOverallEngagementRate() float64 {
-	// 简化计算
-	return 78.5
+	// 计算过去7天的平均参与度
+	endDate := time.Now()
+	startDate := endDate.AddDate(0, 0, -7)
+
+	var analytics []models.UserAnalytics
+	s.db.Where("date BETWEEN ? AND ?", startDate.Format("2006-01-02"), endDate.Format("2006-01-02")).
+		Find(&analytics)
+
+	if len(analytics) == 0 {
+		return 0.0
+	}
+
+	// 计算总活跃用户数和总用户数
+	var activeUsers int
+	var totalPossibleUsers int64
+	
+	// 获取7天前的总用户数
+	s.db.Model(&models.User{}).
+		Where("created_at <= ?", startDate).
+		Count(&totalPossibleUsers)
+	
+	if totalPossibleUsers == 0 {
+		return 0.0
+	}
+
+	// 统计有活动的用户
+	activeUserMap := make(map[string]bool)
+	for _, a := range analytics {
+		if a.LettersSent > 0 || a.LettersReceived > 0 || a.CourierTasks > 0 {
+			activeUserMap[a.UserID] = true
+		}
+	}
+	activeUsers = len(activeUserMap)
+
+	// 计算参与度百分比
+	engagementRate := float64(activeUsers) / float64(totalPossibleUsers) * 100
+	
+	// 保留一位小数
+	return math.Round(engagementRate*10) / 10
 }
 
 func (s *AnalyticsService) calculateOverallDeliveryRate() float64 {

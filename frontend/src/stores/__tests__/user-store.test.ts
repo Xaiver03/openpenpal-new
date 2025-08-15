@@ -17,6 +17,8 @@ jest.mock('@/lib/services/auth-service', () => ({
   }
 }))
 
+import { hasPermission as mockHasPermission } from '@/constants/roles'
+
 jest.mock('@/constants/roles', () => ({
   hasPermission: jest.fn(),
   canAccessAdmin: jest.fn(),
@@ -413,8 +415,7 @@ describe('usePermissions hook', () => {
   })
 
   test('hasPermission works correctly', () => {
-    const { hasPermission: mockHasPermission } = require('@/constants/roles')
-    mockHasPermission.mockReturnValue(true)
+    ;(mockHasPermission as jest.Mock).mockReturnValue(true)
 
     const { result } = renderHook(() => usePermissions())
     const { result: storeResult } = renderHook(() => useUserStore())

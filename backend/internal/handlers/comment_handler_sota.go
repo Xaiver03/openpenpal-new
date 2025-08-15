@@ -353,7 +353,7 @@ func (h *CommentHandlerSOTA) GetCommentStatsSOTA(c *gin.Context) {
 		return
 	}
 
-	stats, err := h.commentService.GetCommentStats(c.Request.Context(), targetID, targetType)
+	stats, err := h.commentService.GetCommentStatsSOTA(c.Request.Context(), targetID, targetType)
 	if err != nil {
 		utils.BadRequestResponse(c, "Failed to get comment stats", err)
 		return
@@ -410,7 +410,7 @@ func (h *CommentHandlerSOTA) GetReportedComments(c *gin.Context) {
 	// 解析查询参数
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	statusFilter := c.DefaultQuery("status", "pending")
+	_ = c.DefaultQuery("status", "pending") // TODO: Implement status filtering
 
 	if page <= 0 {
 		page = 1

@@ -28,23 +28,37 @@ func (s *CreditService) SetNotificationService(notificationSvc *NotificationServ
 	s.notificationSvc = notificationSvc
 }
 
-// 积分奖励规则 - 导出常量以供API使用
+// 积分奖励规则 - 严格按照FSD规格配置
 const (
-	// 信件相关积分
-	PointsLetterCreated   = 5  // 创建信件
-	PointsLetterGenerated = 10 // 生成编号
-	PointsLetterDelivered = 20 // 信件送达
-	PointsLetterRead      = 15 // 信件被阅读
-	PointsReceiveLetter   = 10 // 收到信件
+	// 信件相关积分 - FSD规格匹配
+	PointsLetterCreated    = 10 // 成功写信并绑定条码 (FSD: +10)
+	PointsLetterGenerated  = 10 // 生成编号 (与创建信件相同)
+	PointsLetterDelivered  = 20 // 信件送达 (内部奖励)
+	PointsLetterRead       = 15 // 信件被阅读 (内部奖励)
+	PointsReceiveLetter    = 5  // 被回信 (FSD: +5) - 修正
+	PointsPublicLetterLike = 1  // 公开信被点赞 (FSD: +1) - 新增
+
+	// 写作与挑战相关积分 - FSD新增
+	PointsWritingChallenge = 15 // 参与写作挑战并完成投稿 (FSD: +15)
+	PointsAIInteraction    = 3  // 使用AI笔友并留下评价 (FSD: +3)
+
+	// 信使相关积分 - FSD规格
+	PointsCourierFirstTask = 20 // 成为信使后首次完成任务 (FSD: +20)
+	PointsCourierDelivery  = 5  // 信使每成功送达一封信 (FSD: +5)
 
 	// 信封相关积分
 	PointsEnvelopePurchase = 2 // 购买信封
 	PointsEnvelopeBinding  = 3 // 绑定信封
 
-	// 博物馆相关积分
-	PointsMuseumSubmit   = 25 // 提交作品到博物馆
-	PointsMuseumApproved = 50 // 作品通过审核
-	PointsMuseumLiked    = 5  // 作品获得点赞
+	// 博物馆相关积分 - FSD规格修正
+	PointsMuseumSubmit   = 25  // 提交作品到博物馆
+	PointsMuseumApproved = 100 // 审核通过投稿信封被采纳 (FSD: +100) - 修正
+	PointsMuseumLiked    = 5   // 作品获得点赞
+
+	// 系统管理相关积分 - FSD新增
+	PointsOPCodeApproval    = 10 // 点位申请审核成功 (FSD: +10)
+	PointsCommunityBadge    = 50 // 被授予社区贡献徽章 (FSD: +50)
+	PointsAdminReward       = 0  // 管理员手动奖励 (可变)
 )
 
 // 等级升级所需积分
@@ -305,6 +319,109 @@ func (s *CreditService) RewardMuseumApproved(userID, submissionID string) error 
 // RewardMuseumLiked 奖励博物馆作品获得点赞
 func (s *CreditService) RewardMuseumLiked(userID, submissionID string) error {
 	return s.AddPoints(userID, PointsMuseumLiked, "博物馆作品获得点赞", submissionID)
+}
+
+// ========================= FSD新增积分奖励方法 =========================
+
+// RewardPublicLetterLike 奖励公开信被点赞 - FSD规格
+func (s *CreditService) RewardPublicLetterLike(userID, letterID string) error {
+	return s.AddPoints(userID, PointsPublicLetterLike, "公开信被点赞", letterID)
+}
+
+// RewardWritingChallenge 奖励参与写作挑战 - FSD规格
+func (s *CreditService) RewardWritingChallenge(userID, challengeID string) error {
+	return s.AddPoints(userID, PointsWritingChallenge, "参与写作挑战并完成投稿", challengeID)
+}
+
+// RewardAIInteraction 奖励AI互动评价 - FSD规格
+func (s *CreditService) RewardAIInteraction(userID, sessionID string) error {
+	return s.AddPoints(userID, PointsAIInteraction, "使用AI笔友并留下评价", sessionID)
+}
+
+// RewardCourierFirstTask 奖励信使首次任务完成 - FSD规格
+func (s *CreditService) RewardCourierFirstTask(userID, taskID string) error {
+	return s.AddPoints(userID, PointsCourierFirstTask, "成为信使后首次完成任务", taskID)
+}
+
+// RewardCourierDelivery 奖励信使送达信件 - FSD规格
+func (s *CreditService) RewardCourierDelivery(userID, taskID string) error {
+	return s.AddPoints(userID, PointsCourierDelivery, "信使成功送达一封信", taskID)
+}
+
+// RewardOPCodeApproval 奖励点位申请审核成功 - FSD规格
+func (s *CreditService) RewardOPCodeApproval(userID, applicationID string) error {
+	return s.AddPoints(userID, PointsOPCodeApproval, "点位申请审核成功", applicationID)
+}
+
+// RewardCommunityBadge 奖励社区贡献徽章 - FSD规格
+func (s *CreditService) RewardCommunityBadge(userID, badgeID string) error {
+	return s.AddPoints(userID, PointsCommunityBadge, "被授予社区贡献徽章", badgeID)
+}
+
+// RewardAdminCustom 管理员手动奖励积分 - FSD规格
+func (s *CreditService) RewardAdminCustom(userID string, points int, description, reference string) error {
+	if points <= 0 {
+		return fmt.Errorf("admin reward points must be positive")
+	}
+	return s.AddPoints(userID, points, fmt.Sprintf("管理员奖励: %s", description), reference)
+}
+
+// ========================= 积分限制与验证机制 =========================
+
+// CheckDailyLimit 检查每日积分限制 - FSD风控要求
+func (s *CreditService) CheckDailyLimit(userID, actionType string) (bool, error) {
+	today := time.Now().Format("2006-01-02")
+	
+	var dailyLimits = map[string]int{
+		"letter_created":    3,  // 每日上限3封
+		"receive_letter":    5,  // 每日上限5封
+		"public_like":       20, // 每封信上限20赞
+		"writing_challenge": 1,  // 每周限一次
+		"ai_interaction":    3,  // 每日限3次
+	}
+	
+	limit, exists := dailyLimits[actionType]
+	if !exists {
+		return true, nil // 无限制的行为类型
+	}
+	
+	var count int64
+	err := s.db.Model(&models.CreditTransaction{}).
+		Where("user_id = ? AND description LIKE ? AND DATE(created_at) = ?", 
+			userID, "%"+actionType+"%", today).
+		Count(&count).Error
+	
+	if err != nil {
+		return false, err
+	}
+	
+	return int(count) < limit, nil
+}
+
+// GetDailyStats 获取用户每日积分统计 - 风控监控
+func (s *CreditService) GetDailyStats(userID string) (map[string]interface{}, error) {
+	today := time.Now().Format("2006-01-02")
+	
+	var dailyStats struct {
+		TotalPoints int64 `json:"total_points"`
+		TotalTrans  int64 `json:"total_transactions"`
+	}
+	
+	err := s.db.Model(&models.CreditTransaction{}).
+		Select("COALESCE(SUM(amount), 0) as total_points, COUNT(*) as total_trans").
+		Where("user_id = ? AND DATE(created_at) = ? AND amount > 0", userID, today).
+		Scan(&dailyStats).Error
+	
+	if err != nil {
+		return nil, err
+	}
+	
+	return map[string]interface{}{
+		"date":          today,
+		"total_points":  dailyStats.TotalPoints,
+		"transactions":  dailyStats.TotalTrans,
+		"user_id":       userID,
+	}, nil
 }
 
 // GetLeaderboard 获取积分排行榜

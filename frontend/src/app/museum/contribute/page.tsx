@@ -9,16 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/contexts/auth-context-new'
 import { useLetterStore } from '@/stores/letter-store'
-// Mock API functions - replace with actual API calls
-const contributeExistingLetter = async (letterId: string) => {
-  // Simulate API call
-  return new Promise(resolve => setTimeout(resolve, 1000))
-}
-
-const contributeToMuseum = async (data: any) => {
-  // Simulate API call
-  return new Promise(resolve => setTimeout(resolve, 1000))
-}
+import { museumService } from '@/lib/services/museum-service'
+import { toast } from '@/components/ui/use-toast'
 import Link from 'next/link'
 import { 
   Sparkles,
@@ -89,11 +81,23 @@ export default function MuseumContributePage() {
 
   const handleContributeLetter = async (letter: LetterItem) => {
     try {
-      await contributeExistingLetter(letter.id)
-      alert(`信件「${letter.title}」已成功贡献到博物馆！感谢您的分享。`)
-    } catch (error) {
+      await museumService.submitToMuseum({
+        letter_id: letter.id,
+        title: letter.title,
+        author_name: letter.sender || user?.nickname || '匿名用户',
+        tags: []
+      })
+      toast({
+        title: '贡献成功',
+        description: `信件「${letter.title}」已成功贡献到博物馆！感谢您的分享。`
+      })
+    } catch (error: any) {
       console.error('Contribute letter error:', error)
-      alert('贡献失败，请稍后重试')
+      toast({
+        title: '贡献失败',
+        description: error?.message || '请稍后重试',
+        variant: 'destructive'
+      })
     }
   }
 
@@ -105,17 +109,20 @@ export default function MuseumContributePage() {
     imageFile: File | null
   }) => {
     try {
-      await contributeToMuseum({
-        title: data.title,
-        content: data.content,
-        tags: data.tags,
-        is_handwritten: data.isHandwritten,
-        image_file: data.imageFile,
+      // TODO: Implement direct museum content creation API
+      // Currently the backend only supports submitting existing letters
+      toast({
+        title: '功能开发中',
+        description: '直接创建博物馆内容的功能正在开发中，请先写信后再贡献到博物馆',
+        variant: 'destructive'
       })
-      alert(`信件笔记「${data.title}」已成功贡献到博物馆！感谢您的创作分享。`)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Contribute new note error:', error)
-      alert('贡献失败，请稍后重试')
+      toast({
+        title: '贡献失败',
+        description: error?.message || '请稍后重试',
+        variant: 'destructive'
+      })
     }
   }
 

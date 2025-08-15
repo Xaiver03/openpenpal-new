@@ -5,9 +5,54 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Users, Mail, BarChart, Settings, Shield, Brain, Truck } from 'lucide-react'
 import Link from 'next/link'
 import { WelcomeBanner } from '@/components/ui/welcome-banner'
+import { useEffect, useState } from 'react'
+import adminService from '@/lib/services/admin-service'
+
+interface DashboardStats {
+  totalUsers: number
+  newUsersToday: number
+  totalLetters: number
+  lettersToday: number
+  activeCouriers: number
+  museumExhibits: number
+  envelopeOrders: number
+  totalNotifications: number
+}
 
 export default function AdminDashboard() {
   const { user, getRoleDisplayName } = usePermission()
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true)
+        const response = await adminService.getDashboardStats()
+        setStats(response.data as unknown as DashboardStats)
+        setError(null)
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats:', err)
+        setError('获取统计数据失败')
+        // Fallback to initial values if API fails
+        setStats({
+          totalUsers: 0,
+          newUsersToday: 0,
+          totalLetters: 0,
+          lettersToday: 0,
+          activeCouriers: 0,
+          museumExhibits: 0,
+          envelopeOrders: 0,
+          totalNotifications: 0
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [])
 
   const adminCards = [
     {
@@ -96,20 +141,47 @@ export default function AdminDashboard() {
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6">
-              <div className="text-2xl font-bold">1,234</div>
+              {loading ? (
+                <div className="text-2xl font-bold text-gray-400">加载中...</div>
+              ) : error ? (
+                <div className="text-2xl font-bold text-red-500">--</div>
+              ) : (
+                <div className="text-2xl font-bold">{stats?.totalUsers.toLocaleString() || 0}</div>
+              )}
               <p className="text-gray-600">注册用户</p>
+              {stats?.newUsersToday ? (
+                <p className="text-sm text-green-600">今日新增: {stats.newUsersToday}</p>
+              ) : null}
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6">
-              <div className="text-2xl font-bold">5,678</div>
+              {loading ? (
+                <div className="text-2xl font-bold text-gray-400">加载中...</div>
+              ) : error ? (
+                <div className="text-2xl font-bold text-red-500">--</div>
+              ) : (
+                <div className="text-2xl font-bold">{stats?.totalLetters.toLocaleString() || 0}</div>
+              )}
               <p className="text-gray-600">投递信件</p>
+              {stats?.lettersToday ? (
+                <p className="text-sm text-green-600">今日投递: {stats.lettersToday}</p>
+              ) : null}
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6">
-              <div className="text-2xl font-bold">156</div>
+              {loading ? (
+                <div className="text-2xl font-bold text-gray-400">加载中...</div>
+              ) : error ? (
+                <div className="text-2xl font-bold text-red-500">--</div>
+              ) : (
+                <div className="text-2xl font-bold">{stats?.activeCouriers.toLocaleString() || 0}</div>
+              )}
               <p className="text-gray-600">活跃信使</p>
+              {stats?.museumExhibits ? (
+                <p className="text-sm text-blue-600">博物馆展品: {stats.museumExhibits}</p>
+              ) : null}
             </CardContent>
           </Card>
         </div>

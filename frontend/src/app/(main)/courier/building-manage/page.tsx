@@ -172,7 +172,7 @@ export default function BuildingManagePage() {
   }, [])
 
   useEffect(() => {
-    let filtered = couriers.filter(courier => {
+    const filtered = couriers.filter(courier => {
       const matchesSearch = courier.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            courier.buildingName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            courier.buildingCode.toLowerCase().includes(searchTerm.toLowerCase())

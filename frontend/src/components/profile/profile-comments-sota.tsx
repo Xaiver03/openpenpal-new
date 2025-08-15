@@ -312,14 +312,17 @@ export function ProfileCommentsSOTA({
             {filteredComments.map((comment, index) => (
               <React.Fragment key={comment.id}>
                 <CommentItemSOTA
-                  comment={comment}
+                  comment={{
+                    ...comment,
+                    letter_id: comment.letter_id || comment.target_id
+                  } as any}
                   depth={0}
                   max_depth={3}
                   enable_reply={allow_comments && !!currentUser}
                   enable_like={true}
                   enable_edit={currentUser?.id === comment.user_id}
                   enable_delete={currentUser?.id === comment.user_id}
-                  enable_report={currentUser && currentUser.id !== comment.user_id}
+                  // enable_report={currentUser && currentUser.id !== comment.user_id}
                   show_replies={true}
                   on_action={handleCommentAction}
                 />

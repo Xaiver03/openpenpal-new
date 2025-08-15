@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
-import { useAuth } from './auth-context-new'
+import { useToken } from './token-context'
 import { TokenManager } from '@/lib/auth/cookie-token-manager'
 
 // WebSocket消息类型
@@ -67,7 +67,7 @@ interface WebSocketProviderProps {
 }
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
-  const { user } = useAuth()
+  const { token, userId } = useToken()
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null)
   const [connectionInfo, setConnectionInfo] = useState<any>(null)
@@ -183,7 +183,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     }
 
     const token = TokenManager.get()
-    if (!user || !token) {
+    if (!userId || !token) {
       console.warn('用户未登录，无法建立WebSocket连接')
       setConnectionStatus('disconnected')
       return
@@ -235,7 +235,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         }
         
         // 自动重连
-        if (!event.wasClean && reconnectAttemptsRef.current < WS_CONFIG.maxReconnectAttempts && user) {
+        if (!event.wasClean && reconnectAttemptsRef.current < WS_CONFIG.maxReconnectAttempts && userId) {
           setConnectionStatus('reconnecting')
           reconnectAttemptsRef.current++
           console.log(`尝试重连 (${reconnectAttemptsRef.current}/${WS_CONFIG.maxReconnectAttempts})`)
@@ -259,7 +259,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       console.error('创建WebSocket连接失败:', error)
       setConnectionStatus('error')
     }
-  }, [user, getWebSocketUrl, handleMessage, stopHeartbeat])
+  }, [userId, getWebSocketUrl, handleMessage, stopHeartbeat])
 
   // 断开连接
   const disconnect = useCallback(() => {
@@ -361,7 +361,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     
     // 延迟连接，避免认证初始化未完成
     const connectTimer = setTimeout(() => {
-      if (user && TokenManager.get()) {
+      if (userId && TokenManager.get()) {
         connect()
       }
     }, 1000)
@@ -372,7 +372,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         disconnect()
       }
     }
-  }, [user, connect, disconnect])
+  }, [userId, connect, disconnect])
 
   // 页面卸载时断开连接 - 只在客户端执行
   useEffect(() => {

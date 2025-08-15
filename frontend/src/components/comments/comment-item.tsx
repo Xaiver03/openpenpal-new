@@ -30,7 +30,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import CommentForm from './comment-form'
+import ReportCommentDialog from './report-comment-dialog'
 import type { CommentItemProps, CommentAction, CommentFormData } from '@/types/comment'
+import type { CommentReportRequestSOTA } from '@/types/comment-sota'
 
 export const CommentItem = React.forwardRef<HTMLDivElement, CommentItemProps>(
   ({
@@ -50,6 +52,8 @@ export const CommentItem = React.forwardRef<HTMLDivElement, CommentItemProps>(
     const [show_edit_form, setShowEditForm] = useState(false)
     const [replies_expanded, setRepliesExpanded] = useState(true)
     const [is_loading, setIsLoading] = useState(false)
+    const [show_report_dialog, setShowReportDialog] = useState(false)
+    const [is_reporting, setIsReporting] = useState(false)
 
     // Format creation time
     const created_time = formatDistanceToNow(new Date(comment.created_at), {
@@ -106,6 +110,20 @@ export const CommentItem = React.forwardRef<HTMLDivElement, CommentItemProps>(
         })
       }
     }, [dispatch_action, comment.id])
+
+    // Handle report action
+    const handle_report = useCallback(async (commentId: string, report: CommentReportRequestSOTA) => {
+      setIsReporting(true)
+      try {
+        dispatch_action({
+          type: 'report',
+          comment_id: commentId,
+          data: { report },
+        })
+      } finally {
+        setIsReporting(false)
+      }
+    }, [dispatch_action])
 
     // Check if user can edit/delete (basic client-side check)
     const can_edit = enable_edit && comment.user_id === 'current_user_id' // TODO: Get from auth context
@@ -254,7 +272,7 @@ export const CommentItem = React.forwardRef<HTMLDivElement, CommentItemProps>(
                     </DropdownMenuItem>
                   )}
                   {(can_edit || can_delete) && <DropdownMenuSeparator />}
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
                     <Flag className="h-4 w-4 mr-2" />
                     举报
                   </DropdownMenuItem>
@@ -306,6 +324,19 @@ export const CommentItem = React.forwardRef<HTMLDivElement, CommentItemProps>(
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
           </div>
         )}
+
+        {/* Report dialog */}
+        <ReportCommentDialog
+          open={show_report_dialog}
+          onOpenChange={setShowReportDialog}
+          commentId={comment.id}
+          commentAuthor={{
+            username: comment.user?.username || '',
+            nickname: comment.user?.nickname || ''
+          }}
+          onSubmit={handle_report}
+          isSubmitting={is_reporting}
+        />
       </div>
     )
   }

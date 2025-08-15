@@ -53,6 +53,7 @@ func main() {
 	analyticsService := services.NewAnalyticsService(db)
 	schedulerService := services.NewSchedulerService(db)
 	creditService := services.NewCreditService(db)
+	creditTaskService := services.NewCreditTaskService(db, creditService) // 新增：模块化积分任务服务
 	courierTaskService := services.NewCourierTaskService(db)
 	adminService := services.NewAdminService(db, cfg)
 	systemSettingsService := services.NewSystemSettingsService(db, cfg)
@@ -64,6 +65,7 @@ func main() {
 	privacyService := services.NewPrivacyService(db) // 隐私设置服务
 	opcodeService := services.NewOPCodeService(db)       // OP Code服务 - 重新启用
 	scanEventService := services.NewScanEventService(db) // 扫描事件服务 - PRD要求
+	cloudLetterService := services.NewCloudLetterService(db, cfg) // 云中锦书服务 - 自定义现实角色
 
 	// 初始化延迟队列服务
 	delayQueueService, err := services.NewDelayQueueService(db, cfg)
@@ -101,6 +103,11 @@ func main() {
 	commentService.SetLetterService(letterService)
 	commentService.SetCreditService(creditService)
 	commentService.SetModerationService(moderationService)
+	// 配置云中锦书服务依赖
+	cloudLetterService.SetLetterService(letterService)
+	cloudLetterService.SetAIService(aiService)
+	cloudLetterService.SetCourierService(courierService)
+	cloudLetterService.SetNotificationService(notificationService)
 
 	// 启动任务调度服务
 	if err := schedulerService.Start(); err != nil {
@@ -123,6 +130,7 @@ func main() {
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
 	schedulerHandler := handlers.NewSchedulerHandler(schedulerService)
 	creditHandler := handlers.NewCreditHandler(creditService)
+	creditTaskHandler := handlers.NewCreditTaskHandler(creditTaskService, creditService) // 新增：积分任务处理器
 	adminHandler := handlers.NewAdminHandler(adminService)
 	systemSettingsHandler := handlers.NewSystemSettingsHandler(systemSettingsService, cfg)
 	storageHandler := handlers.NewStorageHandler(storageService)
@@ -130,6 +138,7 @@ func main() {
 	opcodeHandler := handlers.NewOPCodeHandler(opcodeService, courierService)
 	barcodeHandler := handlers.NewBarcodeHandler(letterService, opcodeService, scanEventService) // PRD条码系统处理器
 	scanEventHandler := handlers.NewScanEventHandler(scanEventService)                           // 扫描事件处理器
+	cloudLetterHandler := handlers.NewCloudLetterHandler(cloudLetterService)                     // 云中锦书处理器
 	shopHandler := handlers.NewShopHandler(shopService, userService)
 	commentHandler := handlers.NewCommentHandler(commentService)
 	followHandler := handlers.NewFollowHandler(followService) // 关注系统处理器
@@ -377,6 +386,22 @@ func main() {
 			// 写作辅助
 			letters.POST("/auto-save", letterHandler.AutoSaveDraft)                   // 自动保存草稿
 			letters.POST("/writing-suggestions", letterHandler.GetWritingSuggestions) // 获取写作建议
+		}
+
+		// 云中锦书相关（自定义现实角色写信）
+		cloudLetters := protected.Group("/cloud-letters")
+		{
+			// 人物角色管理
+			cloudLetters.POST("/personas", cloudLetterHandler.CreatePersona)          // 创建自定义人物角色
+			cloudLetters.GET("/personas", cloudLetterHandler.GetPersonas)             // 获取用户的人物角色列表
+			cloudLetters.PUT("/personas/:persona_id", cloudLetterHandler.UpdatePersona) // 更新人物角色
+			cloudLetters.GET("/persona-types", cloudLetterHandler.GetPersonaTypes)    // 获取支持的人物关系类型
+			
+			// 云信件管理
+			cloudLetters.POST("/", cloudLetterHandler.CreateCloudLetter)              // 创建云信件
+			cloudLetters.GET("/", cloudLetterHandler.GetCloudLetters)                 // 获取用户的云信件列表
+			cloudLetters.GET("/:letter_id", cloudLetterHandler.GetCloudLetter)        // 获取云信件详情
+			cloudLetters.GET("/status-options", cloudLetterHandler.GetLetterStatusOptions) // 获取信件状态选项
 		}
 
 		// 信使相关

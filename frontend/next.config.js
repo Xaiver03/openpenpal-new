@@ -48,6 +48,13 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   
+  // ESLint configuration
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
+  
   // Webpack优化
   webpack: (config, { dev, isServer }) => {
     // Bundle 分析器

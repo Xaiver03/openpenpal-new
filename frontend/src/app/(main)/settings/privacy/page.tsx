@@ -6,7 +6,6 @@
  */
 
 import React from 'react'
-import { Metadata } from 'next'
 import { Container } from '@/components/ui/container'
 import { PageHeader } from '@/components/ui/page-header'
 import { PrivacySettings } from '@/components/profile/privacy-settings'
@@ -25,10 +24,4 @@ export default function PrivacySettingsPage() {
       </div>
     </Container>
   )
-}
-
-// Static metadata for better SEO
-export const metadata: Metadata = {
-  title: '隐私设置 - OpenPenPal',
-  description: '管理您的隐私偏好和个人资料可见性设置',
 }

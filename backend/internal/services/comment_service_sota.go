@@ -360,7 +360,7 @@ func (s *CommentService) GetCommentsByTarget(ctx context.Context, targetID strin
 	}
 
 	// 获取统计信息
-	stats, err := s.GetCommentStats(ctx, targetID, targetType)
+	stats, err := s.GetCommentStatsSOTA(ctx, targetID, targetType)
 	if err != nil {
 		stats = models.CommentStats{} // 使用空统计信息
 	}
@@ -452,8 +452,8 @@ func (s *CommentService) buildEnhancedCommentResponse(comment *models.Comment, u
 	return response, nil
 }
 
-// GetCommentStats 获取评论统计信息
-func (s *CommentService) GetCommentStats(ctx context.Context, targetID string, targetType models.CommentType) (models.CommentStats, error) {
+// GetCommentStatsSOTA 获取评论统计信息 - SOTA版本
+func (s *CommentService) GetCommentStatsSOTA(ctx context.Context, targetID string, targetType models.CommentType) (models.CommentStats, error) {
 	stats := models.CommentStats{}
 
 	// 总评论数

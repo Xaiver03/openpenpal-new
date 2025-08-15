@@ -7,7 +7,8 @@
 
 import { createContext, useContext, useEffect, ReactNode, useCallback } from 'react'
 import { useUserStore, useAuth as useAuthStore, usePermissions, useUser, type CourierInfo } from '@/stores/user-store'
-import { TokenManager, wsManager } from '@/lib/api-client'
+import { TokenManager } from '@/lib/api-client'
+import { useToken } from './token-context'
 import { type UserRole, type Permission } from '@/constants/roles'
 import { log } from '@/utils/logger'
 import { EnhancedAuthService } from '@/lib/services/auth-service-enhanced'
@@ -62,6 +63,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Use token context for WebSocket connection
+  const { setToken, setUserId, clear: clearToken } = useToken()
+
   // Use the new user store
   const { 
     user: storeUser, 
@@ -85,28 +89,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const permissions = storeUser?.permissions || []
 
-  // Auto-initialize WebSocket connection based on auth state
+  // Sync token state with auth state for WebSocket
   // 使用防抖机制，避免临时认证状态变化导致意外登出
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (isAuthenticated && user) {
-        console.log('🔐 Auth state: User authenticated, connecting WebSocket')
-        // Connect WebSocket with error handling
-        wsManager.connect().catch((error) => {
-          console.error('📡 WebSocket connection failed:', error)
-          // Don't trigger logout on WebSocket failure
-        })
+        console.log('🔐 Auth state: User authenticated, syncing token')
+        const token = TokenManager.get()
+        if (token) {
+          setToken(token)
+          setUserId(user.id)
+        }
         
         // Emit auth events for legacy components
-        const authEvent = new CustomEvent('auth:login', { 
-          detail: { user } 
-        })
-        window.dispatchEvent(authEvent)
+        if (typeof window !== 'undefined') {
+          const authEvent = new CustomEvent('auth:login', { 
+            detail: { user } 
+          })
+          window.dispatchEvent(authEvent)
+        }
       } else if (!isLoading) {
         // 只有在不处于加载状态时才处理登出
-        console.log('🔐 Auth state: User not authenticated, disconnecting WebSocket')
-        // Disconnect WebSocket
-        wsManager.disconnect()
+        console.log('🔐 Auth state: User not authenticated, clearing token')
+        clearToken()
         
         // Don't trigger logout event here - let other systems handle it
         // This prevents cascading logout events during initialization
@@ -114,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 300) // 300ms防抖，给状态变化更多时间稳定
 
     return () => clearTimeout(timeoutId)
-  }, [isAuthenticated, user, isLoading])
+  }, [isAuthenticated, user, isLoading, setToken, setUserId, clearToken])
 
   // Enhanced login with optimistic updates
   const login = useCallback(async (data: LoginRequest) => {

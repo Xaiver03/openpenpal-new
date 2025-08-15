@@ -572,7 +572,7 @@ export default function BindBarcodePage() {
                     <Alert>
                       <Target className="h-4 w-4" />
                       <AlertDescription>
-                        OP Code是收件人的6位地址编码，格式为"学校代码+区域代码+位置代码"，
+                        OP Code是收件人的6位地址编码，格式为{'"学校代码+区域代码+位置代码"'}，
                         如PK5F3D代表北大5号楼303室。
                       </AlertDescription>
                     </Alert>

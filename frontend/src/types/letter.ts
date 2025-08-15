@@ -51,16 +51,7 @@ export interface LetterDraft {
   updated_at: Date
 }
 
-/**
- * 信件统计信息 - 匹配后端JSON格式
- */
-export interface LetterStats {
-  total_sent: number
-  total_received: number
-  in_transit: number
-  delivered: number
-  drafts: number
-}
+// 删除重复的LetterStats定义，使用下方的增强版
 
 /**
  * 信件编号 - 增强支持FSD条码系统规格

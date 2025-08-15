@@ -85,6 +85,7 @@ func autoMigrate(db *gorm.DB) error {
 		// 评论系统模型
 		&models.Comment{},
 		&models.CommentLike{},
+		&models.CommentReport{},
 		// Note: LetterTemplate moved to extended migration to handle null values
 		&models.LetterThread{},
 		&models.LetterReply{},

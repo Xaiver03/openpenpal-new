@@ -10,6 +10,7 @@ import { QueryProvider } from '@/components/providers/query-provider'
 import { LazyWrapper } from '@/components/optimization/performance-wrapper'
 // AuthDebugWidget removed - using AuthDebugPanel instead
 import { TokenRefreshProvider } from '@/components/providers/token-refresh-provider'
+import { TokenProvider } from '@/contexts/token-context'
 import dynamic from 'next/dynamic'
 
 const ClientBoundary = dynamic(
@@ -77,17 +78,19 @@ export default function RootLayout({
         <PageErrorBoundary>
           <LazyWrapper enableLazyLoading={true}>
             <QueryProvider>
-              <AuthProvider>
-                <AuthInitializer>
-                  <TokenRefreshProvider>
-                    <WebSocketErrorBoundary fallback={<div className="hidden"></div>}>
-                      <ClientBoundary>
-                        {children}
-                      </ClientBoundary>
-                    </WebSocketErrorBoundary>
-                  </TokenRefreshProvider>
-                </AuthInitializer>
-              </AuthProvider>
+              <TokenProvider>
+                <AuthProvider>
+                  <AuthInitializer>
+                    <TokenRefreshProvider>
+                      <WebSocketErrorBoundary fallback={<div className="hidden"></div>}>
+                        <ClientBoundary>
+                          {children}
+                        </ClientBoundary>
+                      </WebSocketErrorBoundary>
+                    </TokenRefreshProvider>
+                  </AuthInitializer>
+                </AuthProvider>
+              </TokenProvider>
             </QueryProvider>
           </LazyWrapper>
         </PageErrorBoundary>

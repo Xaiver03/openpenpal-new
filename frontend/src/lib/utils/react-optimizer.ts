@@ -268,15 +268,15 @@ export function smartMemo<T extends ComponentType<any>>(
   const { deepCompare = false, skipProps = [] } = options
 
   const areEqual = (prevProps: any, nextProps: any): boolean => {
-    const prevFiltered = filterProps(prevProps, skipProps)
-    const nextFiltered = filterProps(nextProps, skipProps)
+    const prevFiltered = filterProps(prevProps, skipProps as string[])
+    const nextFiltered = filterProps(nextProps, skipProps as string[])
 
     return deepCompare 
       ? deepEqual(prevFiltered, nextFiltered)
       : shallowEqual(prevFiltered, nextFiltered)
   }
 
-  return React.memo(Component, areEqual) as T
+  return React.memo(Component, areEqual) as unknown as T
 }
 
 /**

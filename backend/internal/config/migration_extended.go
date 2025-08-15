@@ -97,6 +97,22 @@ func MigrateExtendedModels(db *gorm.DB) error {
 	}
 	log.Println("Scan event models migrated successfully")
 
+	// 云中锦书模型 - Cloud Letter System
+	log.Println("Migrating cloud letter models...")
+	err = db.AutoMigrate(
+		&models.CloudPersona{},
+		&models.CloudLetter{},
+	)
+	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			log.Printf("Cloud letter models already exist, continuing: %v", err)
+		} else {
+			log.Printf("Cloud letter models migration error: %v", err)
+			return err
+		}
+	}
+	log.Println("Cloud letter models migrated successfully")
+
 	// 创建默认模板
 	log.Println("Creating default templates...")
 	createDefaultTemplates(db)

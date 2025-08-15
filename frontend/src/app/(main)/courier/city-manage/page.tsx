@@ -239,7 +239,7 @@ export default function CityManagePage() {
   }, [])
 
   useEffect(() => {
-    let filtered = couriers.filter(courier => {
+    const filtered = couriers.filter(courier => {
       const matchesSearch = courier.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            courier.schoolName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            courier.schoolCode.toLowerCase().includes(searchTerm.toLowerCase())

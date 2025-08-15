@@ -185,7 +185,7 @@ export class PerformanceMonitor {
   ): T {
     if (!this.isEnabled) return Component
 
-    return (React.forwardRef((props: any, ref: any) => {
+    const WrappedComponent = React.forwardRef((props: any, ref: any) => {
       const startTime = React.useRef<number>()
       
       React.useLayoutEffect(() => {
@@ -206,7 +206,11 @@ export class PerformanceMonitor {
       })
 
       return React.createElement(Component, { ...props, ref })
-    }) as unknown) as T
+    })
+    
+    WrappedComponent.displayName = `PerformanceMonitor(${componentName})`
+    
+    return WrappedComponent as unknown as T
   }
 
   /**

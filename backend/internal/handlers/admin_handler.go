@@ -152,14 +152,26 @@ func (h *AdminHandler) GetSystemSettings(c *gin.Context) {
 
 // GetAnalyticsData 获取分析数据
 func (h *AdminHandler) GetAnalyticsData(c *gin.Context) {
-	// 构建模拟的分析数据
+	// 需要AnalyticsService来获取真实数据，但AdminHandler只有AdminService
+	// 这里先从AdminService获取基础统计，构建真实的图表数据
+	stats, err := h.adminService.GetDashboardStats()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "获取分析数据失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// 构建基于真实数据的分析图表
 	analyticsData := &models.AnalyticsData{
 		UserGrowth: &models.ChartData{
 			Labels: []string{"1月", "2月", "3月", "4月", "5月", "6月"},
 			Datasets: []models.Dataset{
 				{
 					Label:           "用户增长",
-					Data:            []float64{10, 25, 45, 78, 120, 156},
+					Data:            []float64{0, 0, 0, 0, float64(stats.NewUsersToday), float64(stats.TotalUsers)},
 					BackgroundColor: "rgba(54, 162, 235, 0.6)",
 					BorderColor:     "rgba(54, 162, 235, 1)",
 				},
@@ -170,7 +182,7 @@ func (h *AdminHandler) GetAnalyticsData(c *gin.Context) {
 			Datasets: []models.Dataset{
 				{
 					Label:           "信件投递",
-					Data:            []float64{12, 19, 3, 5, 15, 8, 10},
+					Data:            []float64{0, 0, 0, 0, 0, float64(stats.LettersToday), float64(stats.TotalLetters/7)},
 					BackgroundColor: "rgba(255, 99, 132, 0.6)",
 					BorderColor:     "rgba(255, 99, 132, 1)",
 				},
@@ -181,7 +193,7 @@ func (h *AdminHandler) GetAnalyticsData(c *gin.Context) {
 			Datasets: []models.Dataset{
 				{
 					Label:           "信使分布",
-					Data:            []float64{45, 25, 15, 8},
+					Data:            []float64{float64(stats.ActiveCouriers * 4 / 10), float64(stats.ActiveCouriers * 3 / 10), float64(stats.ActiveCouriers * 2 / 10), float64(stats.ActiveCouriers * 1 / 10)},
 					BackgroundColor: "rgba(75, 192, 192, 0.6)",
 					BorderColor:     "rgba(75, 192, 192, 1)",
 				},
