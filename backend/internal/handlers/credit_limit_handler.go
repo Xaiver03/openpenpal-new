@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"openpenpal/internal/models"
-	"openpenpal/internal/services"
+	"openpenpal-backend/internal/models"
+	"openpenpal-backend/internal/services"
 )
 
 // CreditLimitHandler 积分限制处理器
@@ -426,7 +426,3 @@ func (h *CreditLimitHandler) isAdmin(c *gin.Context) bool {
 	return userRole == "super_admin" || userRole == "admin"
 }
 
-// Extension method to access DB from service
-func (s *services.CreditLimiterService) DB() *gorm.DB {
-	return s.db
-}

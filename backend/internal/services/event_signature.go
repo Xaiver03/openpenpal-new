@@ -10,6 +10,8 @@ import (
 	"log"
 	"strings"
 	"time"
+	
+	"openpenpal-backend/internal/models"
 )
 
 var (

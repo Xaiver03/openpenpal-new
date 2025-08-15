@@ -53,7 +53,21 @@ func main() {
 	analyticsService := services.NewAnalyticsService(db)
 	schedulerService := services.NewSchedulerService(db)
 	creditService := services.NewCreditService(db)
-	creditTaskService := services.NewCreditTaskService(db, creditService) // 新增：模块化积分任务服务
+	
+	// 初始化Redis连接（用于限制系统）
+	redisClient, err := config.SetupRedis(cfg)
+	if err != nil {
+		log.Printf("Warning: Failed to setup Redis: %v", err)
+		redisClient = nil // 继续运行，但限制功能不可用
+	}
+	
+	// 初始化积分限制服务
+	var creditLimiterService *services.CreditLimiterService
+	if redisClient != nil {
+		creditLimiterService = services.NewCreditLimiterService(db, redisClient)
+	}
+	
+	creditTaskService := services.NewCreditTaskService(db, creditService, creditLimiterService) // 新增：模块化积分任务服务
 	courierTaskService := services.NewCourierTaskService(db)
 	adminService := services.NewAdminService(db, cfg)
 	systemSettingsService := services.NewSystemSettingsService(db, cfg)
@@ -153,6 +167,14 @@ func main() {
 	schedulerHandler := handlers.NewSchedulerHandler(schedulerService)
 	creditHandler := handlers.NewCreditHandler(creditService)
 	creditTaskHandler := handlers.NewCreditTaskHandler(creditTaskService, creditService) // 新增：积分任务处理器
+	
+	// 初始化积分限制处理器（如果限制服务可用）
+	var creditLimitHandler *handlers.CreditLimitHandler
+	var creditLimitAdminHandler *handlers.CreditLimitAdminHandler
+	if creditLimiterService != nil {
+		creditLimitHandler = handlers.NewCreditLimitHandler(creditLimiterService)
+		creditLimitAdminHandler = handlers.NewCreditLimitAdminHandler(creditLimiterService) // Phase 1.4: 管理界面处理器
+	}
 	adminHandler := handlers.NewAdminHandler(adminService)
 	systemSettingsHandler := handlers.NewSystemSettingsHandler(systemSettingsService, cfg)
 	storageHandler := handlers.NewStorageHandler(storageService)
@@ -167,6 +189,7 @@ func main() {
 	privacyHandler := handlers.NewPrivacyHandler(privacyService) // 隐私设置处理器
 	userProfileHandler := handlers.NewUserProfileHandler(db) // 用户档案处理器
 	sensitiveWordHandler := handlers.NewSensitiveWordHandler(contentSecurityService) // 敏感词管理处理器
+	validationHandler := handlers.NewValidationHandler() // 安全验证处理器
 
 	// QR扫描服务和处理器 - SOTA集成：复用现有依赖
 	qrScanService := services.NewQRScanService(db, letterService, courierService, wsAdapter)
@@ -613,6 +636,12 @@ func main() {
 			credits.POST("/trigger/like", creditTaskHandler.TriggerPublicLetterLikeReward)              // 触发点赞奖励
 			credits.POST("/trigger/ai-interaction", creditTaskHandler.TriggerAIInteractionReward)       // 触发AI互动奖励
 			credits.POST("/trigger/courier/:task_id", creditTaskHandler.TriggerCourierDeliveryReward)   // 触发信使送达奖励
+			
+			// 积分限制相关端点（如果服务可用）
+			if creditLimitHandler != nil {
+				credits.GET("/limits/:action_type", creditLimitHandler.GetUserLimitStatus) // 获取用户限制状态
+				credits.GET("/risk-info", creditLimitHandler.GetUserRiskInfo)               // 获取用户风险信息
+			}
 		}
 
 		// 文件存储相关
@@ -893,6 +922,41 @@ func main() {
 			adminCredits.POST("/tasks/:task_id/execute", creditTaskHandler.ExecuteTask)    // 手动执行任务
 			adminCredits.GET("/tasks/statistics", creditTaskHandler.GetTaskStatistics)     // 获取任务统计
 			adminCredits.POST("/tasks/batch", creditTaskHandler.CreateBatchTasks)          // 批量创建任务
+			
+			// 积分限制和风控管理（如果服务可用）
+			if creditLimitHandler != nil {
+				adminCredits.GET("/limit-rules", creditLimitHandler.GetLimitRules)               // 获取限制规则
+				adminCredits.POST("/limit-rules", creditLimitHandler.CreateLimitRule)            // 创建限制规则
+				adminCredits.PUT("/limit-rules/:id", creditLimitHandler.UpdateLimitRule)         // 更新限制规则
+				adminCredits.DELETE("/limit-rules/:id", creditLimitHandler.DeleteLimitRule)      // 删除限制规则
+				adminCredits.GET("/risk-users", creditLimitHandler.GetRiskUsers)                 // 获取风险用户
+				adminCredits.POST("/users/block", creditLimitHandler.BlockUser)                  // 封禁用户
+				adminCredits.DELETE("/users/:user_id/block", creditLimitHandler.UnblockUser)     // 解封用户
+				adminCredits.GET("/users/:user_id/actions", creditLimitHandler.GetUserActions)   // 获取用户行为记录
+			}
+			
+			// Phase 1.4: 增强管理界面（如果服务可用）
+			if creditLimitAdminHandler != nil {
+				// 批量操作
+				adminCredits.POST("/limit-rules/batch", creditLimitAdminHandler.BatchCreateRules)     // 批量创建规则
+				adminCredits.PUT("/limit-rules/batch", creditLimitAdminHandler.BatchUpdateRules)      // 批量更新规则
+				
+				// 导入导出
+				adminCredits.GET("/limit-rules/export", creditLimitAdminHandler.ExportRules)          // 导出规则配置
+				adminCredits.POST("/limit-rules/import", creditLimitAdminHandler.ImportRules)         // 导入规则配置
+				
+				// 统计报表
+				adminCredits.GET("/dashboard/stats", creditLimitAdminHandler.GetDashboardStats)       // 仪表板统计
+				adminCredits.GET("/reports/usage", creditLimitAdminHandler.GetLimitUsageReport)       // 限制使用报告
+				adminCredits.GET("/reports/fraud", creditLimitAdminHandler.GetFraudDetectionReport)   // 防作弊检测报告
+				
+				// 实时监控
+				adminCredits.GET("/monitoring/alerts", creditLimitAdminHandler.GetRealTimeAlerts)     // 实时告警
+				adminCredits.GET("/monitoring/health", creditLimitAdminHandler.GetSystemHealth)       // 系统健康状态
+				
+				// 高级搜索
+				adminCredits.POST("/search/advanced", creditLimitAdminHandler.AdvancedSearch)          // 高级搜索
+			}
 		}
 
 		// AI管理
@@ -941,6 +1005,15 @@ func main() {
 			adminSecurity.GET("/stats", securityHandler.GetSecurityStats)         // 获取安全统计
 			adminSecurity.GET("/dashboard", securityHandler.GetSecurityDashboard) // 安全仪表板
 			adminSecurity.POST("/events", securityHandler.RecordCustomSecurityEvent) // 记录自定义安全事件
+			
+			// 安全验证相关端点
+			adminSecurity.POST("/validate", validationHandler.RunSecurityValidation) // 运行完整安全验证
+			adminSecurity.GET("/validate/summary", validationHandler.GetValidationSummary) // 获取验证摘要
+			adminSecurity.GET("/validate/results", validationHandler.GetValidationResults) // 获取详细结果
+			adminSecurity.GET("/validate/export", validationHandler.ExportValidationReport) // 导出验证报告
+			adminSecurity.POST("/validate/:component", validationHandler.ValidateSpecificComponent) // 验证特定组件
+			adminSecurity.POST("/validate/continuous", validationHandler.RunContinuousValidation) // 持续验证
+			adminSecurity.GET("/validate/health", validationHandler.GetValidationHealth) // 验证系统健康
 		}
 
 		// 敏感词管理（独立路由组，需要四级信使或平台管理员权限）

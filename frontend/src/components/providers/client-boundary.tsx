@@ -1,69 +1,62 @@
 'use client'
 
-import React, { Suspense } from 'react'
+import React, { Suspense, useState, useEffect } from 'react'
 
-// 确保这些导入存在并正确导出
-const WebSocketProvider = React.lazy(() => 
-  import('@/contexts/websocket-context').then(module => ({
-    default: module.WebSocketProvider
-  }))
-)
+// 直接导入而不是懒加载以避免hydration问题
+import { WebSocketProvider } from '@/contexts/websocket-context'
 
+// 保持懒加载用于可选组件
 const PerformanceMonitor = React.lazy(() => 
   import('@/components/optimization/performance-monitor').then(module => ({
-    default: module.PerformanceMonitor
-  }))
+    default: module.PerformanceMonitor || (() => null)
+  })).catch(() => ({ default: () => null }))
 )
 
 const AuthDebugPanel = React.lazy(() => 
   import('@/components/debug/auth-debug-panel').then(module => ({
-    default: module.AuthDebugPanel
-  }))
+    default: module.AuthDebugPanel || (() => null)
+  })).catch(() => ({ default: () => null }))
 )
 
 const NotificationManager = React.lazy(() => 
   import('@/components/realtime/notification-center').then(module => ({
-    default: module.NotificationManager
-  }))
+    default: module.NotificationManager || module.NotificationCenter || (() => null)
+  })).catch(() => ({ default: () => null }))
 )
 
 interface ClientBoundaryProps {
   children: React.ReactNode
 }
 
-// 客户端渲染的边界组件
-export function ClientBoundary({ children }: ClientBoundaryProps) {
-  // 确保只在客户端渲染
-  const [mounted, setMounted] = React.useState(false)
+// 客户端组件的容器，避免hydration不匹配
+function ClientOnlyComponents() {
+  const [mounted, setMounted] = useState(false)
 
-  React.useEffect(() => {
+  useEffect(() => {
     setMounted(true)
   }, [])
 
   if (!mounted) {
-    // 服务端渲染时返回占位符，保持结构一致
-    return (
-      <div className="relative flex min-h-screen flex-col">
-        <main className="flex-1">{children}</main>
-      </div>
-    )
+    return null
   }
 
-  // 客户端渲染时加载所有组件
   return (
-    <Suspense fallback={
-      <div className="relative flex min-h-screen flex-col">
-        <main className="flex-1">{children}</main>
-      </div>
-    }>
-      <WebSocketProvider>
-        <div className="relative flex min-h-screen flex-col">
-          <main className="flex-1">{children}</main>
-          <NotificationManager />
-          <PerformanceMonitor />
-          <AuthDebugPanel />
-        </div>
-      </WebSocketProvider>
+    <Suspense fallback={null}>
+      <NotificationManager />
+      <PerformanceMonitor />
+      <AuthDebugPanel />
     </Suspense>
+  )
+}
+
+// 客户端渲染的边界组件
+export function ClientBoundary({ children }: ClientBoundaryProps) {
+  return (
+    <WebSocketProvider>
+      <div className="relative flex min-h-screen flex-col" suppressHydrationWarning>
+        <main className="flex-1">{children}</main>
+        <ClientOnlyComponents />
+      </div>
+    </WebSocketProvider>
   )
 }

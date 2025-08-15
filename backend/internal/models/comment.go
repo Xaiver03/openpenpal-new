@@ -215,3 +215,12 @@ type CommentStats struct {
 	TopComments    int `json:"top_comments"`
 	RecentComments int `json:"recent_comments"`
 }
+
+// CommentModerationRequest 评论审核请求
+type CommentModerationRequest struct {
+	Action       string `json:"action" binding:"required" validate:"oneof=approve reject hide"`
+	Reason       string `json:"reason" binding:"max=500" validate:"max=500"`
+	Notify       bool   `json:"notify"`                                 // 是否通知用户
+	BanDuration  int    `json:"ban_duration,omitempty"`                 // 封禁时长（分钟）
+	AutoModerate bool   `json:"auto_moderate"`                          // 是否自动审核相似内容
+}

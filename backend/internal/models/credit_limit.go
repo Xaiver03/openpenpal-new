@@ -95,6 +95,20 @@ type FraudAlert struct {
 	CreatedAt   time.Time          `json:"created_at"`
 }
 
+// FraudDetectionLog Phase 1.3: 防作弊检测日志
+type FraudDetectionLog struct {
+	ID              string    `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	UserID          string    `json:"user_id" gorm:"not null;index"`
+	ActionType      string    `json:"action_type" gorm:"not null"`
+	RiskScore       float64   `json:"risk_score" gorm:"not null"`
+	IsAnomalous     bool      `json:"is_anomalous" gorm:"not null"`
+	DetectedPatterns string   `json:"detected_patterns" gorm:"type:text"` // JSON array of patterns
+	Evidence        string    `json:"evidence" gorm:"type:text"`          // JSON object
+	Recommendations string    `json:"recommendations" gorm:"type:text"`   // JSON array
+	AlertCount      int       `json:"alert_count" gorm:"default:0"`
+	CreatedAt       time.Time `json:"created_at" gorm:"autoCreateTime"`
+}
+
 // FraudAlertType 作弊警报类型
 type FraudAlertType string
 
@@ -127,6 +141,10 @@ func (UserCreditAction) TableName() string {
 
 func (CreditRiskUser) TableName() string {
 	return "credit_risk_users"
+}
+
+func (FraudDetectionLog) TableName() string {
+	return "fraud_detection_logs"
 }
 
 // GetPeriodStart 获取周期开始时间

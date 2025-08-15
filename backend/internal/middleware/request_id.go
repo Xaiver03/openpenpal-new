@@ -27,41 +27,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
 	}
 }
 
-// MetricsMiddleware 性能监控中间件
-func MetricsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 记录开始时间
-		start := time.Now()
-		path := c.Request.URL.Path
-		method := c.Request.Method
-
-		// 处理请求
-		c.Next()
-
-		// 计算耗时
-		duration := time.Since(start)
-		statusCode := c.Writer.Status()
-
-		// 添加性能头
-		c.Header("X-Response-Time", fmt.Sprintf("%v", duration))
-
-		// 记录慢请求
-		if duration > time.Second {
-			requestID := c.GetString("request_id")
-			userID := c.GetString("user_id")
-
-			fmt.Printf("[SLOW_REQUEST] RequestID=%s UserID=%s Method=%s Path=%s Status=%d Duration=%v\n",
-				requestID, userID, method, path, statusCode, duration)
-		}
-
-		// 记录错误请求
-		if statusCode >= 500 {
-			requestID := c.GetString("request_id")
-			fmt.Printf("[ERROR_REQUEST] RequestID=%s Method=%s Path=%s Status=%d Duration=%v Error=%v\n",
-				requestID, method, path, statusCode, duration, c.Errors.String())
-		}
-	}
-}
+// Note: MetricsMiddleware moved to metrics_middleware.go to avoid duplication
 
 // generateRequestID 生成唯一的请求ID
 func generateRequestID() string {

@@ -167,8 +167,10 @@ export default function BindBarcodePage() {
   // 模拟扫码检测（实际应用中需要集成QR码检测库）
   const simulateScan = () => {
     const mockCodes = ['OP7X1F2K', 'OP8Y3M5N', 'OP9Z4P6Q']
-    const randomCode = mockCodes[Math.floor(Math.random() * mockCodes.length)]
-    handleBarcodeDetected(randomCode)
+    // Use a consistent index based on current time seconds to avoid hydration issues
+    const index = Math.floor(Date.now() / 1000) % mockCodes.length
+    const selectedCode = mockCodes[index]
+    handleBarcodeDetected(selectedCode)
   }
 
   // AI匹配处理

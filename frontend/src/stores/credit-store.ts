@@ -311,6 +311,12 @@ export const useCreditLeaderboard = () => useCreditStore((state) => ({
   error: state.error,
 }))
 
+export const useCreditStatistics = () => useCreditStore((state) => ({
+  statistics: state.taskStatistics,
+  loading: state.loading.statistics,
+  error: state.error,
+}))
+
 // Helper function to initialize credit store
 export const initializeCreditStore = async () => {
   const store = useCreditStore.getState()

@@ -13,22 +13,24 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"openpenpal/internal/models"
+	"openpenpal-backend/internal/models"
 )
 
 // CreditLimiterService 积分限制服务
 type CreditLimiterService struct {
-	db    *gorm.DB
-	redis *redis.Client
-	ctx   context.Context
+	db              *gorm.DB
+	redis           *redis.Client
+	ctx             context.Context
+	enhancedDetector *EnhancedFraudDetector // Phase 1.3: 增强防作弊检测器
 }
 
 // NewCreditLimiterService 创建积分限制服务
 func NewCreditLimiterService(db *gorm.DB, redis *redis.Client) *CreditLimiterService {
 	return &CreditLimiterService{
-		db:    db,
-		redis: redis,
-		ctx:   context.Background(),
+		db:               db,
+		redis:            redis,
+		ctx:              context.Background(),
+		enhancedDetector: NewEnhancedFraudDetector(db), // Phase 1.3: 初始化增强检测器
 	}
 }
 
@@ -134,8 +136,54 @@ func (s *CreditLimiterService) GetLimitStatus(userID string, actionType string) 
 	return strictestStatus, nil
 }
 
-// DetectAnomalous 检测异常行为
+// DetectAnomalous 检测异常行为 (Phase 1.3: 增强版本)
 func (s *CreditLimiterService) DetectAnomalous(userID string, actionType string, metadata map[string]string) (*models.FraudAlert, error) {
+	// 使用增强检测器进行深度分析
+	if s.enhancedDetector != nil {
+		// 获取积分数据（从metadata或默认值）
+		points := 10 // 默认积分
+		if pointsStr, exists := metadata["points"]; exists {
+			if p, err := strconv.Atoi(pointsStr); err == nil {
+				points = p
+			}
+		}
+
+		result, err := s.enhancedDetector.DetectAdvancedFraud(userID, actionType, points, metadata)
+		if err != nil {
+			log.Printf("Enhanced fraud detection failed: %v", err)
+			// 降级到基础检测
+			return s.detectAnomalousBasic(userID, actionType, metadata)
+		}
+
+		// 如果检测到高风险，返回最严重的告警
+		if result.IsAnomalous && len(result.Alerts) > 0 {
+			// 更新用户风险分数
+			if err := s.UpdateRiskScore(userID, result.RiskScore*0.1); err != nil {
+				log.Printf("Failed to update risk score: %v", err)
+			}
+
+			// 返回最高优先级的告警
+			highestAlert := result.Alerts[0]
+			for _, alert := range result.Alerts {
+				if alert.Severity == models.SeverityHigh {
+					highestAlert = alert
+					break
+				}
+			}
+
+			// 记录检测结果到数据库
+			go s.logDetectionResult(userID, actionType, result)
+
+			return highestAlert, nil
+		}
+	}
+
+	// 降级到基础检测
+	return s.detectAnomalousBasic(userID, actionType, metadata)
+}
+
+// detectAnomalousBasic 基础异常检测（原有逻辑）
+func (s *CreditLimiterService) detectAnomalousBasic(userID string, actionType string, metadata map[string]string) (*models.FraudAlert, error) {
 	// 1. 检查频率异常
 	if alert := s.checkFrequencyAnomaly(userID, actionType); alert != nil {
 		return alert, nil
@@ -249,6 +297,192 @@ func (s *CreditLimiterService) IsUserBlocked(userID string) (bool, error) {
 	}
 
 	return riskUser.IsBlocked(), nil
+}
+
+// Phase 1.3: 增强防作弊检测相关方法
+
+// GetDetectionResult 获取增强检测结果
+func (s *CreditLimiterService) GetDetectionResult(userID string, actionType string, points int, metadata map[string]string) (*FraudDetectionResult, error) {
+	if s.enhancedDetector == nil {
+		return nil, fmt.Errorf("enhanced detector not available")
+	}
+	
+	return s.enhancedDetector.DetectAdvancedFraud(userID, actionType, points, metadata)
+}
+
+// logDetectionResult 记录检测结果
+func (s *CreditLimiterService) logDetectionResult(userID string, actionType string, result *FraudDetectionResult) {
+	// 将检测结果序列化存储
+	evidenceJSON, _ := json.Marshal(result.Evidence)
+	patternsJSON, _ := json.Marshal(result.DetectedPatterns)
+	recommendationsJSON, _ := json.Marshal(result.Recommendations)
+
+	// 创建检测日志记录
+	detectionLog := models.FraudDetectionLog{
+		ID:              uuid.New().String(),
+		UserID:          userID,
+		ActionType:      actionType,
+		RiskScore:       result.RiskScore,
+		IsAnomalous:     result.IsAnomalous,
+		DetectedPatterns: string(patternsJSON),
+		Evidence:        string(evidenceJSON),
+		Recommendations: string(recommendationsJSON),
+		AlertCount:      len(result.Alerts),
+		CreatedAt:       time.Now(),
+	}
+
+	if err := s.db.Create(&detectionLog).Error; err != nil {
+		log.Printf("Failed to log detection result: %v", err)
+	}
+
+	// 如果风险分数很高，同时更新用户风险等级
+	if result.RiskScore >= 0.8 {
+		log.Printf("High risk user detected: %s (score: %.2f)", userID, result.RiskScore)
+		
+		// 考虑自动封禁高风险用户
+		if result.RiskScore >= 0.9 {
+			reason := fmt.Sprintf("自动检测到高风险行为，风险分数: %.2f", result.RiskScore)
+			duration := time.Hour * 24 // 24小时封禁
+			if err := s.BlockUser(userID, reason, duration); err != nil {
+				log.Printf("Failed to auto-block high risk user: %v", err)
+			} else {
+				log.Printf("Auto-blocked user %s for 24 hours due to high risk score", userID)
+			}
+		}
+	}
+}
+
+// GetUserRiskAnalysis 获取用户风险分析报告
+func (s *CreditLimiterService) GetUserRiskAnalysis(userID string) (*UserRiskAnalysis, error) {
+	analysis := &UserRiskAnalysis{
+		UserID:    userID,
+		Timestamp: time.Now(),
+	}
+
+	// 获取用户基础风险信息
+	riskScore, err := s.GetRiskScore(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get risk score: %w", err)
+	}
+	analysis.CurrentRiskScore = riskScore
+
+	// 获取最近的检测日志
+	var recentLogs []models.FraudDetectionLog
+	since := time.Now().Add(-time.Hour * 24 * 7) // 最近7天
+	err = s.db.Where("user_id = ? AND created_at > ?", userID, since).
+		Order("created_at DESC").
+		Limit(10).
+		Find(&recentLogs).Error
+	
+	if err != nil {
+		log.Printf("Failed to get recent logs: %v", err)
+	} else {
+		analysis.RecentDetections = len(recentLogs)
+		
+		// 分析检测趋势
+		anomalousCount := 0
+		totalRiskScore := 0.0
+		for _, logEntry := range recentLogs {
+			if logEntry.IsAnomalous {
+				anomalousCount++
+			}
+			totalRiskScore += logEntry.RiskScore
+		}
+		
+		if len(recentLogs) > 0 {
+			analysis.AnomalousRate = float64(anomalousCount) / float64(len(recentLogs))
+			analysis.AvgRiskScore = totalRiskScore / float64(len(recentLogs))
+		}
+	}
+
+	// 获取用户行为统计
+	var actionStats struct {
+		TotalActions int64
+		TotalPoints  int
+		UniqueIPs    int64
+		UniqueDevices int64
+	}
+
+	since = time.Now().Add(-time.Hour * 24 * 30) // 最近30天
+	s.db.Model(&models.UserCreditAction{}).
+		Where("user_id = ? AND created_at > ?", userID, since).
+		Select("COUNT(*) as total_actions, COALESCE(SUM(points), 0) as total_points").
+		Scan(&actionStats)
+
+	s.db.Model(&models.UserCreditAction{}).
+		Where("user_id = ? AND created_at > ? AND ip_address != ''", userID, since).
+		Count(&actionStats.UniqueIPs)
+
+	s.db.Model(&models.UserCreditAction{}).
+		Where("user_id = ? AND created_at > ? AND device_id != ''", userID, since).
+		Count(&actionStats.UniqueDevices)
+
+	analysis.MonthlyActions = actionStats.TotalActions
+	analysis.MonthlyPoints = actionStats.TotalPoints
+	analysis.UniqueIPs = actionStats.UniqueIPs
+	analysis.UniqueDevices = actionStats.UniqueDevices
+
+	// 计算风险等级
+	analysis.RiskLevel = s.calculateRiskLevel(riskScore)
+
+	// 生成建议
+	analysis.Recommendations = s.generateRiskRecommendations(analysis)
+
+	return analysis, nil
+}
+
+// UserRiskAnalysis 用户风险分析结果
+type UserRiskAnalysis struct {
+	UserID            string              `json:"user_id"`
+	Timestamp         time.Time           `json:"timestamp"`
+	CurrentRiskScore  float64             `json:"current_risk_score"`
+	RiskLevel         models.RiskLevel    `json:"risk_level"`
+	RecentDetections  int                 `json:"recent_detections"`
+	AnomalousRate     float64             `json:"anomalous_rate"`
+	AvgRiskScore      float64             `json:"avg_risk_score"`
+	MonthlyActions    int64               `json:"monthly_actions"`
+	MonthlyPoints     int                 `json:"monthly_points"`
+	UniqueIPs         int64               `json:"unique_ips"`
+	UniqueDevices     int64               `json:"unique_devices"`
+	Recommendations   []string            `json:"recommendations"`
+}
+
+// generateRiskRecommendations 生成风险管理建议
+func (s *CreditLimiterService) generateRiskRecommendations(analysis *UserRiskAnalysis) []string {
+	recommendations := []string{}
+
+	if analysis.CurrentRiskScore >= 0.8 {
+		recommendations = append(recommendations, "用户风险极高，建议立即人工审核")
+		recommendations = append(recommendations, "暂停所有积分获取权限")
+	} else if analysis.CurrentRiskScore >= 0.6 {
+		recommendations = append(recommendations, "用户风险较高，建议加强监控")
+		recommendations = append(recommendations, "要求额外验证步骤")
+	} else if analysis.CurrentRiskScore >= 0.4 {
+		recommendations = append(recommendations, "用户风险中等，建议定期检查")
+	}
+
+	if analysis.AnomalousRate > 0.5 {
+		recommendations = append(recommendations, "异常行为频率过高，需要详细调查")
+	}
+
+	if analysis.UniqueIPs > 10 {
+		recommendations = append(recommendations, "IP地址变化频繁，可能使用代理或VPN")
+	}
+
+	if analysis.UniqueDevices > 5 {
+		recommendations = append(recommendations, "设备变化频繁，需要验证账户安全性")
+	}
+
+	if len(recommendations) == 0 {
+		recommendations = append(recommendations, "用户行为正常，继续常规监控")
+	}
+
+	return recommendations
+}
+
+// DB 提供数据库访问（用于handlers）
+func (s *CreditLimiterService) DB() *gorm.DB {
+	return s.db
 }
 
 // Private methods

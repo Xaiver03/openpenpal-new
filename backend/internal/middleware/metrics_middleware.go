@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"bytes"
-	"io"
 	"openpenpal-backend/internal/monitoring"
 	"openpenpal-backend/internal/resilience"
 	"strconv"
@@ -203,7 +202,7 @@ func (mm *MetricsMiddleware) normalizePath(path string) string {
 		"/api/v1/admin/[^/]+/[0-9a-f-]+": "/api/v1/admin/:resource/:id",
 	}
 	
-	for pattern, replacement := range patterns {
+	for _, replacement := range patterns {
 		// Simple pattern matching - in production, use regex
 		if strings.Contains(normalizedPath, "letters/") && 
 		   !strings.Contains(normalizedPath, "letters/barcode") {
@@ -211,6 +210,8 @@ func (mm *MetricsMiddleware) normalizePath(path string) string {
 				normalizedPath[strings.LastIndex(normalizedPath, "/")+1:],
 				":id", 1)
 		}
+		// Note: replacement can be used for more sophisticated pattern matching
+		_ = replacement
 	}
 	
 	return normalizedPath

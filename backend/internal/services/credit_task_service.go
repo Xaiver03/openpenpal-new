@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"openpenpal/internal/models"
+	"openpenpal-backend/internal/models"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

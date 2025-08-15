@@ -39,6 +39,18 @@ import {
 import { CommentCountBadge } from '@/components/comments'
 import { CompactFollowButton, UserSuggestions } from '@/components/follow'
 
+// 生成基于ID的一致性随机数，避免hydration问题
+function getConsistentRandom(seed: string, max: number, min: number = 0): number {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    const char = seed.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+  const normalized = Math.abs(hash) / 2147483647 // Normalize to 0-1
+  return Math.floor(normalized * max) + min
+}
+
 // 动态加载大型组件
 const CommunityStats = dynamic(
   () => import('@/components/community/stats').then(mod => ({ default: mod.CommunityStats })),
@@ -266,8 +278,8 @@ const PlazaPageComponent = () => {
           author: letter.user?.nickname || letter.author_name || '匿名作者',
           category: letter.style || 'story',
           categoryLabel: getCategoryLabel(letter.style || 'story'),
-          likes: letter.like_count || Math.floor(Math.random() * 500) + 100,
-          views: letter.view_count || Math.floor(Math.random() * 2000) + 500,
+          likes: letter.like_count || getConsistentRandom(letter.id, 500, 100),
+          views: letter.view_count || getConsistentRandom(letter.id + 'views', 2000, 500),
           publishDate: new Date(letter.created_at).toISOString().split('T')[0],
           tags: getTagsForLetter(letter.content || ''),
           trending: true
@@ -342,10 +354,10 @@ const PlazaPageComponent = () => {
           category: letter.style || 'story',
           categoryLabel: getCategoryLabel(letter.style || 'story'),
           publishDate: new Date(letter.created_at).toISOString().split('T')[0],
-          likes: letter.like_count || Math.floor(Math.random() * 300) + 50,
-          views: letter.view_count || Math.floor(Math.random() * 1500) + 200,
+          likes: letter.like_count || getConsistentRandom(letter.id, 300, 50),
+          views: letter.view_count || getConsistentRandom(letter.id + 'views', 1500, 200),
           tags: getTagsForLetter(letter.content || ''),
-          featured: Math.random() > 0.7
+          featured: getConsistentRandom(letter.id + 'featured', 10, 0) > 7
         }))
         updateState({ posts: formattedPosts })
       } else {
