@@ -17,10 +17,13 @@
 const https = require('https');
 const { performance } = require('perf_hooks');
 
+// 🔐 安全令牌生成 - 替代硬编码令牌
+const { generateTestToken } = require('../../../backend/scripts/test-token-generator');
+
 // Configuration
 const config = {
     baseURL: 'http://localhost:8080',
-    adminToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LWFkbWluIiwicm9sZSI6InN1cGVyX2FkbWluIiwiaXNzIjoib3BlbnBlbnBhbCIsImV4cCI6MTc1NDE0MDA2NCwiaWF0IjoxNzU0MDUzNjY0LCJqdGkiOiI3ODgyZGRmMWEyZTk5MDA2YmE4MDFkNWZkYTMyM2NmMyJ9.D9VLMt14F4JpFV6k-r2pe7Rr_kziBmlpqTKsVo4VhaA',
+    adminToken: generateTestToken('ADMIN', {}, '4h'),
     testUser: {
         username: 'test_admin_user',
         email: 'test@admin.com',

@@ -62,7 +62,7 @@ const (
 
 // CreditActivity 积分活动模型
 type CreditActivity struct {
-	ID               uuid.UUID                  `gorm:"type:uuid;primary_key" json:"id"`
+	ID               uuid.UUID                  `gorm:"type:varchar(36);primary_key" json:"id"`
 	Name             string                     `gorm:"type:varchar(200);not null" json:"name"`
 	Description      string                     `gorm:"type:text" json:"description"`
 	ActivityType     CreditActivityType         `gorm:"type:varchar(50);not null" json:"activity_type"`
@@ -110,8 +110,8 @@ func (a *CreditActivity) IsActive() bool {
 
 // CreditActivityParticipation 活动参与记录
 type CreditActivityParticipation struct {
-	ID                  uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	ActivityID          uuid.UUID      `gorm:"type:uuid;not null;index" json:"activity_id"`
+	ID                  uuid.UUID      `gorm:"type:varchar(36);primary_key" json:"id"`
+	ActivityID          uuid.UUID      `gorm:"type:varchar(36);not null;index" json:"activity_id"`
 	Activity            *CreditActivity `gorm:"foreignKey:ActivityID" json:"activity,omitempty"`
 	UserID              string         `gorm:"type:varchar(36);not null;index" json:"user_id"`
 	User                *User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
@@ -142,8 +142,8 @@ func (p *CreditActivityParticipation) BeforeCreate(tx *gorm.DB) error {
 
 // CreditActivityRule 活动规则模型（用于规则引擎）
 type CreditActivityRule struct {
-	ID              uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	ActivityID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"activity_id"`
+	ID              uuid.UUID      `gorm:"type:varchar(36);primary_key" json:"id"`
+	ActivityID      uuid.UUID      `gorm:"type:varchar(36);not null;index" json:"activity_id"`
 	Activity        *CreditActivity `gorm:"foreignKey:ActivityID" json:"activity,omitempty"`
 	RuleType        string         `gorm:"type:varchar(50);not null" json:"rule_type"`      // 规则类型
 	RuleName        string         `gorm:"type:varchar(100);not null" json:"rule_name"`
@@ -164,8 +164,8 @@ func (r *CreditActivityRule) BeforeCreate(tx *gorm.DB) error {
 
 // CreditActivitySchedule 活动调度记录
 type CreditActivitySchedule struct {
-	ID                uuid.UUID       `gorm:"type:uuid;primary_key" json:"id"`
-	ActivityID        uuid.UUID       `gorm:"type:uuid;not null;index" json:"activity_id"`
+	ID                uuid.UUID       `gorm:"type:varchar(36);primary_key" json:"id"`
+	ActivityID        uuid.UUID       `gorm:"type:varchar(36);not null;index" json:"activity_id"`
 	Activity          *CreditActivity `gorm:"foreignKey:ActivityID" json:"activity,omitempty"`
 	ScheduledTime     time.Time       `json:"scheduled_time"`
 	ExecutedTime      *time.Time      `json:"executed_time,omitempty"`
@@ -187,8 +187,8 @@ func (s *CreditActivitySchedule) BeforeCreate(tx *gorm.DB) error {
 
 // CreditActivityStatistics 活动统计
 type CreditActivityStatistics struct {
-	ID                   uuid.UUID       `gorm:"type:uuid;primary_key" json:"id"`
-	ActivityID           uuid.UUID       `gorm:"type:uuid;not null;uniqueIndex" json:"activity_id"`
+	ID                   uuid.UUID       `gorm:"type:varchar(36);primary_key" json:"id"`
+	ActivityID           uuid.UUID       `gorm:"type:varchar(36);not null;uniqueIndex" json:"activity_id"`
 	Activity             *CreditActivity `gorm:"foreignKey:ActivityID" json:"activity,omitempty"`
 	TotalParticipants    int             `gorm:"type:int;default:0" json:"total_participants"`
 	CompletedParticipants int            `gorm:"type:int;default:0" json:"completed_participants"`
@@ -215,8 +215,8 @@ func (s *CreditActivityStatistics) BeforeCreate(tx *gorm.DB) error {
 
 // CreditActivityLog 活动日志
 type CreditActivityLog struct {
-	ID           uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	ActivityID   uuid.UUID      `gorm:"type:uuid;not null;index" json:"activity_id"`
+	ID           uuid.UUID      `gorm:"type:varchar(36);primary_key" json:"id"`
+	ActivityID   uuid.UUID      `gorm:"type:varchar(36);not null;index" json:"activity_id"`
 	UserID       string         `gorm:"type:varchar(36);index" json:"user_id"`
 	Action       string         `gorm:"type:varchar(50);not null" json:"action"`       // 动作类型
 	Details      datatypes.JSON `gorm:"type:jsonb" json:"details"`                     // 详细信息
@@ -234,17 +234,23 @@ func (l *CreditActivityLog) BeforeCreate(tx *gorm.DB) error {
 
 // CreditActivityTemplate 活动模板
 type CreditActivityTemplate struct {
-	ID               uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	Name             string         `gorm:"type:varchar(200);not null" json:"name"`
+	ID               uuid.UUID      `gorm:"type:varchar(36);primary_key" json:"id"`
+	TemplateName     string         `gorm:"column:template_name;type:varchar(200);not null" json:"name"`
+	TemplateType     string         `gorm:"column:template_type;type:varchar(50);not null" json:"template_type"`
 	Description      string         `gorm:"type:text" json:"description"`
-	Category         string         `gorm:"type:varchar(50)" json:"category"`
-	TemplateData     datatypes.JSON `gorm:"type:jsonb;not null" json:"template_data"`       // 模板数据
-	PreviewImageURL  string         `gorm:"type:text" json:"preview_image_url"`
-	IsPublic         bool           `gorm:"default:true" json:"is_public"`
-	UsageCount       int            `gorm:"type:int;default:0" json:"usage_count"`
+	Category         string         `gorm:"type:varchar(100)" json:"category"`
+	TemplateData     datatypes.JSON `gorm:"column:template_data;type:jsonb;not null" json:"template_data"`       // 模板数据
+	Tags             datatypes.JSON `gorm:"type:jsonb" json:"tags"`
+	IsPublic         bool           `gorm:"column:is_public;default:true" json:"is_public"`
+	UsageCount       int            `gorm:"column:usage_count;type:int;default:0" json:"usage_count"`
 	CreatedBy        string         `gorm:"type:varchar(36)" json:"created_by"`
+	UpdatedBy        string         `gorm:"column:updated_by;type:varchar(36)" json:"updated_by"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
+}
+
+func (CreditActivityTemplate) TableName() string {
+	return "credit_activity_templates"
 }
 
 func (t *CreditActivityTemplate) BeforeCreate(tx *gorm.DB) error {

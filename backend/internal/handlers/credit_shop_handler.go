@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"shared/pkg/response"
+	"openpenpal-backend/internal/pkg/response"
 )
 
 // CreditShopHandler 积分商城处理器

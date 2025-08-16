@@ -31,7 +31,7 @@ const (
 
 // CreditShopProduct 积分商城商品模型
 type CreditShopProduct struct {
-	ID             uuid.UUID               `gorm:"type:uuid;primary_key" json:"id"`
+	ID             uuid.UUID               `gorm:"type:varchar(36);primary_key" json:"id"`
 	Name           string                  `gorm:"type:varchar(200);not null" json:"name"`
 	Description    string                  `gorm:"type:text" json:"description"`
 	ShortDesc      string                  `gorm:"type:varchar(500)" json:"short_desc"`      // 简短描述
@@ -106,11 +106,11 @@ const (
 
 // CreditRedemption 积分兑换订单模型
 type CreditRedemption struct {
-	ID              uuid.UUID              `gorm:"type:uuid;primary_key" json:"id"`
+	ID              uuid.UUID              `gorm:"type:varchar(36);primary_key" json:"id"`
 	RedemptionNo    string                 `gorm:"type:varchar(50);unique;not null" json:"redemption_no"`
 	UserID          string                 `gorm:"type:varchar(36);not null;index" json:"user_id"`
 	User            *User                  `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	ProductID       uuid.UUID              `gorm:"type:uuid;not null;index" json:"product_id"`
+	ProductID       uuid.UUID              `gorm:"type:varchar(36);not null;index" json:"product_id"`
 	Product         *CreditShopProduct     `gorm:"foreignKey:ProductID" json:"product,omitempty"`
 	Quantity        int                    `gorm:"type:int;not null;default:1" json:"quantity"`
 	CreditPrice     int                    `gorm:"not null" json:"credit_price"`         // 兑换时的积分价格
@@ -141,7 +141,7 @@ func (r *CreditRedemption) BeforeCreate(tx *gorm.DB) error {
 
 // CreditCart 积分购物车模型
 type CreditCart struct {
-	ID           uuid.UUID        `gorm:"type:uuid;primary_key" json:"id"`
+	ID           uuid.UUID        `gorm:"type:varchar(36);primary_key" json:"id"`
 	UserID       string           `gorm:"type:varchar(36);not null;index" json:"user_id"`
 	User         *User            `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Items        []CreditCartItem `gorm:"foreignKey:CartID" json:"items"`
@@ -160,10 +160,10 @@ func (c *CreditCart) BeforeCreate(tx *gorm.DB) error {
 
 // CreditCartItem 积分购物车项目模型
 type CreditCartItem struct {
-	ID          uuid.UUID          `gorm:"type:uuid;primary_key" json:"id"`
-	CartID      uuid.UUID          `gorm:"type:uuid;not null;index" json:"cart_id"`
+	ID          uuid.UUID          `gorm:"type:varchar(36);primary_key" json:"id"`
+	CartID      uuid.UUID          `gorm:"type:varchar(36);not null;index" json:"cart_id"`
 	Cart        *CreditCart        `gorm:"foreignKey:CartID" json:"cart,omitempty"`
-	ProductID   uuid.UUID          `gorm:"type:uuid;not null;index" json:"product_id"`
+	ProductID   uuid.UUID          `gorm:"type:varchar(36);not null;index" json:"product_id"`
 	Product     *CreditShopProduct `gorm:"foreignKey:ProductID" json:"product,omitempty"`
 	Quantity    int                `gorm:"type:int;not null;default:1" json:"quantity"`
 	CreditPrice int                `gorm:"not null" json:"credit_price"` // 加入时的积分价格
@@ -181,11 +181,11 @@ func (ci *CreditCartItem) BeforeCreate(tx *gorm.DB) error {
 
 // CreditShopCategory 积分商城分类模型
 type CreditShopCategory struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
+	ID          uuid.UUID `gorm:"type:varchar(36);primary_key" json:"id"`
 	Name        string    `gorm:"type:varchar(100);not null" json:"name"`
 	Description string    `gorm:"type:text" json:"description"`
 	IconURL     string    `gorm:"type:text" json:"icon_url"`
-	ParentID    *uuid.UUID `gorm:"type:uuid;index" json:"parent_id,omitempty"`
+	ParentID    *uuid.UUID `gorm:"type:varchar(36);index" json:"parent_id,omitempty"`
 	Parent      *CreditShopCategory `gorm:"foreignKey:ParentID" json:"parent,omitempty"`
 	Children    []CreditShopCategory `gorm:"foreignKey:ParentID" json:"children,omitempty"`
 	SortOrder   int       `gorm:"type:int;default:0" json:"sort_order"`
@@ -203,7 +203,7 @@ func (c *CreditShopCategory) BeforeCreate(tx *gorm.DB) error {
 
 // UserRedemptionHistory 用户兑换历史统计
 type UserRedemptionHistory struct {
-	ID               uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
+	ID               uuid.UUID `gorm:"type:varchar(36);primary_key" json:"id"`
 	UserID           string    `gorm:"type:varchar(36);not null;uniqueIndex" json:"user_id"`
 	User             *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	TotalRedemptions int       `gorm:"type:int;default:0" json:"total_redemptions"`     // 总兑换次数
@@ -223,7 +223,7 @@ func (u *UserRedemptionHistory) BeforeCreate(tx *gorm.DB) error {
 
 // CreditShopConfig 积分商城配置模型
 type CreditShopConfig struct {
-	ID                   uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
+	ID                   uuid.UUID `gorm:"type:varchar(36);primary_key" json:"id"`
 	Key                  string    `gorm:"type:varchar(100);uniqueIndex;not null" json:"key"`
 	Value                string    `gorm:"type:text;not null" json:"value"`
 	Description          string    `gorm:"type:text" json:"description"`

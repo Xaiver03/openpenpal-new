@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"shared/pkg/response"
+	"openpenpal-backend/internal/pkg/response"
 )
 
 // Phase 4.2: 积分转赠处理器

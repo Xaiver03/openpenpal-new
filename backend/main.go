@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"openpenpal-backend/internal/adapters"
 	"openpenpal-backend/internal/config"
 	"openpenpal-backend/internal/handlers"
+	"openpenpal-backend/internal/logger"
 	"openpenpal-backend/internal/middleware"
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/routes"
@@ -18,26 +18,29 @@ import (
 )
 
 func main() {
+	// 初始化智能日志系统
+	log := logger.GetLogger()
+	
 	// 加载配置
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal("Failed to load config:", err)
+		log.Fatal("Failed to load config: %v", err)
 	}
 
 	// 初始化数据库
 	// 使用直接的数据库连接方法，绕过 shared 包的配置问题
 	db, err := config.SetupDatabaseDirect(cfg)
 	if err != nil {
-		log.Fatal("Failed to setup database:", err)
+		log.Fatal("Failed to setup database: %v", err)
 	}
 
 	// 在开发环境下初始化测试数据
 	if cfg.Environment == "development" {
 		// 重新启用数据种子功能
 		if err := config.SeedData(db); err != nil {
-			log.Printf("Warning: Failed to seed data: %v", err)
+			log.Warn("Failed to seed data: %v", err)
 		} else {
-			log.Printf("Test data seeded successfully")
+			log.Info("Test data seeded successfully")
 		}
 	}
 
@@ -49,6 +52,7 @@ func main() {
 	museumService := services.NewMuseumService(db)
 	aiService := services.NewAIService(db, cfg)
 	configService := services.NewConfigService(db)
+	aiManager := services.NewAIProviderManager(db)
 	notificationService := services.NewNotificationService(db, cfg)
 	analyticsService := services.NewAnalyticsService(db)
 	schedulerService := services.NewSchedulerService(db)
@@ -57,7 +61,7 @@ func main() {
 	// 初始化Redis连接（用于限制系统）
 	redisClient, err := config.SetupRedis(cfg)
 	if err != nil {
-		log.Printf("Warning: Failed to setup Redis: %v", err)
+		log.Warn("Failed to setup Redis: %v", err)
 		redisClient = nil // 继续运行，但限制功能不可用
 	}
 	
@@ -93,14 +97,16 @@ func main() {
 	// Phase 4.2: 初始化积分转赠服务
 	creditTransferService := services.NewCreditTransferService(db, creditService, notificationService, creditLimiterService)
 
-	// 初始化延迟队列服务
+	// 延迟队列服务 - 已修复数据库模型问题
+	log.Info("Initializing delay queue service with proper database models...")
+	
 	delayQueueService, err := services.NewDelayQueueService(db, cfg)
 	if err != nil {
-		log.Printf("Warning: Failed to initialize delay queue service: %v", err)
+		log.Warn("Failed to initialize delay queue service: %v", err)
 	} else {
 		// 在后台启动延迟队列工作进程
 		go delayQueueService.StartWorker()
-		log.Println("Delay queue worker started")
+		log.Info("Delay queue worker started successfully")
 	}
 
 	// 初始化WebSocket服务
@@ -143,16 +149,16 @@ func main() {
 
 	// 启动任务调度服务
 	if err := schedulerService.Start(); err != nil {
-		log.Printf("Warning: Failed to start scheduler service: %v", err)
+		log.Warn("Failed to start scheduler service: %v", err)
 	} else {
-		log.Println("Scheduler service started successfully")
+		log.Info("Scheduler service started successfully")
 	}
 	
 	// 启动积分活动调度器
 	if err := creditActivityScheduler.Start(); err != nil {
-		log.Printf("Warning: Failed to start credit activity scheduler: %v", err)
+		log.Warn("Failed to start credit activity scheduler: %v", err)
 	} else {
-		log.Println("Credit activity scheduler started successfully")
+		log.Info("Credit activity scheduler started successfully")
 	}
 
 	// 注册默认调度任务
@@ -169,9 +175,9 @@ func main() {
 	)
 	
 	if err := schedulerTasks.RegisterDefaultTasks(schedulerService); err != nil {
-		log.Printf("Warning: Failed to register default scheduler tasks: %v", err)
+		log.Warn("Failed to register default scheduler tasks: %v", err)
 	} else {
-		log.Println("Default scheduler tasks registered successfully")
+		log.Info("Default scheduler tasks registered successfully")
 	}
 	*/
 
@@ -184,7 +190,7 @@ func main() {
 	promotionService := services.NewPromotionService(db)
 	courierGrowthHandler := handlers.NewCourierGrowthHandler(courierService, userService, promotionService)
 	museumHandler := handlers.NewMuseumHandler(museumService)
-	aiHandler := handlers.NewAIHandler(aiService, configService)
+	aiHandler := handlers.NewAIHandler(aiService, configService, aiManager)
 	notificationHandler := handlers.NewNotificationHandler(notificationService)
 	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
 	schedulerHandler := handlers.NewSchedulerHandler(schedulerService)
@@ -312,6 +318,10 @@ func main() {
 
 	// 设置API路由别名 - SOTA解决方案
 	routes.SetupAPIAliases(router, userProfileHandler)
+	
+	// 设置AI路由 - 多提供商AI系统
+	routes.SetupAIRoutes(router, aiHandler, cfg, db)
+	routes.SetupAIWebSocketRoutes(router, aiHandler, cfg, db)
 
 	// API版本组
 	v1 := router.Group("/api/v1")
@@ -1308,11 +1318,11 @@ func main() {
 
 	// 启动服务器
 	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
-	log.Printf("Starting server on %s", addr)
-	log.Printf("Environment: %s", cfg.Environment)
-	log.Printf("Frontend URL: %s", cfg.FrontendURL)
+	log.Info("Starting server on %s", addr)
+	log.Info("Environment: %s", cfg.Environment)
+	log.Info("Frontend URL: %s", cfg.FrontendURL)
 
 	if err := router.Run(addr); err != nil {
-		log.Fatal("Failed to start server:", err)
+		log.Fatal("Failed to start server: %v", err)
 	}
 }

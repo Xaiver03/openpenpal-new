@@ -162,8 +162,8 @@ var RolePermissions = map[UserRole][]Permission{
 // User 用户模型
 type User struct {
 	ID           string         `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	Username     string         `json:"username" gorm:"type:varchar(50);uniqueIndex;not null"`
-	Email        string         `json:"email" gorm:"type:varchar(100);uniqueIndex"`
+	Username     string         `json:"username" gorm:"type:varchar(50);uniqueIndex:unique_username;not null"`
+	Email        string         `json:"email" gorm:"type:varchar(100);uniqueIndex:unique_email"`
 	PasswordHash string         `json:"-" gorm:"type:varchar(255);not null"`
 	Nickname     string         `json:"nickname" gorm:"type:varchar(50)"`
 	Avatar       string         `json:"avatar" gorm:"type:varchar(500)"`

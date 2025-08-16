@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"shared/pkg/response"
+	"openpenpal-backend/internal/pkg/response"
 )
 
 // ShopHandler 商店处理器

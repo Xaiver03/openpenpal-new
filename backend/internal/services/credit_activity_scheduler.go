@@ -2,10 +2,10 @@ package services
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
+	"openpenpal-backend/internal/logger"
 	"openpenpal-backend/internal/models"
 
 	"github.com/google/uuid"
@@ -50,12 +50,12 @@ func (s *CreditActivityScheduler) Start() error {
 		return fmt.Errorf("scheduler is already running")
 	}
 
-	log.Println("Starting credit activity scheduler...")
+	logger.Info("Starting credit activity scheduler...")
 	s.ticker = time.NewTicker(s.interval)
 	s.running = true
 
 	go s.run()
-	log.Printf("Credit activity scheduler started with interval: %v", s.interval)
+	logger.InfoWithKey("scheduler_start", "Credit activity scheduler started with interval: %v", s.interval)
 	return nil
 }
 
@@ -68,12 +68,12 @@ func (s *CreditActivityScheduler) Stop() error {
 		return fmt.Errorf("scheduler is not running")
 	}
 
-	log.Println("Stopping credit activity scheduler...")
+	logger.Info("Stopping credit activity scheduler...")
 	s.ticker.Stop()
 	s.stopChan <- true
 	s.running = false
 	
-	log.Println("Credit activity scheduler stopped")
+	logger.Info("Credit activity scheduler stopped")
 	return nil
 }
 
@@ -101,7 +101,7 @@ func (s *CreditActivityScheduler) processScheduledTasks() {
 	// 获取待处理的调度任务
 	tasks, err := s.getPendingScheduledTasks()
 	if err != nil {
-		log.Printf("Error getting pending tasks: %v", err)
+		logger.Error("Error getting pending tasks: %v", err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (s *CreditActivityScheduler) processScheduledTasks() {
 		return
 	}
 
-	log.Printf("Processing %d scheduled tasks", len(tasks))
+	logger.InfoWithKey("scheduler_batch", "Processing %d scheduled tasks", len(tasks))
 
 	// 使用工作池限制并发数
 	taskChan := make(chan *models.CreditActivitySchedule, len(tasks))
@@ -129,7 +129,7 @@ func (s *CreditActivityScheduler) processScheduledTasks() {
 	// 等待所有任务完成
 	for i := 0; i < len(tasks); i++ {
 		if err := <-resultChan; err != nil {
-			log.Printf("Task execution error: %v", err)
+			logger.DebugWithKey("task_error", "Task execution error: %v", err)
 		}
 	}
 }
@@ -212,11 +212,11 @@ func (s *CreditActivityScheduler) handleTaskSuccess(schedule *models.CreditActiv
 		return fmt.Errorf("failed to update successful task: %w", err)
 	}
 
-	log.Printf("Task %s completed successfully", schedule.ID)
+	logger.DebugWithKey("task_success", "Task %s completed successfully", schedule.ID)
 	
 	// 如果是重复任务，创建下一次执行
 	if err := s.scheduleNextExecution(schedule); err != nil {
-		log.Printf("Failed to schedule next execution: %v", err)
+		logger.Warn("Failed to schedule next execution: %v", err)
 	}
 
 	return nil
@@ -244,7 +244,7 @@ func (s *CreditActivityScheduler) handleTaskFailure(schedule *models.CreditActiv
 		updateData["status"] = "failed"
 		updateData["next_retry_time"] = nextRetry
 		
-		log.Printf("Task %s failed, retry %d/%d scheduled for %v", 
+		logger.DebugWithKey("task_retry", "Task %s failed, retry %d/%d scheduled for %v", 
 			schedule.ID, schedule.RetryCount, s.retryMaxAttempts, nextRetry)
 	}
 
@@ -277,7 +277,7 @@ func (s *CreditActivityScheduler) scheduleNextExecution(schedule *models.CreditA
 
 	// 检查是否超过重复结束时间
 	if activity.RepeatEndDate != nil && nextTime.After(*activity.RepeatEndDate) {
-		log.Printf("Activity %s repeat pattern ended", activity.ID)
+		logger.DebugWithKey("schedule_end", "Activity %s repeat pattern ended", activity.ID)
 		return nil
 	}
 
@@ -296,7 +296,7 @@ func (s *CreditActivityScheduler) scheduleNextExecution(schedule *models.CreditA
 		return fmt.Errorf("failed to create next schedule: %w", err)
 	}
 
-	log.Printf("Scheduled next execution for activity %s at %v", activity.ID, nextTime)
+	logger.DebugWithKey("schedule_next", "Scheduled next execution for activity %s at %v", activity.ID, nextTime)
 	return nil
 }
 
@@ -341,7 +341,7 @@ func (s *CreditActivityScheduler) ScheduleActivity(activityID uuid.UUID, schedul
 		return nil, fmt.Errorf("failed to create schedule: %w", err)
 	}
 
-	log.Printf("Activity %s scheduled for execution at %v", activityID, scheduledTime)
+	logger.InfoWithKey("schedule_create", "Activity %s scheduled for execution at %v", activityID, scheduledTime)
 	return schedule, nil
 }
 
@@ -382,7 +382,7 @@ func (s *CreditActivityScheduler) CancelScheduledTask(scheduleID uuid.UUID) erro
 		return fmt.Errorf("failed to cancel scheduled task: %w", err)
 	}
 
-	log.Printf("Scheduled task %s cancelled", scheduleID)
+	logger.InfoWithKey("schedule_cancel", "Scheduled task %s cancelled", scheduleID)
 	return nil
 }
 

@@ -2,6 +2,7 @@ package models
 
 import (
 	"gorm.io/gorm"
+	"gorm.io/datatypes"
 	"time"
 )
 
@@ -69,8 +70,8 @@ type Letter struct {
 	Status     LetterStatus           `json:"status" gorm:"type:varchar(20);not null;default:'draft'"`
 	Visibility LetterVisibility       `json:"visibility" gorm:"type:varchar(20);not null;default:'private'"`
 	Type       LetterType             `json:"type" gorm:"type:varchar(20);not null;default:'original'"`
-	LikeCount  int                    `json:"like_count" gorm:"default:0"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty" gorm:"type:jsonb"`
+	LikeCount  int             `json:"like_count" gorm:"default:0"`
+	Metadata   datatypes.JSON `json:"metadata,omitempty" gorm:"type:jsonb"`
 
 	// OP Code System - 核心地址标识
 	RecipientOPCode string         `json:"recipient_op_code" gorm:"type:varchar(6);index"` // 收件人OP Code，如: PK5F3D

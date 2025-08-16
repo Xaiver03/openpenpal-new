@@ -1,0 +1,17 @@
+{
+  "smart_logger": {
+    "time_window": "10m",
+    "max_aggregation": 10000,
+    "verbose_threshold": 10,
+    "circuit_breaker_threshold": 100,
+    "sampling_rate": 50,
+    "cleanup_interval": "1h"
+  },
+  "delay_queue": {
+    "worker_interval": "30s",
+    "max_retries": 3,
+    "backoff_factor": 2,
+    "circuit_breaker_threshold": 5,
+    "circuit_breaker_timeout": "10m"
+  }
+}

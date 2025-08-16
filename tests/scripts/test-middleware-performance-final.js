@@ -2,10 +2,13 @@
 
 const axios = require('axios');
 
+// 🔐 安全令牌生成 - 替代硬编码令牌
+const { generateTestToken } = require('../../backend/scripts/test-token-generator');
+
 // 测试配置
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 const FRONTEND_API_URL = 'http://localhost:3000/api';
-const TEST_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LWFkbWluIiwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJzdXBlcl9hZG1pbiIsInBlcm1pc3Npb25zIjpbIk1BTkFHRV9VU0VSUyIsIlZJRVdfQU5BTFlUSUNTIiwiTU9ERVJBVEVFQ09OVEVOVCIsIk1BTkFHRV9TQ0hPT0xTIiwiTUFOQUdFX0VYSElCSVRJT05TIiwiU1lTVEVNX0NPTkZJRyIsIkFVRElUX1NVQk1JU1NJT05TIiwiSEFORExFX1JFUE9SVFMiXSwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjI1MDAwMDAwMDAsImp0aSI6InRlc3QtanRpLTEyMyJ9.Bx6uGrGNv9XNYQBS7JEJsBEGElYXBxh7jYOBfhBBZ40';
+const TEST_TOKEN = generateTestToken('ADMIN', {}, '2h');
 
 async function measurePerformance(name, testFunc) {
   console.log(`\n=== Testing: ${name} ===`);

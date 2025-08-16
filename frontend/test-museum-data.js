@@ -7,9 +7,12 @@
 
 const axios = require('axios');
 
+// 🔐 安全令牌生成 - 替代硬编码令牌
+const { generateTestToken } = require('../backend/scripts/test-token-generator');
+
 // Configuration
 const API_BASE = 'http://localhost:8080';
-const AUTH_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LWFkbWluIiwicm9sZSI6InN1cGVyX2FkbWluIiwiaXNzIjoib3BlbnBlbnBhbCIsImV4cCI6MTc1NDEyMDYzNywiaWF0IjoxNzU0MDM0MjM3LCJqdGkiOiI1NDZkNTYzZTc1ZDJlMzg2NDVkOGQyNmQ1NjBiOTY5ZiJ9.XhP-0k-UhHRZQ3pQk6oN3L8q-tkzkReuTNyFT43qdWU';
+const AUTH_TOKEN = generateTestToken('ADMIN', {}, '4h');
 
 // Set NO_PROXY to bypass proxy issues
 process.env.NO_PROXY = 'localhost,127.0.0.1';

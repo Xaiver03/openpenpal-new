@@ -1,11 +1,13 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"openpenpal-backend/internal/models"
 )
@@ -50,7 +52,13 @@ func (s *ScanEventService) CreateScanEvent(req *models.ScanEventCreateRequest, s
 		UserAgent:    userAgent,
 		IPAddress:    ipAddress,
 		Note:         req.Note,
-		Metadata:     req.Metadata,
+		Metadata: func() datatypes.JSON {
+			if req.Metadata == nil {
+				return nil
+			}
+			data, _ := json.Marshal(req.Metadata)
+			return datatypes.JSON(data)
+		}(),
 		Timestamp:    time.Now(),
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"shared/pkg/response"
+	"openpenpal-backend/internal/pkg/response"
 )
 
 type LetterHandler struct {

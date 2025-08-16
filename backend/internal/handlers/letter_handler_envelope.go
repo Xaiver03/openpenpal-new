@@ -5,7 +5,7 @@ import (
 	"openpenpal-backend/internal/models"
 
 	"github.com/gin-gonic/gin"
-	"shared/pkg/response"
+	"openpenpal-backend/internal/pkg/response"
 )
 
 // BindEnvelope 为信件绑定信封

@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"shared/pkg/response"
+	"openpenpal-backend/internal/pkg/response"
 )
 
 // CreditActivityHandler 积分活动处理器

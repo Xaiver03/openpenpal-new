@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"gorm.io/datatypes"
 )
 
 // CreditTask 积分任务模型 - 模块化积分奖励系统
@@ -12,8 +14,8 @@ type CreditTask struct {
 	Status      CreditTaskStatus `json:"status" gorm:"default:'pending'"`       // 任务状态
 	Points      int             `json:"points" gorm:"not null"`                 // 奖励积分
 	Description string          `json:"description" gorm:"not null"`            // 任务描述
-	Reference   string          `json:"reference"`                              // 关联对象ID
-	Metadata    string          `json:"metadata" gorm:"type:jsonb"`             // 扩展数据
+	Reference   string          `json:"reference"`                            // 关联对象ID
+	Metadata    datatypes.JSON `json:"metadata,omitempty" gorm:"type:jsonb"` // 扩展数据
 	
 	// 执行控制
 	Priority     int        `json:"priority" gorm:"default:0"`              // 优先级 (0-10, 10最高)
@@ -27,8 +29,8 @@ type CreditTask struct {
 	
 	// 限制条件
 	DailyLimit   int        `json:"daily_limit" gorm:"default:0"`           // 每日限制 (0=无限制)
-	WeeklyLimit  int        `json:"weekly_limit" gorm:"default:0"`          // 每周限制
-	Constraints  string     `json:"constraints" gorm:"type:jsonb"`          // 约束条件JSON
+	WeeklyLimit  int             `json:"weekly_limit" gorm:"default:0"`          // 每周限制
+	Constraints  datatypes.JSON `json:"constraints,omitempty" gorm:"type:jsonb"` // 约束条件JSON
 	
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -88,8 +90,8 @@ type CreditTaskQueue struct {
 	ID          string          `json:"id" gorm:"primaryKey;type:varchar(36)"`
 	QueueName   string          `json:"queue_name" gorm:"not null;index"`       // 队列名称
 	TaskType    CreditTaskType  `json:"task_type" gorm:"not null"`              // 任务类型
-	Priority    int             `json:"priority" gorm:"default:0;index"`        // 优先级
-	Payload     string          `json:"payload" gorm:"type:jsonb"`              // 任务载荷
+	Priority    int             `json:"priority" gorm:"default:0;index"`      // 优先级
+	Payload     datatypes.JSON `json:"payload" gorm:"type:jsonb"`            // 任务载荷
 	Status      CreditTaskStatus `json:"status" gorm:"default:'pending';index"` // 状态
 	RetryCount  int             `json:"retry_count" gorm:"default:0"`           // 重试次数
 	MaxRetries  int             `json:"max_retries" gorm:"default:3"`           // 最大重试
@@ -112,8 +114,8 @@ type CreditTaskRule struct {
 	WeeklyLimit int            `json:"weekly_limit" gorm:"default:0"`          // 每周限制
 	IsActive    bool           `json:"is_active" gorm:"default:true"`          // 是否启用
 	AutoExecute bool           `json:"auto_execute" gorm:"default:true"`       // 是否自动执行
-	Description string         `json:"description"`                            // 规则描述
-	Constraints string         `json:"constraints" gorm:"type:jsonb"`          // 约束条件
+	Description string          `json:"description"`                           // 规则描述
+	Constraints datatypes.JSON `json:"constraints" gorm:"type:jsonb"`         // 约束条件
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 }
@@ -135,8 +137,8 @@ type CreditTaskBatch struct {
 	TotalPoints int                `json:"total_points" gorm:"default:0"`          // 总积分
 	StartedAt   *time.Time         `json:"started_at,omitempty"`                   // 开始时间
 	CompletedAt *time.Time         `json:"completed_at,omitempty"`                 // 完成时间
-	CreatedBy   string             `json:"created_by" gorm:"not null"`             // 创建者
-	Metadata    string             `json:"metadata" gorm:"type:jsonb"`             // 批次元数据
+	CreatedBy   string          `json:"created_by" gorm:"not null"`           // 创建者
+	Metadata    datatypes.JSON `json:"metadata" gorm:"type:jsonb"`           // 批次元数据
 	CreatedAt   time.Time          `json:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
 }

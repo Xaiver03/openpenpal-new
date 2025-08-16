@@ -1,6 +1,9 @@
 // Test token expiry fix
 const jwt = require('jsonwebtoken');
 
+// 🔐 安全令牌生成 - 替代硬编码令牌
+const { generateTestToken } = require('../../backend/scripts/test-token-generator');
+
 console.log('=== Testing JWT Token Expiry Fix ===\n');
 
 // Simulate what the backend should return
@@ -8,7 +11,7 @@ const backendResponse = {
   code: 0,
   message: "Login successful",
   data: {
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTEyMyIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzUzOTU2MDQ4LCJleHAiOjE3NTQwNDI0NDh9.UiCmvn_78d2lnLTjgaFgMqHh3xZ2JTyPXqf0vWRXg2c",
+    token: generateTestToken('USER', {}, '24h'), // 安全生成的24小时令牌
     expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
     user: {
       id: "test-user-123",

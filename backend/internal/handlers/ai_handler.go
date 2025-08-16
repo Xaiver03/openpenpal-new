@@ -1,16 +1,20 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"openpenpal-backend/internal/middleware"
-	"openpenpal-backend/internal/models"
-	"openpenpal-backend/internal/services"
-	"openpenpal-backend/internal/utils"
+	"strconv"
 	"strings"
 	"time"
+
+	"openpenpal-backend/internal/middleware"
+	"openpenpal-backend/internal/models"
+	"openpenpal-backend/internal/pkg/response"
+	"openpenpal-backend/internal/services"
+	"openpenpal-backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,13 +23,15 @@ import (
 type AIHandler struct {
 	aiService     *services.AIService
 	configService *services.ConfigService
+	aiManager     *services.AIProviderManager
 }
 
 // NewAIHandler 创建AI处理器
-func NewAIHandler(aiService *services.AIService, configService *services.ConfigService) *AIHandler {
+func NewAIHandler(aiService *services.AIService, configService *services.ConfigService, aiManager *services.AIProviderManager) *AIHandler {
 	return &AIHandler{
 		aiService:     aiService,
 		configService: configService,
+		aiManager:     aiManager,
 	}
 }
 
@@ -498,6 +504,570 @@ func (h *AIHandler) GetDailyInspiration(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "Daily inspiration fetched successfully", inspiration)
+}
+
+// Multi-Provider AI API Endpoints
+
+// GenerateTextRequest 文本生成请求
+type GenerateTextRequest struct {
+	Prompt           string  `json:"prompt" binding:"required"`
+	MaxTokens        int     `json:"max_tokens,omitempty"`
+	Temperature      float64 `json:"temperature,omitempty"`
+	TopP             float64 `json:"top_p,omitempty"`
+	Model            string  `json:"model,omitempty"`
+	PreferredProvider string `json:"preferred_provider,omitempty"`
+	Stop             []string `json:"stop,omitempty"`
+}
+
+// ChatRequest 聊天请求
+type ChatRequest struct {
+	Messages         []services.ChatMessage `json:"messages" binding:"required"`
+	MaxTokens        int                    `json:"max_tokens,omitempty"`
+	Temperature      float64                `json:"temperature,omitempty"`
+	TopP             float64                `json:"top_p,omitempty"`
+	Model            string                 `json:"model,omitempty"`
+	PreferredProvider string                `json:"preferred_provider,omitempty"`
+	Stop             []string               `json:"stop,omitempty"`
+}
+
+// SummarizeRequest 总结请求
+type SummarizeRequest struct {
+	Text             string  `json:"text" binding:"required"`
+	MaxTokens        int     `json:"max_tokens,omitempty"`
+	Temperature      float64 `json:"temperature,omitempty"`
+	PreferredProvider string `json:"preferred_provider,omitempty"`
+}
+
+// TranslateRequest 翻译请求
+type TranslateRequest struct {
+	Text             string  `json:"text" binding:"required"`
+	TargetLanguage   string  `json:"target_language" binding:"required"`
+	MaxTokens        int     `json:"max_tokens,omitempty"`
+	Temperature      float64 `json:"temperature,omitempty"`
+	PreferredProvider string `json:"preferred_provider,omitempty"`
+}
+
+// SentimentAnalysisRequest 情感分析请求
+type SentimentAnalysisRequest struct {
+	Text             string `json:"text" binding:"required"`
+	PreferredProvider string `json:"preferred_provider,omitempty"`
+}
+
+// ContentModerationRequest 内容审核请求
+type ContentModerationRequest struct {
+	Text             string `json:"text" binding:"required"`
+	PreferredProvider string `json:"preferred_provider,omitempty"`
+}
+
+// GenerateText 文本生成API
+// @Summary 生成文本
+// @Description 使用AI生成文本内容
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param request body GenerateTextRequest true "文本生成请求"
+// @Success 200 {object} response.Response{data=services.AIResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/ai/generate [post]
+func (h *AIHandler) GenerateText(c *gin.Context) {
+	var req GenerateTextRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
+		return
+	}
+
+	// 设置默认值
+	if req.MaxTokens == 0 {
+		req.MaxTokens = 1000
+	}
+	if req.Temperature == 0 {
+		req.Temperature = 0.7
+	}
+
+	options := services.AIGenerationOptions{
+		MaxTokens:   req.MaxTokens,
+		Temperature: req.Temperature,
+		TopP:        req.TopP,
+		Model:       req.Model,
+		Stop:        req.Stop,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	result, err := h.aiManager.GenerateText(ctx, req.Prompt, options, req.PreferredProvider)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to generate text", err.Error())
+		return
+	}
+
+	response.Success(c, result, "Text generated successfully")
+}
+
+// Chat 聊天对话API
+// @Summary AI聊天对话
+// @Description 与AI进行多轮对话
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param request body ChatRequest true "聊天请求"
+// @Success 200 {object} response.Response{data=services.AIResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/ai/chat [post]
+func (h *AIHandler) Chat(c *gin.Context) {
+	var req ChatRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
+		return
+	}
+
+	if len(req.Messages) == 0 {
+		response.Error(c, http.StatusBadRequest, "Messages cannot be empty", "")
+		return
+	}
+
+	// 设置默认值
+	if req.MaxTokens == 0 {
+		req.MaxTokens = 1500
+	}
+	if req.Temperature == 0 {
+		req.Temperature = 0.7
+	}
+
+	options := services.AIGenerationOptions{
+		MaxTokens:   req.MaxTokens,
+		Temperature: req.Temperature,
+		TopP:        req.TopP,
+		Model:       req.Model,
+		Stop:        req.Stop,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	result, err := h.aiManager.Chat(ctx, req.Messages, options, req.PreferredProvider)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to process chat", err.Error())
+		return
+	}
+
+	response.Success(c, result, "Chat processed successfully")
+}
+
+// Summarize 文本总结API
+// @Summary 文本总结
+// @Description 对长文本进行智能总结
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param request body SummarizeRequest true "总结请求"
+// @Success 200 {object} response.Response{data=services.AIResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/ai/summarize [post]
+func (h *AIHandler) Summarize(c *gin.Context) {
+	var req SummarizeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
+		return
+	}
+
+	if len(req.Text) < 10 {
+		response.Error(c, http.StatusBadRequest, "Text too short for summarization", "")
+		return
+	}
+
+	// 设置默认值
+	if req.MaxTokens == 0 {
+		req.MaxTokens = 500
+	}
+	if req.Temperature == 0 {
+		req.Temperature = 0.3
+	}
+
+	options := services.AIGenerationOptions{
+		MaxTokens:   req.MaxTokens,
+		Temperature: req.Temperature,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+
+	provider, usedProvider, err := h.aiManager.GetAvailableProvider(req.PreferredProvider)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "No available AI provider", err.Error())
+		return
+	}
+
+	result, err := provider.Summarize(ctx, req.Text, options)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to summarize text", err.Error())
+		return
+	}
+
+	result.Provider = usedProvider
+	response.Success(c, result, "Text summarized successfully")
+}
+
+// Translate 翻译API
+// @Summary 文本翻译
+// @Description 将文本翻译成目标语言
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param request body TranslateRequest true "翻译请求"
+// @Success 200 {object} response.Response{data=services.AIResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/ai/translate [post]
+func (h *AIHandler) Translate(c *gin.Context) {
+	var req TranslateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
+		return
+	}
+
+	// 设置默认值
+	if req.MaxTokens == 0 {
+		req.MaxTokens = len(req.Text) * 2 // 翻译通常需要更多token
+	}
+	if req.Temperature == 0 {
+		req.Temperature = 0.2 // 翻译需要较低的随机性
+	}
+
+	options := services.AIGenerationOptions{
+		MaxTokens:   req.MaxTokens,
+		Temperature: req.Temperature,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+
+	provider, usedProvider, err := h.aiManager.GetAvailableProvider(req.PreferredProvider)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "No available AI provider", err.Error())
+		return
+	}
+
+	result, err := provider.Translate(ctx, req.Text, req.TargetLanguage, options)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to translate text", err.Error())
+		return
+	}
+
+	result.Provider = usedProvider
+	response.Success(c, result, "Text translated successfully")
+}
+
+// AnalyzeSentiment 情感分析API
+// @Summary 情感分析
+// @Description 分析文本的情感倾向
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param request body SentimentAnalysisRequest true "情感分析请求"
+// @Success 200 {object} response.Response{data=services.SentimentAnalysis}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/ai/sentiment [post]
+func (h *AIHandler) AnalyzeSentiment(c *gin.Context) {
+	var req SentimentAnalysisRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	provider, _, err := h.aiManager.GetAvailableProvider(req.PreferredProvider)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "No available AI provider", err.Error())
+		return
+	}
+
+	result, err := provider.AnalyzeSentiment(ctx, req.Text)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to analyze sentiment", err.Error())
+		return
+	}
+
+	response.Success(c, result, "Sentiment analyzed successfully")
+}
+
+// ModerateContent 内容审核API
+// @Summary 内容审核
+// @Description 检查内容是否包含不当信息
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param request body ContentModerationRequest true "内容审核请求"
+// @Success 200 {object} response.Response{data=services.ContentModeration}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/ai/moderate [post]
+func (h *AIHandler) ModerateContent(c *gin.Context) {
+	var req ContentModerationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	provider, _, err := h.aiManager.GetAvailableProvider(req.PreferredProvider)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "No available AI provider", err.Error())
+		return
+	}
+
+	result, err := provider.ModerateContent(ctx, req.Text)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to moderate content", err.Error())
+		return
+	}
+
+	response.Success(c, result, "Content moderated successfully")
+}
+
+// GetProviderStatus 获取AI提供商状态
+// @Summary 获取AI提供商状态
+// @Description 查看所有AI提供商的健康状态和使用情况
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Response{data=map[string]interface{}}
+// @Failure 500 {object} response.Response
+// @Router /api/ai/providers/status [get]
+func (h *AIHandler) GetProviderStatus(c *gin.Context) {
+	stats := h.aiManager.GetProviderStats()
+	response.Success(c, stats, "Provider status retrieved successfully")
+}
+
+// ReloadProviders 重新加载AI提供商配置
+// @Summary 重新加载AI提供商配置
+// @Description 从数据库重新加载AI提供商配置并重新初始化
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/ai/providers/reload [post]
+func (h *AIHandler) ReloadProviders(c *gin.Context) {
+	if err := h.aiManager.ReloadConfigurations(); err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to reload providers", err.Error())
+		return
+	}
+
+	response.Success(c, nil, "Providers reloaded successfully")
+}
+
+// LetterWritingAssistRequest 信件写作辅助请求
+type LetterWritingAssistRequest struct {
+	Topic            string `json:"topic" binding:"required"`
+	Style            string `json:"style,omitempty"`           // 写作风格：formal, casual, romantic, friendly
+	Tone             string `json:"tone,omitempty"`            // 语调：warm, professional, humorous
+	Length           string `json:"length,omitempty"`          // 长度：short, medium, long
+	PreferredProvider string `json:"preferred_provider,omitempty"`
+}
+
+// LetterWritingAssist 信件写作辅助API
+// @Summary 信件写作辅助
+// @Description 根据主题和风格生成信件内容建议
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param request body LetterWritingAssistRequest true "写作辅助请求"
+// @Success 200 {object} response.Response{data=services.AIResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/ai/letter/assist [post]
+func (h *AIHandler) LetterWritingAssist(c *gin.Context) {
+	var req LetterWritingAssistRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
+		return
+	}
+
+	// 设置默认值
+	if req.Style == "" {
+		req.Style = "friendly"
+	}
+	if req.Tone == "" {
+		req.Tone = "warm"
+	}
+	if req.Length == "" {
+		req.Length = "medium"
+	}
+
+	// 构建专门的写信提示词
+	prompt := buildLetterWritingPrompt(req.Topic, req.Style, req.Tone, req.Length)
+
+	options := services.AIGenerationOptions{
+		MaxTokens:   1000,
+		Temperature: 0.8, // 创作性内容需要较高的创造性
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	result, err := h.aiManager.GenerateText(ctx, prompt, options, req.PreferredProvider)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to generate letter content", err.Error())
+		return
+	}
+
+	response.Success(c, result, "Letter writing assistance generated successfully")
+}
+
+// BatchTranslateRequest 批量翻译请求
+type BatchTranslateRequest struct {
+	Texts            []string `json:"texts" binding:"required"`
+	TargetLanguage   string   `json:"target_language" binding:"required"`
+	PreferredProvider string  `json:"preferred_provider,omitempty"`
+}
+
+// BatchTranslate 批量翻译API
+// @Summary 批量翻译
+// @Description 批量翻译多个文本
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param request body BatchTranslateRequest true "批量翻译请求"
+// @Success 200 {object} response.Response{data=[]services.AIResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/ai/translate/batch [post]
+func (h *AIHandler) BatchTranslate(c *gin.Context) {
+	var req BatchTranslateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
+		return
+	}
+
+	if len(req.Texts) == 0 {
+		response.Error(c, http.StatusBadRequest, "No texts provided for translation", "")
+		return
+	}
+
+	if len(req.Texts) > 50 {
+		response.Error(c, http.StatusBadRequest, "Too many texts (max 50)", "")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	provider, usedProvider, err := h.aiManager.GetAvailableProvider(req.PreferredProvider)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "No available AI provider", err.Error())
+		return
+	}
+
+	results := make([]*services.AIResponse, len(req.Texts))
+	options := services.AIGenerationOptions{
+		MaxTokens:   1000,
+		Temperature: 0.2,
+	}
+
+	// 并发翻译以提高效率（限制并发数）
+	semaphore := make(chan struct{}, 5) // 最多5个并发
+	errChan := make(chan error, len(req.Texts))
+	
+	for i, text := range req.Texts {
+		go func(index int, t string) {
+			semaphore <- struct{}{} // 获取信号量
+			defer func() { <-semaphore }() // 释放信号量
+
+			result, err := provider.Translate(ctx, t, req.TargetLanguage, options)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			
+			result.Provider = usedProvider
+			results[index] = result
+			errChan <- nil
+		}(i, text)
+	}
+
+	// 等待所有翻译完成
+	for i := 0; i < len(req.Texts); i++ {
+		if err := <-errChan; err != nil {
+			response.Error(c, http.StatusInternalServerError, "Failed to translate batch texts", err.Error())
+			return
+		}
+	}
+
+	response.Success(c, results, "Batch translation completed successfully")
+}
+
+// GetAIUsageStats 获取AI使用统计
+// @Summary 获取AI使用统计
+// @Description 获取用户的AI使用统计信息
+// @Tags AI
+// @Accept json
+// @Produce json
+// @Param days query int false "统计天数" default(30)
+// @Success 200 {object} response.Response{data=map[string]interface{}}
+// @Failure 500 {object} response.Response
+// @Router /api/ai/usage/stats [get]
+func (h *AIHandler) GetAIUsageStats(c *gin.Context) {
+	daysStr := c.DefaultQuery("days", "30")
+	days, err := strconv.Atoi(daysStr)
+	if err != nil || days <= 0 {
+		days = 30
+	}
+
+	// TODO: 实现用户使用统计逻辑
+	// 这里应该从数据库中查询用户的AI使用记录
+	stats := map[string]interface{}{
+		"total_requests":    0,
+		"total_tokens":      0,
+		"requests_by_type":  map[string]int{},
+		"providers_used":    map[string]int{},
+		"period_days":       days,
+		"message":          "Usage statistics feature coming soon",
+	}
+
+	response.Success(c, stats, "Usage statistics retrieved")
+}
+
+// buildLetterWritingPrompt 构建信件写作提示词
+func buildLetterWritingPrompt(topic, style, tone, length string) string {
+	lengthGuide := map[string]string{
+		"short":  "简短精炼（100-200字）",
+		"medium": "适中详细（200-400字）",
+		"long":   "详细丰富（400-600字）",
+	}
+
+	styleGuide := map[string]string{
+		"formal":   "正式、规范的书面语",
+		"casual":   "轻松、随意的日常用语",
+		"romantic": "浪漫、温柔的表达方式",
+		"friendly": "友好、亲切的交流风格",
+	}
+
+	toneGuide := map[string]string{
+		"warm":         "温暖、关怀的语调",
+		"professional": "专业、严谨的语调",
+		"humorous":     "幽默、轻松的语调",
+	}
+
+	return "你是一位专业的信件写作助手。请根据以下要求帮助用户写一封信：\n\n" +
+		"主题：" + topic + "\n" +
+		"写作风格：" + styleGuide[style] + "\n" +
+		"语调：" + toneGuide[tone] + "\n" +
+		"长度要求：" + lengthGuide[length] + "\n\n" +
+		"请生成一封完整的信件内容，包括称呼、正文和结尾。要求：\n" +
+		"1. 内容要真诚自然，符合中文信件写作习惯\n" +
+		"2. 语言要流畅优美，情感表达要恰当\n" +
+		"3. 结构要清晰，段落要合理\n" +
+		"4. 体现出手写信件的温度和真诚\n\n" +
+		"请直接返回信件内容，不需要额外的解释。"
 }
 
 // getFallbackInspiration 获取预设的写作灵感

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -130,12 +131,16 @@ func (s *UnifiedAIService) GenerateReply(ctx context.Context, req *models.AIRepl
 		Content: content,
 		Type:    models.LetterTypeReply,
 		Status:  models.LetterStatusDraft,
-		Metadata: map[string]interface{}{
-			"ai_generated":    true,
-			"persona":         string(req.Persona),
-			"original_letter": req.OriginalLetter.ID,
-			"generation_time": time.Now(),
-		},
+		Metadata: func() datatypes.JSON {
+			metadata := map[string]interface{}{
+				"ai_generated":    true,
+				"persona":         string(req.Persona),
+				"original_letter": req.OriginalLetter.ID,
+				"generation_time": time.Now(),
+			}
+			data, _ := json.Marshal(metadata)
+			return datatypes.JSON(data)
+		}(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

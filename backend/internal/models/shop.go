@@ -32,7 +32,7 @@ const (
 
 // Product 商品模型
 type Product struct {
-	ID             uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID             uuid.UUID      `gorm:"type:varchar(36);primary_key" json:"id"`
 	Name           string         `gorm:"type:varchar(200);not null" json:"name"`
 	Description    string         `gorm:"type:text" json:"description"`
 	Category       string         `gorm:"type:varchar(100)" json:"category"`
@@ -65,7 +65,7 @@ func (p *Product) BeforeCreate(tx *gorm.DB) error {
 
 // Cart 购物车模型
 type Cart struct {
-	ID          uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
+	ID          uuid.UUID  `gorm:"type:varchar(36);primary_key" json:"id"`
 	UserID      string     `gorm:"type:varchar(36);not null;index" json:"user_id"`
 	User        *User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Items       []CartItem `gorm:"foreignKey:CartID" json:"items"`
@@ -84,10 +84,10 @@ func (c *Cart) BeforeCreate(tx *gorm.DB) error {
 
 // CartItem 购物车项目模型
 type CartItem struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
-	CartID    uuid.UUID `gorm:"type:uuid;not null;index" json:"cart_id"`
+	ID        uuid.UUID `gorm:"type:varchar(36);primary_key" json:"id"`
+	CartID    uuid.UUID `gorm:"type:varchar(36);not null;index" json:"cart_id"`
 	Cart      *Cart     `gorm:"foreignKey:CartID" json:"cart,omitempty"`
-	ProductID uuid.UUID `gorm:"type:uuid;not null;index" json:"product_id"`
+	ProductID uuid.UUID `gorm:"type:varchar(36);not null;index" json:"product_id"`
 	Product   *Product  `gorm:"foreignKey:ProductID" json:"product,omitempty"`
 	Quantity  int       `gorm:"type:int;not null;default:1" json:"quantity"`
 	Price     float64   `gorm:"type:decimal(10,2);not null" json:"price"` // 加入时的价格
@@ -129,7 +129,7 @@ const (
 
 // Order 订单模型
 type Order struct {
-	ID              uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
+	ID              uuid.UUID      `gorm:"type:varchar(36);primary_key" json:"id"`
 	OrderNo         string         `gorm:"type:varchar(50);unique;not null" json:"order_no"`
 	UserID          string         `gorm:"type:varchar(36);not null;index" json:"user_id"`
 	User            *User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
@@ -169,10 +169,10 @@ func (o *Order) BeforeCreate(tx *gorm.DB) error {
 
 // OrderItem 订单项目模型
 type OrderItem struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
-	OrderID   uuid.UUID `gorm:"type:uuid;not null;index" json:"order_id"`
+	ID        uuid.UUID `gorm:"type:varchar(36);primary_key" json:"id"`
+	OrderID   uuid.UUID `gorm:"type:varchar(36);not null;index" json:"order_id"`
 	Order     *Order    `gorm:"foreignKey:OrderID" json:"order,omitempty"`
-	ProductID uuid.UUID `gorm:"type:uuid;not null;index" json:"product_id"`
+	ProductID uuid.UUID `gorm:"type:varchar(36);not null;index" json:"product_id"`
 	Product   *Product  `gorm:"foreignKey:ProductID" json:"product,omitempty"`
 	Quantity  int       `gorm:"type:int;not null;default:1" json:"quantity"`
 	Price     float64   `gorm:"type:decimal(10,2);not null" json:"price"` // 购买时的价格
@@ -190,12 +190,12 @@ func (oi *OrderItem) BeforeCreate(tx *gorm.DB) error {
 
 // ProductReview 商品评价模型
 type ProductReview struct {
-	ID          uuid.UUID      `gorm:"type:uuid;primary_key" json:"id"`
-	ProductID   uuid.UUID      `gorm:"type:uuid;not null;index" json:"product_id"`
+	ID          uuid.UUID      `gorm:"type:varchar(36);primary_key" json:"id"`
+	ProductID   uuid.UUID      `gorm:"type:varchar(36);not null;index" json:"product_id"`
 	Product     *Product       `gorm:"foreignKey:ProductID" json:"product,omitempty"`
 	UserID      string         `gorm:"type:varchar(36);not null;index" json:"user_id"`
 	User        *User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	OrderID     uuid.UUID      `gorm:"type:uuid;index" json:"order_id"`
+	OrderID     uuid.UUID      `gorm:"type:varchar(36);index" json:"order_id"`
 	Order       *Order         `gorm:"foreignKey:OrderID" json:"order,omitempty"`
 	Rating      int            `gorm:"type:int;not null" json:"rating"` // 1-5
 	Comment     string         `gorm:"type:text" json:"comment"`
@@ -214,10 +214,10 @@ func (pr *ProductReview) BeforeCreate(tx *gorm.DB) error {
 
 // ProductFavorite 商品收藏模型
 type ProductFavorite struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
+	ID        uuid.UUID `gorm:"type:varchar(36);primary_key" json:"id"`
 	UserID    string    `gorm:"type:varchar(36);not null;index" json:"user_id"`
 	User      *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	ProductID uuid.UUID `gorm:"type:uuid;not null;index" json:"product_id"`
+	ProductID uuid.UUID `gorm:"type:varchar(36);not null;index" json:"product_id"`
 	Product   *Product  `gorm:"foreignKey:ProductID" json:"product,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }

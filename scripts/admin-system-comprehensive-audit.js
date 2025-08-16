@@ -3,9 +3,12 @@
 const axios = require('axios');
 const fs = require('fs');
 
+// 🔐 安全令牌生成 - 替代硬编码令牌
+const { generateTestToken } = require('../backend/scripts/test-token-generator');
+
 // Configuration
 const BASE_URL = 'http://localhost:8080';
-const ADMIN_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LWFkbWluIiwicm9sZSI6InN1cGVyX2FkbWluIiwiaXNzIjoib3BlbnBlbnBhbCIsImV4cCI6MTc1NDE0MDA2NCwiaWF0IjoxNzU0MDUzNjY0LCJqdGkiOiI3ODgyZGRmMWEyZTk5MDA2YmE4MDFkNWZkYTMyM2NmMyJ9.D9VLMt14F4JpFV6k-r2pe7Rr_kziBmlpqTKsVo4VhaA';
+const ADMIN_TOKEN = generateTestToken('ADMIN', {}, '4h'); // 生成4小时有效期的管理员令牌
 
 // Colors for console output
 const colors = {

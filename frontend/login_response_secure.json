@@ -1,0 +1,48 @@
+{
+  "_security_notice": "🔐 此文件替代包含硬编码令牌的 login_response.json，使用动态生成的安全令牌",
+  "_usage": "在测试中使用 generateTestToken('COURIER_L4') 生成令牌，而不是使用此静态文件",
+  "code": 0,
+  "message": "登录成功",
+  "data": {
+    "accessToken": "DYNAMIC_TOKEN_PLACEHOLDER_USE_generateTestToken_FUNCTION",
+    "refreshToken": "DYNAMIC_REFRESH_TOKEN_PLACEHOLDER_USE_generateTestToken_FUNCTION",
+    "expiresAt": "2025-07-24T02:31:11.000Z",
+    "tokenType": "Bearer",
+    "user": {
+      "id": "courier_level4_test_user",
+      "username": "courier_level4_city",
+      "email": "city.courier@openpenpal.com",
+      "realName": "四级信使（城市总代）",
+      "role": "courier",
+      "permissions": [
+        "courier_scan_code",
+        "courier_deliver_letter",
+        "courier_view_own_tasks",
+        "courier_report_exception",
+        "courier_manage_subordinates",
+        "courier_assign_tasks",
+        "courier_view_subordinate_reports",
+        "courier_create_subordinate",
+        "courier_manage_school_zone",
+        "courier_view_school_analytics",
+        "courier_coordinate_cross_zone",
+        "courier_manage_city_operations",
+        "courier_create_school_courier",
+        "courier_view_city_analytics"
+      ],
+      "school_code": "SYSTEM",
+      "school_name": "系统测试",
+      "status": "active",
+      "created_at": "2025-07-24T02:15:35.392Z",
+      "courierLevel": 4,
+      "courierInfo": {
+        "level": 4,
+        "zoneCode": "BEIJING",
+        "zoneType": "city",
+        "status": "active",
+        "points": 1391,
+        "taskCount": 57
+      }
+    }
+  }
+}

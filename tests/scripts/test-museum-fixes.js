@@ -2,9 +2,12 @@
 
 const axios = require('axios');
 
+// 🔐 安全令牌生成 - 替代硬编码令牌  
+const { generateTestToken } = require('../../backend/scripts/test-token-generator');
+
 // Configuration
 const BASE_URL = 'http://localhost:8080';
-const ADMIN_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LWFkbWluIiwicm9sZSI6InN1cGVyX2FkbWluIiwiaXNzIjoib3BlbnBlbnBhbCIsImV4cCI6MTc1NDE0ODE2MywiaWF0IjoxNzU0MDYxNzYzLCJqdGkiOiI5YjA2MDZlNmZkOGE2M2U5NmU3NWE1YWZkOWM5OWMxMyJ9.pBplSW1gq3bhIwsr5_H57UzTvPcoG7qHMNhzm86JUw0';
+const ADMIN_TOKEN = generateTestToken('ADMIN', {}, '2h');
 
 // Colors for console output
 const colors = {

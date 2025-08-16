@@ -4,11 +4,17 @@
 """
 import requests
 import json
+import sys
+import os
 from datetime import datetime, timedelta
+
+# 🔐 安全令牌生成 - 替代硬编码令牌
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../backend/scripts'))
+from test_token_generator import get_admin_token
 
 # 服务配置
 BASE_URL = "http://localhost:8001"
-TEST_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.test"  # 测试用token
+TEST_TOKEN = get_admin_token()  # 安全生成的测试令牌
 
 def make_request(method, endpoint, data=None, params=None):
     """发送HTTP请求"""

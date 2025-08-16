@@ -4,10 +4,10 @@ import (
 	"strconv"
 
 	"openpenpal-backend/internal/middleware"
+	"openpenpal-backend/internal/pkg/response"
 	"openpenpal-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
-	"shared/pkg/response"
 )
 
 type CreditHandler struct {

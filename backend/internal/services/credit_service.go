@@ -495,17 +495,17 @@ func (s *CreditService) determineCreditType(description string) string {
 		return "opcode_activity"
 	case description == "被授予社区贡献徽章":
 		return "community_badge"
-	case contains(description, "管理员奖励"):
+	case creditContains(description, "管理员奖励"):
 		return "admin_reward"
-	case contains(description, "购买") || contains(description, "绑定信封"):
+	case creditContains(description, "购买") || creditContains(description, "绑定信封"):
 		return "commerce_activity"
 	default:
 		return "default" // 默认类型
 	}
 }
 
-// contains 检查字符串是否包含子字符串（辅助函数）
-func contains(s, substr string) bool {
+// creditContains 检查字符串是否包含子字符串（辅助函数）
+func creditContains(s, substr string) bool {
 	return len(s) >= len(substr) && s[:len(substr)] == substr ||
 		   len(s) > len(substr) && findSubstring(s, substr)
 }

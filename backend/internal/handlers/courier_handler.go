@@ -8,7 +8,7 @@ import (
 	"openpenpal-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
-	"shared/pkg/response"
+	"openpenpal-backend/internal/pkg/response"
 )
 
 type CourierHandler struct {

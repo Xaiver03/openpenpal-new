@@ -5,14 +5,20 @@
 
 import requests
 import json
+import sys
+import os
 from datetime import datetime
+
+# 🔐 安全令牌生成 - 替代硬编码令牌
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../backend/scripts'))
+from test_token_generator import get_admin_token
 
 # 配置
 BASE_URL = "http://localhost:8001"
 PLAZA_API = f"{BASE_URL}/api/plaza"
 
-# 测试用的JWT Token（需要替换为实际有效的token）
-TEST_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test"
+# 安全生成的测试令牌
+TEST_TOKEN = get_admin_token()
 
 def get_headers():
     """获取请求头"""

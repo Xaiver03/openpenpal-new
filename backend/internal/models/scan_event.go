@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"gorm.io/gorm"
+	"gorm.io/datatypes"
 	"time"
 )
 
@@ -42,7 +43,7 @@ type ScanEvent struct {
 	Note       string `json:"note,omitempty" gorm:"type:text"`              // 备注
 
 	// 元数据
-	Metadata map[string]interface{} `json:"metadata,omitempty" gorm:"type:jsonb"` // 扩展数据
+	Metadata datatypes.JSON `json:"metadata,omitempty" gorm:"type:jsonb"` // 扩展数据
 
 	// 时间戳
 	Timestamp time.Time      `json:"timestamp" gorm:"not null;index"` // 扫描时间

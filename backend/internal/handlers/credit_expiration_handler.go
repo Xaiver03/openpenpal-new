@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"shared/pkg/response"
+	"openpenpal-backend/internal/pkg/response"
 )
 
 // CreditExpirationHandler 积分过期处理器
