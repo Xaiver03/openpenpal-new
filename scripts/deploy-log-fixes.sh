@@ -64,12 +64,20 @@ else
     exit 1
 fi
 
-echo "编译修复版延迟队列服务..."
-if go build -o /tmp/delay_queue_test internal/services/delay_queue_service_fixed.go; then
-    echo "✅ 修复版延迟队列服务编译成功"
-    rm -f /tmp/delay_queue_test
+echo "检查修复版延迟队列服务文件..."
+if [ -f "$BACKEND_DIR/internal/services/delay_queue_service_fixed.go" ]; then
+    echo "✅ 修复版延迟队列服务文件存在"
 else
-    echo "❌ 修复版延迟队列服务编译失败"
+    echo "❌ 修复版延迟队列服务文件缺失"
+    exit 1
+fi
+
+echo "测试完整后端编译..."
+if go build -o /tmp/backend_test ./; then
+    echo "✅ 完整后端编译成功"
+    rm -f /tmp/backend_test
+else
+    echo "❌ 后端编译失败"
     exit 1
 fi
 

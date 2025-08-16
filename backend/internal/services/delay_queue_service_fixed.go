@@ -7,6 +7,7 @@ import (
 	"openpenpal-backend/internal/config"
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/utils"
+	"os"
 	"strconv"
 	"time"
 
@@ -68,10 +69,22 @@ func NewDelayQueueServiceFixed(db *gorm.DB, config *config.Config) (*DelayQueueS
 	smartLogger := utils.NewSmartLogger(smartLoggerConfig)
 
 	// 初始化Redis连接
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisDB := 0
+	if dbStr := os.Getenv("REDIS_DB"); dbStr != "" {
+		if db, err := strconv.Atoi(dbStr); err == nil {
+			redisDB = db
+		}
+	}
+	
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     getEnv("REDIS_ADDR", "localhost:6379"),
-		Password: getEnv("REDIS_PASSWORD", ""),
-		DB:       getEnvAsInt("REDIS_DB", 0),
+		Addr:     redisAddr,
+		Password: redisPassword,
+		DB:       redisDB,
 	})
 
 	// 测试连接
@@ -82,7 +95,7 @@ func NewDelayQueueServiceFixed(db *gorm.DB, config *config.Config) (*DelayQueueS
 	if err != nil {
 		smartLogger.LogError("Redis connection failed", map[string]interface{}{
 			"error": err.Error(),
-			"addr":  getEnv("REDIS_ADDR", "localhost:6379"),
+			"addr":  redisAddr,
 		})
 		
 		if config.Environment == "development" {
