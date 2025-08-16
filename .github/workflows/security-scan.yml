@@ -1,0 +1,366 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每天凌晨 2 点运行安全扫描
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  # 依赖漏洞扫描
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        ecosystem:
+          - name: npm
+            path: frontend
+            manifest: package-lock.json
+          - name: go
+            path: backend
+            manifest: go.sum
+          - name: python
+            path: services/write-service
+            manifest: requirements.txt
+          - name: python
+            path: services/ocr-service
+            manifest: requirements.txt
+          - name: maven
+            path: services/admin-service/backend
+            manifest: pom.xml
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Dependency Check for ${{ matrix.ecosystem.name }}
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'OpenPenPal-${{ matrix.ecosystem.name }}-${{ matrix.ecosystem.path }}'
+        path: ${{ matrix.ecosystem.path }}
+        format: 'ALL'
+        args: >
+          --enableRetired
+          --enableExperimental
+          --nvdApiKey ${{ secrets.NVD_API_KEY }}
+    
+    - name: Upload Dependency Check results
+      uses: actions/upload-artifact@v3
+      with:
+        name: dependency-check-${{ matrix.ecosystem.name }}-${{ matrix.ecosystem.path }}
+        path: reports/
+    
+    - name: Publish Dependency Check Results
+      if: always()
+      uses: mikepenz/action-junit-report@v4
+      with:
+        report_paths: 'reports/dependency-check-junit.xml'
+        check_name: 'Dependency Check Results (${{ matrix.ecosystem.name }}-${{ matrix.ecosystem.path }})'
+
+  # 代码安全扫描
+  code-security-scan:
+    name: Code Security Analysis
+    runs-on: ubuntu-latest
+    
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: javascript, go, python, java
+        queries: security-and-quality
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Build projects for CodeQL analysis
+      run: |
+        # Build Frontend
+        cd frontend
+        npm ci
+        npm run build
+        cd ..
+        
+        # Build Go services
+        cd backend
+        go build ./...
+        cd ../services/courier-service
+        go build ./...
+        cd ../gateway
+        go build ./...
+        cd ../..
+        
+        # Install Python dependencies
+        cd services/write-service
+        pip install -r requirements.txt
+        cd ../ocr-service
+        pip install -r requirements.txt
+        cd ../..
+        
+        # Build Java service
+        cd services/admin-service/backend
+        if [ -f "./mvnw" ]; then
+          chmod +x ./mvnw
+          ./mvnw compile
+        else
+          mvn compile
+        fi
+    
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:${{ matrix.language }}"
+
+  # Secrets 扫描
+  secrets-scan:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Run TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+
+  # 容器镜像安全扫描
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'  # 不在定时任务中运行，避免构建开销
+    
+    strategy:
+      matrix:
+        service: [frontend, backend, write-service, courier-service, admin-service, ocr-service, gateway]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build Docker image for ${{ matrix.service }}
+      run: |
+        # 构建镜像用于安全扫描
+        case "${{ matrix.service }}" in
+          "frontend")
+            docker build -t openpenpal/${{ matrix.service }}:scan ./frontend
+            ;;
+          "backend")
+            docker build -t openpenpal/${{ matrix.service }}:scan ./backend
+            ;;
+          "admin-service")
+            docker build -t openpenpal/${{ matrix.service }}:scan ./services/admin-service/backend
+            ;;
+          *)
+            docker build -t openpenpal/${{ matrix.service }}:scan ./services/${{ matrix.service }}
+            ;;
+        esac
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'openpenpal/${{ matrix.service }}:scan'
+        format: 'sarif'
+        output: 'trivy-${{ matrix.service }}.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-${{ matrix.service }}.sarif'
+    
+    - name: Run Dockle for best practices
+      run: |
+        # 安装 Dockle
+        VERSION=$(curl --silent "https://api.github.com/repos/goodwithtech/dockle/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+        curl -L -o dockle.deb "https://github.com/goodwithtech/dockle/releases/download/v${VERSION}/dockle_${VERSION}_Linux-64bit.deb"
+        sudo dpkg -i dockle.deb
+        
+        # 运行 Dockle 扫描
+        dockle --format json --output dockle-${{ matrix.service }}.json openpenpal/${{ matrix.service }}:scan || true
+    
+    - name: Upload Dockle results
+      uses: actions/upload-artifact@v3
+      with:
+        name: dockle-${{ matrix.service }}
+        path: dockle-${{ matrix.service }}.json
+
+  # 基础设施即代码安全扫描
+  iac-scan:
+    name: Infrastructure as Code Security
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Checkov for Docker Compose
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: .
+        framework: docker,dockerfile,docker_compose
+        output_format: sarif
+        output_file_path: checkov-iac.sarif
+    
+    - name: Upload Checkov results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: checkov-iac.sarif
+    
+    - name: Run Terrascan for additional checks
+      run: |
+        # 安装 Terrascan
+        curl -L "$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | grep -o -E "https://.+?_Linux_x86_64.tar.gz")" > terrascan.tar.gz
+        tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz
+        sudo mv terrascan /usr/local/bin && chmod +x /usr/local/bin/terrascan
+        
+        # 扫描 Docker 文件
+        terrascan scan -t docker -f deploy/ || echo "Terrascan completed with warnings"
+
+  # 网络安全配置检查
+  network-security-check:
+    name: Network Security Configuration
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check Docker Compose network security
+      run: |
+        echo "## Network Security Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 检查网络配置
+        if grep -r "network_mode.*host" deploy/ || grep -r "privileged.*true" deploy/; then
+          echo "⚠️ **Warning**: Potentially insecure network configuration found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **Good**: No obvious network security issues" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # 检查端口暴露
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Exposed Ports Analysis" >> $GITHUB_STEP_SUMMARY
+        grep -r "ports:" deploy/ | grep -v "#" || echo "No port mappings found"
+    
+    - name: Check for hardcoded secrets
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Hardcoded Secrets Check" >> $GITHUB_STEP_SUMMARY
+        
+        # 检查常见的硬编码密码模式
+        if grep -r -i -E "(password|pwd|pass)\s*[=:]\s*[\"']?[^\"'\\s]{8,}" . --exclude-dir=.git --exclude-dir=node_modules || true; then
+          echo "⚠️ **Warning**: Potential hardcoded passwords found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **Good**: No obvious hardcoded passwords detected" >> $GITHUB_STEP_SUMMARY
+        fi
+
+  # 安全扫描汇总报告
+  security-summary:
+    name: Security Scan Summary
+    needs: [dependency-scan, code-security-scan, secrets-scan, iac-scan, network-security-check]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Generate Security Summary
+      run: |
+        echo "# 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Scan Type | Status | Details |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Dependency Vulnerabilities | ${{ needs.dependency-scan.result }} | Checks for known vulnerabilities in dependencies |" >> $GITHUB_STEP_SUMMARY
+        echo "| Code Security Analysis | ${{ needs.code-security-scan.result }} | Static analysis for security issues |" >> $GITHUB_STEP_SUMMARY
+        echo "| Secrets Detection | ${{ needs.secrets-scan.result }} | Scans for leaked credentials |" >> $GITHUB_STEP_SUMMARY
+        echo "| Infrastructure Security | ${{ needs.iac-scan.result }} | Docker and infrastructure configuration |" >> $GITHUB_STEP_SUMMARY
+        echo "| Network Security | ${{ needs.network-security-check.result }} | Network configuration analysis |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 整体安全状态
+        if [ "${{ needs.dependency-scan.result }}" = "success" ] && \
+           [ "${{ needs.code-security-scan.result }}" = "success" ] && \
+           [ "${{ needs.secrets-scan.result }}" = "success" ] && \
+           [ "${{ needs.iac-scan.result }}" = "success" ] && \
+           [ "${{ needs.network-security-check.result }}" = "success" ]; then
+          echo "## ✅ Overall Security Status: **PASSED**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All security scans completed successfully. The codebase appears to be secure." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ⚠️ Overall Security Status: **NEEDS ATTENTION**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Some security scans have identified issues that should be reviewed and addressed." >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "- Review detailed scan results in the Security tab" >> $GITHUB_STEP_SUMMARY
+        echo "- Address any high or critical severity findings" >> $GITHUB_STEP_SUMMARY
+        echo "- Update dependencies with known vulnerabilities" >> $GITHUB_STEP_SUMMARY
+        echo "- Ensure no secrets are hardcoded in the repository" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Create security issue if critical findings
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '🔒 Critical Security Findings Detected',
+            body: `## Security Scan Alert
+            
+            Critical security issues have been detected in the latest scan.
+            
+            **Scan Results:**
+            - Dependency Scan: ${{ needs.dependency-scan.result }}
+            - Code Security: ${{ needs.code-security-scan.result }}
+            - Secrets Detection: ${{ needs.secrets-scan.result }}
+            - Infrastructure Security: ${{ needs.iac-scan.result }}
+            - Network Security: ${{ needs.network-security-check.result }}
+            
+            **Action Required:**
+            Please review the detailed findings in the Security tab and address any critical or high severity issues immediately.
+            
+            **Workflow Run:** [View Details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `,
+            labels: ['security', 'critical', 'needs-attention']
+          })

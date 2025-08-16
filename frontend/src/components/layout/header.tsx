@@ -73,7 +73,7 @@ export function Header({ className }: HeaderProps) {
   const userMenuItems = [
     { href: '/profile', label: '个人档案', icon: User },
     { href: username ? `/u/${username}` : '/profile', label: '我的主页', icon: User },
-    { href: '/postcode', label: '地址编号', icon: MapPin },
+    { href: '/opcode', label: 'OPCode', icon: MapPin },
     { href: '/settings', label: '设置', icon: Settings },
     ...(isCourier ? [{ href: '/courier', label: '信使中心', icon: Truck }] : []),
     ...(courierInfo && courierInfo.level >= 2 ? [{

@@ -1,7 +1,6 @@
 package services
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -543,5 +542,11 @@ func (s *CreditTaskService) TriggerMuseumApprovedReward(userID, itemID string) e
 // TriggerMuseumLikedReward 触发博物馆作品被点赞奖励
 func (s *CreditTaskService) TriggerMuseumLikedReward(userID, itemID string) error {
 	_, err := s.CreateTask(models.TaskTypeMuseumLiked, userID, PointsMuseumLiked, "博物馆作品获得点赞", itemID)
+	return err
+}
+
+// TriggerCourierFirstTask 触发信使首次任务完成奖励
+func (s *CreditTaskService) TriggerCourierFirstTask(userID, taskID string) error {
+	_, err := s.CreateTask("courier_first_task", userID, 20, "信使首次任务完成奖励", taskID)
 	return err
 }

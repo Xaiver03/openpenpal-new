@@ -12,6 +12,9 @@ const (
 	MuseumItemPending  MuseumItemStatus = "pending"
 	MuseumItemApproved MuseumItemStatus = "approved"
 	MuseumItemRejected MuseumItemStatus = "rejected"
+	MuseumItemPrivate  MuseumItemStatus = "private"
+	MuseumItemPublic   MuseumItemStatus = "public"
+	MuseumItemArchived MuseumItemStatus = "archived"
 )
 
 // MuseumSourceType 博物馆物品来源类型

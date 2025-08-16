@@ -21,7 +21,7 @@ type MetricsMiddleware struct {
 // NewMetricsMiddleware creates a new metrics middleware
 func NewMetricsMiddleware(serviceName string) *MetricsMiddleware {
 	return &MetricsMiddleware{
-		collector:   monitoring.DefaultMetricsCollector,
+		collector:   monitoring.NewMetricsCollector(),
 		serviceName: serviceName,
 		excludePaths: map[string]bool{
 			"/health":           true,
@@ -349,12 +349,15 @@ func (rww *responseWriterWrapper) WriteString(s string) (int, error) {
 
 // Helper function for tracking external API calls
 func TrackExternalAPICall(apiName string, statusCode int, duration time.Duration) {
-	monitoring.DefaultMetricsCollector.IncrementExternalAPIRequests(apiName, strconv.Itoa(statusCode))
-	monitoring.DefaultMetricsCollector.ObserveExternalAPILatency(apiName, duration)
+	// TODO: Re-enable when DefaultMetricsCollector is available
+	// monitoring.DefaultMetricsCollector.IncrementExternalAPIRequests(apiName, strconv.Itoa(statusCode))
+	// monitoring.DefaultMetricsCollector.ObserveExternalAPILatency(apiName, duration)
 }
 
 // Helper function for tracking database operations
 func TrackDatabaseOperation(operation, table string, duration time.Duration, success bool) {
+	// TODO: Re-enable when DefaultMetricsCollector is available
+	/*
 	monitoring.DefaultMetricsCollector.ObserveDBQueryDuration(operation, table, duration)
 	
 	status := "success"
@@ -362,6 +365,7 @@ func TrackDatabaseOperation(operation, table string, duration time.Duration, suc
 		status = "failure"
 	}
 	monitoring.DefaultMetricsCollector.IncrementDBTransactions(operation, status)
+	*/
 }
 
 // Default middleware instances

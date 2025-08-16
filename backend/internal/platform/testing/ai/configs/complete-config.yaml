@@ -1,0 +1,201 @@
+# Complete AI Testing Module Configuration
+# This file demonstrates all available configuration options for the AI testing module
+
+ai_testing:
+  # Code Analyzer Configuration
+  analyzer:
+    max_complexity: 15
+    enable_deep_analysis: true
+    analyze_test_files: false
+    ignore_patterns:
+      - "_test.go"
+      - "mock_*.go" 
+      - "vendor/**"
+      - "node_modules/**"
+      - ".git/**"
+    focus_patterns:
+      - "*.go"
+      - "internal/**/*.go"
+      - "pkg/**/*.go"
+      - "cmd/**/*.go"
+    risk_thresholds:
+      low: 5
+      medium: 10
+      high: 15
+      critical: 25
+    pattern_weights:
+      constructor_pattern: 1.2
+      validation_pattern: 1.5
+      error_handling: 1.8
+      api_handler: 2.0
+      database_operation: 2.2
+
+  # Test Generator Configuration  
+  generator:
+    max_test_cases: 50
+    min_coverage_target: 0.85
+    complexity_threshold: 15
+    enable_pattern_learning: true
+    enable_coverage_opt: true
+    test_data_size: 1000
+    random_seed: 42
+    
+    # Generation Strategy
+    strategy:
+      prioritize_critical: true
+      include_edge_cases: true
+      generate_negative_tests: true
+      mock_external_dependencies: true
+      test_boundary_conditions: true
+      include_integration_tests: true
+      
+    # Machine Learning Models
+    ml_models:
+      complexity_model:
+        enabled: true
+        model_path: "models/complexity_predictor.pkl"
+        confidence_threshold: 0.7
+        features:
+          - cyclomatic_complexity
+          - num_parameters
+          - return_types
+          - external_calls
+          
+      priority_model:
+        enabled: true
+        model_path: "models/priority_classifier.pkl"
+        decision_tree_depth: 10
+        features:
+          - function_visibility
+          - error_handling
+          - complexity_score
+          - usage_frequency
+          
+      pattern_recognizer:
+        enabled: true
+        ngram_size: 3
+        min_pattern_frequency: 2
+        pattern_confidence_threshold: 0.6
+        
+      coverage_optimizer:
+        enabled: true
+        genetic_algorithm:
+          population_size: 50
+          generations: 100
+          mutation_rate: 0.1
+          crossover_rate: 0.8
+          elite_preservation: 0.1
+
+  # Enhanced Features Configuration
+  enhanced:
+    enable_advanced_features: true
+    analysis_depth: "deep"  # shallow, medium, deep
+    learning_enabled: true
+    cache_results: true
+    log_level: "info"  # debug, info, warn, error
+    
+    # Advanced Analysis Features
+    advanced_analysis:
+      deep_code_analysis:
+        enabled: true
+        analyze_dependencies: true
+        trace_data_flow: true
+        identify_side_effects: true
+        detect_race_conditions: true
+        
+      intelligent_mocking:
+        enabled: true
+        auto_generate_mocks: true
+        mock_external_apis: true
+        smart_stub_generation: true
+        interface_based_mocking: true
+        
+      performance_prediction:
+        enabled: true
+        estimate_execution_time: true
+        memory_usage_analysis: true
+        resource_optimization: true
+        bottleneck_detection: true
+        
+    # Continuous Learning
+    learning:
+      enabled: true
+      feedback_collection: true
+      model_retraining: true
+      pattern_evolution: true
+      success_rate_tracking: true
+      
+    # Quality Metrics
+    quality_targets:
+      target_success_rate: 0.95
+      min_confidence_score: 0.8
+      max_false_positive_rate: 0.05
+      coverage_improvement_threshold: 0.1
+      pattern_recognition_accuracy: 0.85
+
+  # Integration Configuration
+  integration:
+    core_testing_engine:
+      auto_initialize: true
+      fallback_to_mock: true
+      timeout_seconds: 300
+      parallel_execution: true
+      
+    database_governance:
+      analyze_schema: true
+      generate_migration_tests: true
+      performance_test_queries: true
+      connection_pool_tests: true
+      
+    service_mesh:
+      test_service_discovery: true
+      circuit_breaker_tests: true
+      distributed_tracing_tests: true
+      load_balancing_tests: true
+
+  # Performance and Resource Management
+  performance:
+    max_concurrent_analyses: 5
+    cache_ttl_seconds: 3600
+    batch_size: 20
+    memory_limit_mb: 1024
+    cpu_limit_percent: 80
+    
+  # Monitoring and Observability
+  monitoring:
+    enable_metrics: true
+    log_generation_stats: true
+    track_learning_progress: true
+    export_prometheus_metrics: true
+    metrics_port: 9090
+    health_check_interval: 30
+    
+  # Security Configuration
+  security:
+    sanitize_test_data: true
+    redact_sensitive_info: true
+    secure_model_storage: true
+    audit_ai_decisions: true
+
+# Environment-specific overrides
+environments:
+  development:
+    ai_testing:
+      enhanced:
+        log_level: "debug"
+      monitoring:
+        enable_metrics: true
+        
+  testing:
+    ai_testing:
+      generator:
+        max_test_cases: 20
+        test_data_size: 100
+        
+  production:
+    ai_testing:
+      enhanced:
+        log_level: "warn"
+      performance:
+        max_concurrent_analyses: 10
+        memory_limit_mb: 2048

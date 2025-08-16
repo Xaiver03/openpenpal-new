@@ -107,7 +107,7 @@ func (s *SchedulerService) CreateTask(req *models.CreateTaskRequest, createdBy s
 		Description:    req.Description,
 		TaskType:       req.TaskType,
 		Priority:       req.Priority,
-		Status:         models.TaskStatusPending,
+		Status:         models.SchedulerTaskStatusPending,
 		CronExpression: req.CronExpression,
 		Payload:        payloadJSON,
 		MaxRetries:     req.MaxRetries,
@@ -317,11 +317,11 @@ func (s *SchedulerService) GetTaskStats() (*models.TaskStats, error) {
 		switch sc.Status {
 		case string(models.TaskStatusPending):
 			stats.PendingTasks = sc.Count
-		case string(models.TaskStatusRunning):
+		case string(models.SchedulerTaskStatusRunning):
 			stats.RunningTasks = sc.Count
-		case string(models.TaskStatusCompleted):
+		case string(models.SchedulerTaskStatusCompleted):
 			stats.CompletedTasks = sc.Count
-		case string(models.TaskStatusFailed):
+		case string(models.SchedulerTaskStatusFailed):
 			stats.FailedTasks = sc.Count
 		}
 	}
@@ -349,7 +349,7 @@ func (s *SchedulerService) GetTaskStats() (*models.TaskStats, error) {
 	// 平均执行时间
 	var avgDuration float64
 	s.db.Model(&models.TaskExecution{}).
-		Where("status = ? AND ended_at IS NOT NULL", models.TaskStatusCompleted).
+		Where("status = ? AND ended_at IS NOT NULL", models.SchedulerTaskStatusCompleted).
 		Select("AVG(duration)").
 		Scan(&avgDuration)
 	stats.AvgExecutionTime = avgDuration / 1000 // 转换为秒
@@ -455,7 +455,7 @@ func (s *SchedulerService) removeTaskFromCron(taskID string) {
 // executeTask 执行任务
 func (s *SchedulerService) executeTask(task *models.ScheduledTask) {
 	// 检查是否已经在运行
-	if task.Status == models.TaskStatusRunning {
+	if task.Status == models.SchedulerTaskStatusRunning {
 		log.Printf("Task %s is already running, skipping", task.ID)
 		return
 	}
@@ -464,7 +464,7 @@ func (s *SchedulerService) executeTask(task *models.ScheduledTask) {
 	execution := &models.TaskExecution{
 		ID:         uuid.New().String(),
 		TaskID:     task.ID,
-		Status:     models.TaskStatusRunning,
+		Status:     models.SchedulerTaskStatusRunning,
 		StartedAt:  time.Now(),
 		WorkerID:   s.workerID,
 		ServerHost: s.getHostname(),
@@ -476,7 +476,7 @@ func (s *SchedulerService) executeTask(task *models.ScheduledTask) {
 	s.db.Create(execution)
 
 	// 更新任务状态
-	s.UpdateTaskStatus(task.ID, models.TaskStatusRunning)
+	s.UpdateTaskStatus(task.ID, models.SchedulerTaskStatusRunning)
 
 	// 执行任务
 	startTime := time.Now()
@@ -488,13 +488,13 @@ func (s *SchedulerService) executeTask(task *models.ScheduledTask) {
 	execution.EndedAt = &startTime
 
 	if result.Success {
-		execution.Status = models.TaskStatusCompleted
+		execution.Status = models.SchedulerTaskStatusCompleted
 		execution.Result = result.Result
-		s.UpdateTaskStatus(task.ID, models.TaskStatusCompleted)
+		s.UpdateTaskStatus(task.ID, models.SchedulerTaskStatusCompleted)
 	} else {
-		execution.Status = models.TaskStatusFailed
+		execution.Status = models.SchedulerTaskStatusFailed
 		execution.Error = result.Error
-		s.UpdateTaskStatus(task.ID, models.TaskStatusFailed)
+		s.UpdateTaskStatus(task.ID, models.SchedulerTaskStatusFailed)
 	}
 
 	s.db.Save(execution)
@@ -704,12 +704,12 @@ func (s *SchedulerService) monitorTasks() {
 func (s *SchedulerService) checkTimeoutTasks() {
 	var runningTasks []models.ScheduledTask
 	s.db.Where("status = ? AND last_run_at < ?",
-		models.TaskStatusRunning,
+		models.SchedulerTaskStatusRunning,
 		time.Now().Add(-5*time.Minute)).Find(&runningTasks)
 
 	for _, task := range runningTasks {
 		log.Printf("Task %s appears to be stuck, marking as failed", task.ID)
-		s.UpdateTaskStatus(task.ID, models.TaskStatusFailed)
+		s.UpdateTaskStatus(task.ID, models.SchedulerTaskStatusFailed)
 	}
 }
 

@@ -68,9 +68,10 @@ func (s *CommentService) validateProfileTarget(ctx context.Context, userID, prof
 	}
 
 	// 检查隐私设置
-	if s.privacySvc != nil {
-		// TODO: 实现隐私权限检查
-	}
+	// TODO: 实现隐私权限检查
+	// if s.privacySvc != nil {
+	//     // 隐私权限检查逻辑
+	// }
 
 	return nil
 }
@@ -91,13 +92,13 @@ func (s *CommentService) validateParentComment(ctx context.Context, parentID, ta
 		return fmt.Errorf("failed to verify parent comment: %w", err)
 	}
 
-	// 检查父评论是否属于同一目标
-	if parentComment.TargetID != targetID || parentComment.TargetType != targetType {
+	// 检查父评论是否属于同一目标 (使用新的多目标字段)
+	if parentComment.TargetID != targetID || string(parentComment.TargetType) != string(targetType) {
 		return fmt.Errorf("parent comment does not belong to the same target")
 	}
 
-	// 检查是否可以添加回复
-	if !parentComment.CanAddReply() {
+	// 检查是否可以添加回复 (简化逻辑)
+	if parentComment.Status != models.CommentStatusActive {
 		return fmt.Errorf("cannot add reply to this comment")
 	}
 
@@ -246,25 +247,21 @@ func (s *CommentService) CreateCommentSOTA(ctx context.Context, userID string, r
 
 	// 创建评论 - SOTA增强版（使用安全清理后的内容）
 	comment := &models.Comment{
-		ID:          commentID,
-		TargetID:    req.TargetID,
-		TargetType:  req.TargetType,
-		UserID:      userID,
-		ParentID:    req.ParentID,
-		Content:     cleanedContent,  // 使用安全清理后的内容
-		Status:      commentStatus,   // 使用安全检查后确定的状态
-		IsAnonymous: req.IsAnonymous,
-		LikeCount:   0,
-		ReplyCount:  0,
-		ReportCount: 0,
-		Language:    s.detectLanguage(cleanedContent), // 基于清理后的内容检测语言
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		ID:         commentID,
+		TargetID:   req.TargetID,
+		TargetType: req.TargetType,
+		UserID:     userID,
+		ParentID:   req.ParentID,
+		Content:    cleanedContent, // 使用安全清理后的内容
+		Status:     commentStatus,  // 使用安全检查后确定的状态
+		LikeCount:  0,
+		ReplyCount: 0,
+		IsTop:      false,
 	}
-
-	// 兼容性：设置旧版字段
+	
+	// 向后兼容：如果是信件评论，设置LetterID字段
 	if req.TargetType == models.CommentTypeLetter {
-		comment.LetterID = &req.TargetID
+		comment.LetterID = req.TargetID
 	}
 
 	// 数据库事务
@@ -575,9 +572,22 @@ func (s *CommentService) ModerateComment(ctx context.Context, commentID string, 
 		return fmt.Errorf("comment not found")
 	}
 
+	// 根据Action确定新状态
+	var newStatus models.CommentStatus
+	switch req.Action {
+	case "approve":
+		newStatus = models.CommentStatusActive
+	case "reject":
+		newStatus = models.CommentStatusDeleted
+	case "hide":
+		newStatus = models.CommentStatusHidden
+	default:
+		return fmt.Errorf("invalid moderation action: %s", req.Action)
+	}
+
 	now := time.Now()
 	updates := map[string]interface{}{
-		"status":             req.Status,
+		"status":             newStatus,
 		"moderated_at":       &now,
 		"moderated_by":       &moderatorID,
 		"moderation_reason":  req.Reason,

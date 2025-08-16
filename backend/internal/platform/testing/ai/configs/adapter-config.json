@@ -1,0 +1,40 @@
+{
+  "ai_adapter": {
+    "model_path": "/path/to/ai/models",
+    "confidence_threshold": 0.8,
+    "max_generated_tests": 100,
+    "learning_rate": 0.001,
+    "enable_advanced_features": true,
+    "analysis_depth": "deep",
+    "learning_enabled": true,
+    "integration": {
+      "core_testing_engine": {
+        "auto_initialize": true,
+        "fallback_to_mock": true,
+        "timeout_seconds": 300
+      },
+      "database_governance": {
+        "analyze_schema": true,
+        "generate_migration_tests": true,
+        "performance_test_queries": true
+      },
+      "service_mesh": {
+        "test_service_discovery": true,
+        "circuit_breaker_tests": true,
+        "distributed_tracing_tests": true
+      }
+    },
+    "performance": {
+      "max_concurrent_analyses": 5,
+      "cache_ttl_seconds": 3600,
+      "batch_size": 20,
+      "memory_limit_mb": 1024
+    },
+    "monitoring": {
+      "enable_metrics": true,
+      "log_generation_stats": true,
+      "track_learning_progress": true,
+      "export_prometheus_metrics": true
+    }
+  }
+}

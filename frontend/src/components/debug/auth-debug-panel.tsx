@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AuthStateFixer } from '@/lib/auth/auth-state-fixer'
-import { authSyncService } from '@/lib/auth/auth-sync-service'
+import { getAuthSyncService } from '@/lib/auth/auth-sync-service'
 import { TokenManager } from '@/lib/auth/cookie-token-manager'
 import { useUserStore } from '@/stores/user-store'
 import { JWTUtils } from '@/lib/auth/jwt-utils'
@@ -49,7 +49,7 @@ export function AuthDebugPanel() {
   }
   
   const handleSyncFix = async () => {
-    const success = await authSyncService.fixAuth()
+    const success = await getAuthSyncService().fixAuth()
     setFixResults({ 
       success, 
       message: success ? '同步服务修复成功' : '同步服务修复失败',

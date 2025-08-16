@@ -1,0 +1,85 @@
+📊 Active Queries (Running > 1 second):
+=======================================
+ pid | duration | usename | application_name | state | query_preview 
+-----+----------+---------+------------------+-------+---------------
+(0 rows)
+
+
+🐌 Top 10 Slowest Queries:
+==========================
+psql:performance_monitor.sql:37: ERROR:  relation "pg_stat_statements" does not exist
+LINE 7: FROM pg_stat_statements
+             ^
+
+💾 Table Sizes and Bloat:
+========================
+psql:performance_monitor.sql:60: ERROR:  column "tablename" does not exist
+LINE 4:         tablename,
+                ^
+
+📈 Index Usage Statistics:
+=========================
+psql:performance_monitor.sql:95: ERROR:  column "tablename" does not exist
+LINE 4:         tablename,
+                ^
+
+🎯 Cache Hit Ratios:
+====================
+ cache_level | disk_reads | cache_hits | cache_hit_ratio 
+-------------+------------+------------+-----------------
+ Database    |        118 |    5735727 |          100.00
+ Indexes     |        943 |  170402877 |          100.00
+(2 rows)
+
+
+🔒 Current Locks:
+================
+ locktype | table_name | mode | granted | pid | blocked_by 
+----------+------------+------+---------+-----+------------
+(0 rows)
+
+
+🔌 Connection Statistics:
+========================
+  datname   | active_connections | max_connections | connection_percentage 
+------------+--------------------+-----------------+-----------------------
+ openpenpal |                 21 |             100 |                 21.00
+(1 row)
+
+
+📊 Table Access Patterns (Top 20):
+==================================
+psql:performance_monitor.sql:178: ERROR:  column "tablename" does not exist
+LINE 3:     tablename,
+            ^
+
+🧹 Autovacuum Status:
+====================
+psql:performance_monitor.sql:205: ERROR:  column "tablename" does not exist
+LINE 3:     tablename,
+            ^
+
+📈 Database Size:
+================
+  database  | total_size | table_count | index_count | total_rows 
+------------+------------+-------------+-------------+------------
+ openpenpal | 21 MB      |         159 |         641 |       3791
+(1 row)
+
+
+💡 Performance Recommendations:
+===============================
+        recommendation        |        table_name         |     fk_columns      |                                              suggested_action                                              
+------------------------------+---------------------------+---------------------+------------------------------------------------------------------------------------------------------------
+ Missing index on foreign key | envelope_orders           | design_id           | CREATE INDEX idx_envelope_orders_design_id ON envelope_orders(design_id);
+ Missing index on foreign key | museum_submissions        | letter_id           | CREATE INDEX idx_museum_submissions_letter_id ON museum_submissions(letter_id);
+ Missing index on foreign key | level_upgrade_requests    | reviewed_by         | CREATE INDEX idx_level_upgrade_requests_reviewed_by ON level_upgrade_requests(reviewed_by);
+ Missing index on foreign key | school_admins             | department_id       | CREATE INDEX idx_school_admins_department_id ON school_admins(department_id);
+ Missing index on foreign key | school_applications       | generated_school_id | CREATE INDEX idx_school_applications_generated_school_id ON school_applications(generated_school_id);
+ Missing index on foreign key | privacy_cache             | viewer_user_id      | CREATE INDEX idx_privacy_cache_viewer_user_id ON privacy_cache(viewer_user_id);
+ Missing index on foreign key | privacy_cache             | target_user_id      | CREATE INDEX idx_privacy_cache_target_user_id ON privacy_cache(target_user_id);
+ Missing index on foreign key | credit_carts              | user_id, user_id    | CREATE INDEX idx_credit_carts_user_id_user_id ON credit_carts(user_id, user_id);
+ Missing index on foreign key | credit_redemptions        | user_id, user_id    | CREATE INDEX idx_credit_redemptions_user_id_user_id ON credit_redemptions(user_id, user_id);
+ Missing index on foreign key | user_redemption_histories | user_id, user_id    | CREATE INDEX idx_user_redemption_histories_user_id_user_id ON user_redemption_histories(user_id, user_id);
+(10 rows)
+

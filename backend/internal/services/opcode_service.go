@@ -508,6 +508,106 @@ func (s *OPCodeService) SearchSchools(name string, page, limit int) (map[string]
 	return result, nil
 }
 
+// SearchSchoolsByCity 按城市搜索学校的OPCode信息
+func (s *OPCodeService) SearchSchoolsByCity(cityName string, page, limit int) (map[string]interface{}, error) {
+	var schools []models.OPCodeSchool
+	var total int64
+
+	if cityName == "" {
+		return nil, errors.New("城市名称不能为空")
+	}
+
+	query := s.db.Model(&models.OPCodeSchool{}).Where("is_active = ?", true)
+	
+	// 城市模糊搜索 - 支持"北京"查找"北京市"等
+	query = query.Where("city ILIKE ?", "%"+cityName+"%")
+
+	// 计算总数
+	query.Count(&total)
+
+	// 分页查询，按学校名称排序
+	offset := (page - 1) * limit
+	if err := query.Offset(offset).Limit(limit).Order("school_name").Find(&schools).Error; err != nil {
+		return nil, err
+	}
+
+	// 转换为前端需要的格式，包含城市信息
+	result := make(map[string]interface{})
+	result["schools"] = schools
+	result["city"] = cityName
+	result["pagination"] = map[string]interface{}{
+		"page":       page,
+		"limit":      limit,
+		"total":      total,
+		"total_page": (total + int64(limit) - 1) / int64(limit),
+	}
+
+	return result, nil
+}
+
+// SearchSchoolsAdvanced 高级学校搜索（支持多条件）
+func (s *OPCodeService) SearchSchoolsAdvanced(req *models.AdvancedSchoolSearchRequest) (map[string]interface{}, error) {
+	var schools []models.OPCodeSchool
+	var total int64
+
+	query := s.db.Model(&models.OPCodeSchool{}).Where("is_active = ?", true)
+
+	// 学校名称搜索
+	if req.SchoolName != "" {
+		query = query.Where("school_name ILIKE ? OR full_name ILIKE ?", "%"+req.SchoolName+"%", "%"+req.SchoolName+"%")
+	}
+
+	// 城市搜索
+	if req.City != "" {
+		query = query.Where("city ILIKE ?", "%"+req.City+"%")
+	}
+
+	// 省份搜索
+	if req.Province != "" {
+		query = query.Where("province ILIKE ?", "%"+req.Province+"%")
+	}
+
+	// 学校代码搜索
+	if req.SchoolCode != "" {
+		query = query.Where("school_code ILIKE ?", "%"+strings.ToUpper(req.SchoolCode)+"%")
+	}
+
+	// 计算总数
+	query.Count(&total)
+
+	// 分页查询
+	offset := (req.Page - 1) * req.Limit
+	orderBy := "school_name"
+	if req.SortBy != "" {
+		orderBy = req.SortBy
+	}
+	if req.SortOrder == "desc" {
+		orderBy += " DESC"
+	}
+	
+	if err := query.Offset(offset).Limit(req.Limit).Order(orderBy).Find(&schools).Error; err != nil {
+		return nil, err
+	}
+
+	// 转换为前端需要的格式
+	result := make(map[string]interface{})
+	result["schools"] = schools
+	result["search_criteria"] = map[string]interface{}{
+		"school_name": req.SchoolName,
+		"city":        req.City,
+		"province":    req.Province,
+		"school_code": req.SchoolCode,
+	}
+	result["pagination"] = map[string]interface{}{
+		"page":       req.Page,
+		"limit":      req.Limit,
+		"total":      total,
+		"total_page": (total + int64(req.Limit) - 1) / int64(req.Limit),
+	}
+
+	return result, nil
+}
+
 // generateID 生成UUID（简化版）
 func generateID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())

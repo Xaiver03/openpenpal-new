@@ -19,6 +19,7 @@ type CommentService struct {
 	creditSvc     *CreditService
 	moderationSvc *ModerationService
 	securitySvc   *ContentSecurityService
+	userSvc       *UserService
 }
 
 func NewCommentService(db *gorm.DB, config *config.Config) *CommentService {
@@ -46,6 +47,11 @@ func (s *CommentService) SetModerationService(moderationSvc *ModerationService) 
 // SetContentSecurityService 设置内容安全服务（避免循环依赖）
 func (s *CommentService) SetContentSecurityService(securitySvc *ContentSecurityService) {
 	s.securitySvc = securitySvc
+}
+
+// SetUserService 设置用户服务（避免循环依赖）
+func (s *CommentService) SetUserService(userSvc *UserService) {
+	s.userSvc = userSvc
 }
 
 // CreateComment 创建评论
@@ -478,4 +484,124 @@ func (s *CommentService) GetCommentStats(ctx context.Context, letterID string) (
 	}
 
 	return count, nil
+}
+
+// BatchOperateComments 批量操作评论
+func (s *CommentService) BatchOperateComments(ctx context.Context, userID string, userRole models.UserRole, commentIDs []string, operation string, data map[string]interface{}) error {
+	if len(commentIDs) == 0 {
+		return fmt.Errorf("no comment IDs provided")
+	}
+
+	// 开始事务
+	tx := s.db.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	switch operation {
+	case "delete":
+		// 根据权限删除评论
+		query := tx.Model(&models.Comment{}).Where("id IN (?)", commentIDs)
+		
+		// 非管理员只能删除自己的评论
+		if !s.isAdminRole(userRole) {
+			query = query.Where("user_id = ?", userID)
+		}
+		
+		// 软删除
+		if err := query.Update("status", models.CommentStatusDeleted).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to delete comments: %w", err)
+		}
+
+	case "approve":
+		// 只有管理员可以批量审核
+		if !s.isAdminRole(userRole) {
+			return fmt.Errorf("permission denied: only admins can approve comments")
+		}
+		
+		if err := tx.Model(&models.Comment{}).
+			Where("id IN (?)", commentIDs).
+			Update("status", models.CommentStatusActive).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to approve comments: %w", err)
+		}
+
+	case "reject":
+		// 只有管理员可以批量拒绝
+		if !s.isAdminRole(userRole) {
+			return fmt.Errorf("permission denied: only admins can reject comments")
+		}
+		
+		if err := tx.Model(&models.Comment{}).
+			Where("id IN (?)", commentIDs).
+			Update("status", models.CommentStatusRejected).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to reject comments: %w", err)
+		}
+
+	case "hide":
+		// 管理员可以隐藏任何评论，用户只能隐藏自己的评论
+		query := tx.Model(&models.Comment{}).Where("id IN (?)", commentIDs)
+		
+		if !s.isAdminRole(userRole) {
+			query = query.Where("user_id = ?", userID)
+		}
+		
+		if err := query.Update("status", models.CommentStatusHidden).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to hide comments: %w", err)
+		}
+
+	case "show":
+		// 管理员可以显示任何评论，用户只能显示自己的评论
+		query := tx.Model(&models.Comment{}).Where("id IN (?)", commentIDs)
+		
+		if !s.isAdminRole(userRole) {
+			query = query.Where("user_id = ?", userID)
+		}
+		
+		if err := query.Update("status", models.CommentStatusActive).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to show comments: %w", err)
+		}
+
+	case "moderate":
+		// 只有管理员可以批量设为待审核
+		if !s.isAdminRole(userRole) {
+			return fmt.Errorf("permission denied: only admins can moderate comments")
+		}
+		
+		if err := tx.Model(&models.Comment{}).
+			Where("id IN (?)", commentIDs).
+			Update("status", models.CommentStatusPending).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to moderate comments: %w", err)
+		}
+
+	default:
+		return fmt.Errorf("unsupported operation: %s", operation)
+	}
+
+	return tx.Commit().Error
+}
+
+// isAdminRole 检查是否为管理员角色
+func (s *CommentService) isAdminRole(role models.UserRole) bool {
+	adminRoles := []models.UserRole{
+		models.RolePlatformAdmin,
+		models.RoleSuperAdmin,
+		models.RoleCourierLevel3,
+		models.RoleCourierLevel4,
+	}
+	
+	for _, adminRole := range adminRoles {
+		if role == adminRole {
+			return true
+		}
+	}
+	
+	return false
 }

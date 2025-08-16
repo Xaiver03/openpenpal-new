@@ -1,17 +1,13 @@
 package handlers
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"openpenpal-backend/internal/monitoring"
 	"openpenpal-backend/internal/resilience"
 	"runtime"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -24,8 +20,8 @@ type MonitoringHandler struct {
 // NewMonitoringHandler creates a new monitoring handler
 func NewMonitoringHandler() *MonitoringHandler {
 	return &MonitoringHandler{
-		collector: monitoring.DefaultMetricsCollector,
-		cbManager: resilience.DefaultCircuitBreakerManager,
+		collector: monitoring.NewMetricsCollector(),
+		cbManager: resilience.NewCircuitBreakerManager(),
 	}
 }
 

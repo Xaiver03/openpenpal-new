@@ -81,7 +81,8 @@ func (h *SensitiveWordHandler) ListSensitiveWords(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponseWithPagination(c, http.StatusOK, "Sensitive words fetched successfully", words, page, limit, total)
+	pagination := utils.CalculatePagination(page, limit, total)
+	utils.SuccessResponseWithPagination(c, words, pagination)
 }
 
 // CreateSensitiveWord 创建敏感词
@@ -229,7 +230,6 @@ func (h *SensitiveWordHandler) DeleteSensitiveWord(c *gin.Context) {
 func (h *SensitiveWordHandler) BatchImportSensitiveWords(c *gin.Context) {
 	// 权限检查
 	userRole, _ := middleware.GetUserRole(c)
-	userID, _ := middleware.GetUserID(c)
 	if !h.hasPermission(userRole) {
 		utils.ForbiddenResponse(c, "Insufficient permissions to manage sensitive words")
 		return
@@ -379,9 +379,9 @@ func (h *SensitiveWordHandler) GetSensitiveWordStats(c *gin.Context) {
 func (h *SensitiveWordHandler) hasPermission(role string) bool {
 	// 只有四级信使（城市总代）和平台管理员有权限
 	allowedRoles := map[string]bool{
-		models.RoleCourierLevel4:  true, // 四级信使
-		models.RolePlatformAdmin:  true, // 平台管理员
-		models.RoleSuperAdmin:     true, // 超级管理员
+		string(models.RoleCourierLevel4):  true, // 四级信使
+		string(models.RolePlatformAdmin):  true, // 平台管理员
+		string(models.RoleSuperAdmin):     true, // 超级管理员
 	}
 	return allowedRoles[role]
 }

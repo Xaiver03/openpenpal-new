@@ -56,6 +56,11 @@ type Config struct {
 	EmailFromName    string
 	EmailProvider    string
 	EmailAPIKey      string
+
+	// Service Mesh
+	EtcdEndpoints   string
+	ConsulEndpoint  string
+	JWTExpiry       int
 }
 
 func Load() (*Config, error) {
@@ -111,6 +116,11 @@ func Load() (*Config, error) {
 		EmailFromName:    getEnv("EMAIL_FROM_NAME", "OpenPenPal"),
 		EmailProvider:    getEnv("EMAIL_PROVIDER", "smtp"),
 		EmailAPIKey:      getEnv("EMAIL_API_KEY", ""),
+
+		// Service Mesh
+		EtcdEndpoints:  getEnv("ETCD_ENDPOINTS", "localhost:2379"),
+		ConsulEndpoint: getEnv("CONSUL_ENDPOINT", "localhost:8500"),
+		JWTExpiry:      getEnvAsInt("JWT_EXPIRY", 24),
 	}
 
 	return config, nil

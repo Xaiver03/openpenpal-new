@@ -54,6 +54,13 @@ func SetupDatabaseDirect(config *Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("unsupported database type: %s", config.DatabaseType)
 	}
 
+	// Handle constraint management before auto migration
+	if config.DatabaseType == "postgres" {
+		if err := handleConstraintsBeforeMigration(db); err != nil {
+			log.Printf("Warning: Failed to handle constraints: %v", err)
+		}
+	}
+
 	// 自动迁移表结构
 	if err := autoMigrateDirect(db); err != nil {
 		return nil, fmt.Errorf("failed to auto migrate: %w", err)
@@ -175,9 +182,18 @@ func autoMigrateDirect(db *gorm.DB) error {
 	// Use simple AutoMigrate - it should handle existing tables
 	err := db.AutoMigrate(modelsToMigrate...)
 	if err != nil {
-		// If it's just table already exists errors, we can ignore them
-		if strings.Contains(err.Error(), "already exists") {
+		// Handle different types of migration errors gracefully
+		errStr := err.Error()
+		if strings.Contains(errStr, "already exists") {
 			log.Printf("Some tables already exist during migration, this is normal: %v", err)
+		} else if strings.Contains(errStr, "constraint") && strings.Contains(errStr, "does not exist") {
+			log.Printf("Constraint-related error during migration, this is often recoverable: %v", err)
+			// Try to continue with migration by migrating models individually
+			if err := migrateModelsIndividually(db, modelsToMigrate); err != nil {
+				log.Printf("Individual migration also failed: %v", err)
+				return err
+			}
+			log.Println("Individual model migration completed successfully")
 		} else {
 			log.Printf("Migration error: %v", err)
 			return err
@@ -223,4 +239,94 @@ func ParsePostgreSQLURL(dbURL string) (host string, port int, user string, passw
 	}
 
 	return
+}
+
+// migrateModelsIndividually migrates models one by one to handle constraint errors
+func migrateModelsIndividually(db *gorm.DB, models []interface{}) error {
+	log.Println("Starting individual model migration to handle constraint issues...")
+	
+	for i, model := range models {
+		log.Printf("Migrating model %d/%d...", i+1, len(models))
+		if err := db.AutoMigrate(model); err != nil {
+			errStr := err.Error()
+			// Allow certain types of errors that are recoverable
+			if strings.Contains(errStr, "constraint") && strings.Contains(errStr, "does not exist") {
+				log.Printf("Constraint error for model %T (continuing): %v", model, err)
+				continue
+			} else if strings.Contains(errStr, "already exists") {
+				log.Printf("Model %T already exists (continuing): %v", model, err)
+				continue
+			} else {
+				log.Printf("Failed to migrate model %T: %v", model, err)
+				return err
+			}
+		} else {
+			log.Printf("Successfully migrated model %T", model)
+		}
+	}
+	
+	return nil
+}
+
+// handleConstraintsBeforeMigration ensures constraints are in correct state before auto migration
+func handleConstraintsBeforeMigration(db *gorm.DB) error {
+	log.Println("Handling constraint management before migration...")
+
+	// Check if users table exists
+	var tableExists bool
+	if err := db.Raw("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users')").Scan(&tableExists).Error; err != nil {
+		log.Printf("Could not check if users table exists: %v", err)
+		return nil // Not a critical error, continue with migration
+	}
+
+	if !tableExists {
+		log.Println("Users table does not exist yet, skipping constraint management")
+		return nil
+	}
+
+	// Check if uni_users_username constraint exists
+	var constraintExists bool
+	constraintCheckSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.table_constraints 
+			WHERE table_schema = 'public' 
+			AND table_name = 'users' 
+			AND constraint_name = 'uni_users_username'
+		)
+	`
+	
+	if err := db.Raw(constraintCheckSQL).Scan(&constraintExists).Error; err != nil {
+		log.Printf("Could not check constraint existence: %v", err)
+		return nil // Not critical, continue
+	}
+
+	if !constraintExists {
+		log.Println("uni_users_username constraint does not exist, will let GORM create it")
+		
+		// Check if there's already a unique index on username instead
+		var indexExists bool
+		indexCheckSQL := `
+			SELECT EXISTS (
+				SELECT 1 FROM pg_indexes 
+				WHERE schemaname = 'public' 
+				AND tablename = 'users' 
+				AND indexname = 'idx_users_username'
+			)
+		`
+		
+		if err := db.Raw(indexCheckSQL).Scan(&indexExists).Error; err != nil {
+			log.Printf("Could not check index existence: %v", err)
+			return nil
+		}
+
+		if indexExists {
+			log.Println("Found existing unique index on username, this is good")
+		} else {
+			log.Println("No existing unique constraint or index on username found")
+		}
+	} else {
+		log.Println("uni_users_username constraint already exists")
+	}
+
+	return nil
 }

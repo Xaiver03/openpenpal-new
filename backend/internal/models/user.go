@@ -244,10 +244,15 @@ type AdminUpdateUserRequest struct {
 
 // UserStats 用户统计
 type UserStats struct {
+	UserID         string    `json:"user_id"`
 	LettersSent     int64 `json:"letters_sent"`
 	LettersReceived int64 `json:"letters_received"`
 	DraftsCount     int64 `json:"drafts_count"`
 	DeliveredCount  int64 `json:"delivered_count"`
+	FollowingCount int64 `json:"following_count"`
+	FollowersCount int64 `json:"followers_count"`
+	MutualCount    int64 `json:"mutual_count"`
+	LastActive     time.Time `json:"last_active"`
 }
 
 // HasPermission 检查用户是否有指定权限

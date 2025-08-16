@@ -564,9 +564,9 @@ func (s *FollowService) GetUserStats(userID string) (*models.UserStats, error) {
 	// 返回统计数据
 	return &models.UserStats{
 		UserID:         userID,
-		FollowingCount: stats.FollowingCount,
-		FollowersCount: stats.FollowersCount,
-		MutualCount:    stats.MutualCount,
-		LastActive:     stats.UpdatedAt,
+		FollowingCount: int64(stats.FollowingCount),
+		FollowersCount: int64(stats.FollowersCount),
+		MutualCount:    int64(stats.MutualCount),
+		LastActive:     stats.LastActive,
 	}, nil
 }

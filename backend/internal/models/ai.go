@@ -201,6 +201,8 @@ type AIMatchRequest struct {
 // AIReplyRequest AI回信请求
 type AIReplyRequest struct {
 	LetterID       string    `json:"letter_id" binding:"required"`
+	UserID         string    `json:"user_id"`                   // 用户ID
+	PersonaID      string    `json:"persona_id"`                // 人设ID
 	Persona        AIPersona `json:"persona" binding:"required"`
 	PersonaType    string    `json:"persona_type,omitempty"`    // "custom" or "predefined"
 	PersonaDesc    string    `json:"persona_desc,omitempty"`    // 自定义人设描述
@@ -262,13 +264,15 @@ type AIInspirationResponse struct {
 
 // DelayQueueRecord 延迟队列记录
 type DelayQueueRecord struct {
-	ID           string    `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	TaskType     string    `json:"task_type" gorm:"type:varchar(50);not null"`
-	Payload      string    `json:"payload" gorm:"type:text;not null"`
-	DelayedUntil time.Time `json:"delayed_until" gorm:"not null;index"`
-	Status       string    `json:"status" gorm:"type:varchar(20);default:'pending';index"` // pending/processing/completed/failed
-	CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt    time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	ID           string     `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	TaskType     string     `json:"task_type" gorm:"type:varchar(50);not null"`
+	Payload      string     `json:"payload" gorm:"type:text;not null"`
+	DelayedUntil time.Time  `json:"delayed_until" gorm:"not null;index"`
+	Status       string     `json:"status" gorm:"type:varchar(20);default:'pending';index"` // pending/processing/completed/failed
+	RetryCount   int        `json:"retry_count" gorm:"default:0"`                           // 重试次数
+	CompletedAt  *time.Time `json:"completed_at"`                                          // 完成时间
+	CreatedAt    time.Time  `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt    time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 // AIUsageStats AI使用统计

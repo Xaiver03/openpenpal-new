@@ -1648,7 +1648,8 @@ func (s *AIService) ProcessDelayedReplies(ctx context.Context) (int, error) {
 		
 		// Mark as completed
 		record.Status = "completed"
-		record.CompletedAt = time.Now()
+		now := time.Now()
+		record.CompletedAt = &now
 		if err := s.db.Save(&record).Error; err != nil {
 			log.Printf("Failed to update delay record status: %v", err)
 		}
@@ -1666,11 +1667,11 @@ func (s *AIService) processDelayedAIReply(ctx context.Context, task *AIReplyTask
 	aiReq := &models.AIReplyRequest{
 		UserID:         task.UserID,
 		PersonaID:      task.PersonaID,
-		OriginalLetter: task.OriginalLetter,
+		OriginalLetter: nil, // TODO: Load original letter by ID
 	}
 	
 	// Generate the AI reply
-	replyLetter, err := s.GenerateReply(ctx, aiReq)
+	_, err := s.GenerateReply(ctx, aiReq)
 	if err != nil {
 		return fmt.Errorf("failed to generate AI reply: %w", err)
 	}

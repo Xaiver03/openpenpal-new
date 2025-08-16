@@ -1251,6 +1251,66 @@ func (h *MuseumHandler) PublishExhibition(c *gin.Context) {
 	})
 }
 
+// BatchOperateMuseumItems 批量操作博物馆条目
+func (h *MuseumHandler) BatchOperateMuseumItems(c *gin.Context) {
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "User not authenticated",
+		})
+		return
+	}
+
+	// 获取用户角色
+	userRole, exists := middleware.GetUserRole(c)
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "User role not found",
+		})
+		return
+	}
+
+	var req struct {
+		ItemIDs   []string               `json:"item_ids" binding:"required"`
+		Operation string                 `json:"operation" binding:"required,oneof=delete approve reject hide show archive unarchive"`
+		Data      map[string]interface{} `json:"data"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	err := h.museumService.BatchOperateMuseumItems(c.Request.Context(), userID, models.UserRole(userRole), req.ItemIDs, req.Operation, req.Data)
+	if err != nil {
+		if err.Error() == "permission denied" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "Permission denied",
+			})
+			return
+		}
+		
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Batch operation failed",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Batch operation completed successfully",
+	})
+}
+
 // GetMuseumStats 获取博物馆统计数据 - SOTA: Consistent API Response Format
 func (h *MuseumHandler) GetMuseumStats(c *gin.Context) {
 	// Get actual statistics from service

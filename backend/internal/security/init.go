@@ -3,6 +3,7 @@ package security
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"openpenpal-backend/internal/config"
@@ -23,7 +24,7 @@ type SecurityConfig struct {
 	RateLimiter     *middleware.EnhancedRateLimiter
 	InputValidator  *validation.InputValidator
 	SecureConfig    *env.SecureConfig
-	SecurityHeaders *middleware.SecurityHeadersConfig
+	SecurityHeaders *middleware.SecurityConfig
 	Environment     string
 }
 
@@ -91,7 +92,7 @@ func InitializeSecurity(cfg *config.Config) (*SecurityConfig, error) {
 	inputValidator := validation.NewInputValidator()
 
 	// 6. Configure Security Headers
-	securityHeaders := middleware.DefaultSecurityHeadersConfig(environment)
+	securityHeaders := middleware.NewSecurityConfig()
 
 	// Log security initialization summary
 	log.Println("✅ Security initialization completed:")
@@ -115,10 +116,10 @@ func InitializeSecurity(cfg *config.Config) (*SecurityConfig, error) {
 // ApplySecurityMiddleware applies all security middleware to the router
 func ApplySecurityMiddleware(router *gin.Engine, db *gorm.DB, cfg *config.Config, security *SecurityConfig) {
 	// 1. Security Headers (first middleware)
-	router.Use(middleware.EnhancedSecurityHeaders(security.SecurityHeaders))
+	router.Use(middleware.SecurityHeadersMiddleware())
 
 	// 2. Request ID (for tracking)
-	router.Use(middleware.RequestID())
+	router.Use(middleware.RequestIDMiddleware())
 
 	// 3. Input Validation
 	router.Use(security.InputValidator.Middleware())
@@ -163,7 +164,7 @@ func applyRouteMiddleware(router *gin.Engine, db *gorm.DB, cfg *config.Config, s
 	protected := router.Group("/api/v1")
 	{
 		// Apply auth middleware
-		protected.Use(middleware.EnhancedAuthMiddleware(cfg, db, security.JWTManager))
+		protected.Use(middleware.AuthMiddleware(cfg, db))
 		
 		// Apply CSRF protection
 		protected.Use(security.CSRFProtection.Middleware())
@@ -177,8 +178,8 @@ func applyRouteMiddleware(router *gin.Engine, db *gorm.DB, cfg *config.Config, s
 	// Admin routes (admin auth required)
 	admin := router.Group("/api/v1/admin")
 	{
-		admin.Use(middleware.EnhancedAuthMiddleware(cfg, db, security.JWTManager))
-		admin.Use(middleware.RequireRole("admin", "super_admin"))
+		admin.Use(middleware.AuthMiddleware(cfg, db))
+		admin.Use(middleware.RoleMiddleware("admin"))
 		admin.Use(security.CSRFProtection.Middleware())
 		admin.Use(security.RateLimiter.APILimiter())
 		
@@ -190,7 +191,7 @@ func applyRouteMiddleware(router *gin.Engine, db *gorm.DB, cfg *config.Config, s
 	// Upload routes with special rate limiting
 	upload := router.Group("/api/v1/upload")
 	{
-		upload.Use(middleware.EnhancedAuthMiddleware(cfg, db, security.JWTManager))
+		upload.Use(middleware.AuthMiddleware(cfg, db))
 		upload.Use(security.CSRFProtection.Middleware())
 		upload.Use(security.RateLimiter.UploadLimiter())
 		// Upload handlers will be added here
@@ -202,7 +203,7 @@ func applyRouteMiddleware(router *gin.Engine, db *gorm.DB, cfg *config.Config, s
 	})
 
 	// CSP violation reports
-	router.POST("/api/v1/security/csp-report", middleware.SecurityReportHandler())
+	router.POST("/api/v1/security/csp-report", middleware.CSPViolationHandler())
 }
 
 // getRateLimitConfig returns rate limit configuration based on environment

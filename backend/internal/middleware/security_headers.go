@@ -3,93 +3,121 @@ package middleware
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
+	"log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
+// SecurityConfig 安全配置结构
+type SecurityConfig struct {
+	IsDevelopment        bool
+	AllowedDomains      []string
+	FrontendURL         string
+	WebSocketURL        string
+	EnableHSTS          bool
+	EnableCSPReporting  bool
+	CSPReportURI        string
+	TrustedCDNs         []string
+}
+
+// NewSecurityConfig 创建安全配置
+func NewSecurityConfig() *SecurityConfig {
+	return &SecurityConfig{
+		IsDevelopment: os.Getenv("ENVIRONMENT") == "development" || os.Getenv("ENVIRONMENT") == "",
+		AllowedDomains: []string{
+			os.Getenv("FRONTEND_URL"),
+			"http://localhost:3000",
+			"https://localhost:3000",
+		},
+		FrontendURL:  os.Getenv("FRONTEND_URL"),
+		WebSocketURL: os.Getenv("WEBSOCKET_URL"),
+		EnableHSTS:   os.Getenv("ENABLE_HSTS") == "true",
+		EnableCSPReporting: os.Getenv("ENABLE_CSP_REPORTING") == "true",
+		CSPReportURI: os.Getenv("CSP_REPORT_URI"),
+		TrustedCDNs: []string{
+			"https://cdn.jsdelivr.net",
+			"https://fonts.googleapis.com", 
+			"https://fonts.gstatic.com",
+		},
+	}
+}
+
 // generateNonce 生成CSP nonce
 func generateNonce() string {
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	bytes := make([]byte, 24) // 增加到24字节以提高安全性
+	if _, err := rand.Read(bytes); err != nil {
+		log.Printf("Warning: Failed to generate secure nonce: %v", err)
+		// 使用时间戳作为后备
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
 	return base64.StdEncoding.EncodeToString(bytes)
 }
 
 // SecurityHeadersMiddleware 安全头中间件 - SOTA级别实现
 func SecurityHeadersMiddleware() gin.HandlerFunc {
-	// 判断是否为开发环境
-	isDev := os.Getenv("ENVIRONMENT") == "development" || os.Getenv("ENVIRONMENT") == ""
+	config := NewSecurityConfig()
 
 	return func(c *gin.Context) {
-		// 基础安全头
+		// 生成请求级别nonce
+		nonce := generateNonce()
+		c.Set("csp_nonce", nonce)
+		// 基础安全头 - 增强版
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
-		c.Header("X-XSS-Protection", "1; mode=block")
+		c.Header("X-XSS-Protection", "0") // 现代浏览器中建议禁用，依赖CSP
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Header("X-Powered-By", "") // 隐藏服务器信息
 		
-		// 完善的权限策略 - 业界最佳实践
-		c.Header("Permissions-Policy", 
-			"geolocation=(), "+
-			"microphone=(), "+
-			"camera=(), "+
-			"usb=(), "+
-			"bluetooth=(), "+
-			"gyroscope=(), "+
-			"accelerometer=(), "+
-			"magnetometer=(), "+
-			"payment=(), "+
-			"midi=(), "+
-			"sync-xhr=(self), "+
-			"autoplay=(self), "+
-			"encrypted-media=(self), "+
-			"picture-in-picture=(self), "+
-			"fullscreen=(self), "+
-			"interest-cohort=()")
+		// 完善的权限策略 - 最新业界标准
+		permissionsPolicy := []string{
+			"geolocation=()",
+			"microphone=()",
+			"camera=()",
+			"usb=()",
+			"bluetooth=()",
+			"gyroscope=()",
+			"accelerometer=()",
+			"magnetometer=()",
+			"payment=()",
+			"midi=()",
+			"speaker=()",
+			"vibrate=()",
+			"push=()",
+			"notifications=()",
+			"persistent-storage=()",
+			"sync-xhr=(self)",
+			"autoplay=(self)",
+			"encrypted-media=(self)",
+			"picture-in-picture=(self)",
+			"fullscreen=(self)",
+			"web-share=()",
+			"cross-origin-isolated=()",
+			"interest-cohort=()", // 禁用Google FLoC
+			"browsing-topics=()", // 禁用Topics API
+		}
+		c.Header("Permissions-Policy", strings.Join(permissionsPolicy, ", "))
 
-		// HSTS - 仅在生产环境启用
-		if !isDev {
-			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		// HSTS - 基于配置启用
+		if config.EnableHSTS && !config.IsDevelopment {
+			c.Header("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload") // 2年
 		}
 
-		// CSP策略
-		if isDev {
-			// 开发环境：较宽松的策略，支持热重载等开发工具
-			c.Header("Content-Security-Policy",
-				"default-src 'self'; "+
-					"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "+
-					"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "+
-					"font-src 'self' https://fonts.gstatic.com data:; "+
-					"img-src 'self' data: https: blob:; "+
-					"connect-src 'self' ws://localhost:* wss://* http://localhost:*; "+
-					"media-src 'self'; "+
-					"object-src 'none'; "+
-					"frame-ancestors 'none'; "+
-					"base-uri 'self'; "+
-					"form-action 'self';")
-		} else {
-			// 生产环境：严格的CSP策略，使用nonce
-			nonce := generateNonce()
-			c.Set("csp_nonce", nonce)
-
-			c.Header("Content-Security-Policy",
-				"default-src 'self'; "+
-					"script-src 'self' 'nonce-"+nonce+"' https://cdn.jsdelivr.net; "+
-					"style-src 'self' 'nonce-"+nonce+"' https://fonts.googleapis.com; "+
-					"font-src 'self' https://fonts.gstatic.com data:; "+
-					"img-src 'self' data: https:; "+
-					"connect-src 'self' wss://*; "+
-					"media-src 'self'; "+
-					"object-src 'none'; "+
-					"frame-ancestors 'none'; "+
-					"base-uri 'self'; "+
-					"form-action 'self'; "+
-					"block-all-mixed-content; "+
-					"upgrade-insecure-requests; "+
-					"require-trusted-types-for 'script';")
-
-			// 将nonce传递给模板引擎（如果使用）
-			c.Header("X-CSP-Nonce", nonce)
+		// 构建动态CSP策略
+		cspPolicy := buildCSPPolicy(config, nonce)
+		c.Header("Content-Security-Policy", cspPolicy)
+		
+		// CSP报告模式（仅在开发环境）
+		if config.IsDevelopment && config.EnableCSPReporting {
+			cspReportPolicy := buildCSPReportOnlyPolicy(config, nonce)
+			c.Header("Content-Security-Policy-Report-Only", cspReportPolicy)
 		}
+		
+		// 将nonce传递给前端
+		c.Header("X-CSP-Nonce", nonce)
 
 		// 添加其他推荐的安全头 - 加强版
 		c.Header("X-Permitted-Cross-Domain-Policies", "none")
@@ -117,7 +145,7 @@ func SecurityHeadersMiddleware() gin.HandlerFunc {
 	}
 }
 
-// CSPViolationHandler 处理CSP违规报告
+// CSPViolationHandler 处理CSP违规报告 - 增强版
 func CSPViolationHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var violation map[string]interface{}
@@ -126,11 +154,164 @@ func CSPViolationHandler() gin.HandlerFunc {
 			return
 		}
 		
-		// 记录CSP违规（可以发送到日志系统或监控）
-		// log.Printf("CSP Violation: %+v", violation)
+		// 记录详细的CSP违规信息
+		log.Printf("CSP Violation Report: User-Agent: %s, IP: %s, Violation: %+v", 
+			c.GetHeader("User-Agent"), c.ClientIP(), violation)
+		
+		// 可以在这里添加更多处理逻辑：
+		// 1. 发送到监控系统
+		// 2. 检查是否为潜在攻击
+		// 3. 更新安全策略
+		
+		// 分析违规类型和严重程度
+		if violationType, exists := violation["violated-directive"]; exists {
+			log.Printf("CSP Violation Type: %v", violationType)
+			
+			// 检查是否为高风险违规
+			if isHighRiskViolation(fmt.Sprintf("%v", violationType)) {
+				log.Printf("HIGH RISK CSP Violation detected from IP: %s", c.ClientIP())
+				// 这里可以触发额外的安全措施
+			}
+		}
 		
 		c.Status(204) // No Content
 	}
 }
 
-// CORSMiddleware is already defined in auth.go
+// isHighRiskViolation 检查是否为高风险违规
+func isHighRiskViolation(violationType string) bool {
+	highRiskDirectives := []string{
+		"script-src", "object-src", "base-uri", "form-action",
+	}
+	
+	for _, directive := range highRiskDirectives {
+		if strings.Contains(violationType, directive) {
+			return true
+		}
+	}
+	return false
+}
+
+// buildCSPPolicy 构建动态CSP策略
+func buildCSPPolicy(config *SecurityConfig, nonce string) string {
+	policies := []string{
+		"default-src 'self'",
+		"base-uri 'self'",
+		"form-action 'self'",
+		"frame-ancestors 'none'",
+		"object-src 'none'",
+		"media-src 'self'",
+	}
+	
+	if config.IsDevelopment {
+		// 开发环境：允许热重载和开发工具
+		policies = append(policies,
+			"script-src 'self' 'unsafe-inline' 'unsafe-eval' "+strings.Join(config.TrustedCDNs, " "),
+			"style-src 'self' 'unsafe-inline' "+strings.Join(config.TrustedCDNs, " "),
+			"connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:*",
+			"img-src 'self' data: blob: https:",
+		)
+	} else {
+		// 生产环境：严格安全策略
+		policies = append(policies,
+			"script-src 'self' 'nonce-"+nonce+"' "+strings.Join(config.TrustedCDNs, " "),
+			"style-src 'self' 'nonce-"+nonce+"' "+strings.Join(config.TrustedCDNs, " "),
+			"connect-src 'self' "+config.WebSocketURL,
+			"img-src 'self' data: https:",
+			"upgrade-insecure-requests",
+			"block-all-mixed-content",
+		)
+		
+		// 支持Trusted Types（仅支持的浏览器）
+		policies = append(policies, "require-trusted-types-for 'script'")
+	}
+	
+	// 添加字体支持
+	policies = append(policies, "font-src 'self' https://fonts.gstatic.com data:")
+	
+	// CSP报告
+	if config.EnableCSPReporting && config.CSPReportURI != "" {
+		policies = append(policies, "report-uri "+config.CSPReportURI)
+		policies = append(policies, "report-to csp-endpoint")
+	}
+	
+	return strings.Join(policies, "; ")
+}
+
+// buildCSPReportOnlyPolicy 构建报告模式CSP策略
+func buildCSPReportOnlyPolicy(config *SecurityConfig, nonce string) string {
+	// 与主策略相同，但更严格，用于检测潜在问题
+	return buildCSPPolicy(config, nonce)
+}
+
+// ThreatDetectionMiddleware 威胁检测中间件
+func ThreatDetectionMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 检查常见攻击模式
+		if detectSQLInjection(c) {
+			log.Printf("Security Threat: Potential SQL injection detected from IP: %s", c.ClientIP())
+			c.Header("X-Threat-Detected", "sql-injection")
+		}
+		
+		if detectXSSAttempt(c) {
+			log.Printf("Security Threat: Potential XSS attempt detected from IP: %s", c.ClientIP())
+			c.Header("X-Threat-Detected", "xss-attempt")
+		}
+		
+		if detectDirectoryTraversal(c) {
+			log.Printf("Security Threat: Directory traversal attempt detected from IP: %s", c.ClientIP())
+			c.Header("X-Threat-Detected", "directory-traversal")
+		}
+		
+		c.Next()
+	}
+}
+
+// detectSQLInjection 检测SQL注入尝试
+func detectSQLInjection(c *gin.Context) bool {
+	sqlPatterns := []string{
+		"union", "select", "insert", "delete", "update", "drop",
+		"exec", "--", "/*", "*/", "'", "\"", ";",
+	}
+	
+	queryString := strings.ToLower(c.Request.URL.RawQuery)
+	for _, pattern := range sqlPatterns {
+		if strings.Contains(queryString, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// detectXSSAttempt 检测XSS尝试
+func detectXSSAttempt(c *gin.Context) bool {
+	xssPatterns := []string{
+		"<script", "javascript:", "onerror=", "onload=",
+		"<iframe", "<object", "<embed", "vbscript:",
+	}
+	
+	queryString := strings.ToLower(c.Request.URL.RawQuery)
+	for _, pattern := range xssPatterns {
+		if strings.Contains(queryString, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// detectDirectoryTraversal 检测目录遍历尝试
+func detectDirectoryTraversal(c *gin.Context) bool {
+	path := c.Request.URL.Path
+	traversalPatterns := []string{
+		"../", "..\\", "%2e%2e%2f", "%2e%2e%5c",
+		"..%2f", "..%5c", "%2e%2e/", "%2e%2e\\",
+	}
+	
+	pathLower := strings.ToLower(path)
+	for _, pattern := range traversalPatterns {
+		if strings.Contains(pathLower, pattern) {
+			return true
+		}
+	}
+	return false
+}

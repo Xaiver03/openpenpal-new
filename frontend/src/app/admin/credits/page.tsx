@@ -32,6 +32,7 @@ import { WelcomeBanner } from '@/components/ui/welcome-banner'
 import { CreditStatistics } from '@/components/credit/credit-statistics'
 import { CreditLeaderboard } from '@/components/credit/credit-leaderboard'
 import { CreditManagementPage } from '@/components/credit/credit-management-page'
+import { CreditLimitsManagement } from '@/components/credit/credit-limits-management'
 
 export default function AdminCreditsPage() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -165,11 +166,12 @@ export default function AdminCreditsPage() {
 
         {/* 主要内容 */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-6 w-full max-w-4xl">
             <TabsTrigger value="overview">总览</TabsTrigger>
             <TabsTrigger value="rules">积分规则</TabsTrigger>
             <TabsTrigger value="adjustments">积分调整</TabsTrigger>
             <TabsTrigger value="activities">积分活动</TabsTrigger>
+            <TabsTrigger value="limits">限制管理</TabsTrigger>
             <TabsTrigger value="analytics">数据分析</TabsTrigger>
           </TabsList>
 
@@ -377,6 +379,11 @@ export default function AdminCreditsPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* 限制管理 */}
+          <TabsContent value="limits">
+            <CreditLimitsManagement />
           </TabsContent>
 
           {/* 数据分析 */}

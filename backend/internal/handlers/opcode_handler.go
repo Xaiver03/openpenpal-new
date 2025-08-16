@@ -439,3 +439,96 @@ func (h *OPCodeHandler) SearchSchools(c *gin.Context) {
 		"data":    result,
 	})
 }
+
+// SearchSchoolsByCity 按城市搜索学校
+func (h *OPCodeHandler) SearchSchoolsByCity(c *gin.Context) {
+	cityName := c.Query("city")
+	if cityName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    4001,
+			"message": "城市名称不能为空",
+			"data":    nil,
+		})
+		return
+	}
+
+	page := 1
+	limit := 20
+
+	if pageStr := c.Query("page"); pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		}
+	}
+
+	result, err := h.opcodeService.SearchSchoolsByCity(cityName, page, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"code":    5001,
+			"message": err.Error(),
+			"data":    nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"code":    200,
+		"message": "城市搜索成功",
+		"data":    result,
+	})
+}
+
+// SearchSchoolsAdvanced 高级学校搜索
+func (h *OPCodeHandler) SearchSchoolsAdvanced(c *gin.Context) {
+	var req models.AdvancedSchoolSearchRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    4001,
+			"message": "查询参数无效",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// 设置默认值
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.Limit <= 0 || req.Limit > 100 {
+		req.Limit = 20
+	}
+	if req.SortBy == "" {
+		req.SortBy = "school_name"
+	}
+	if req.SortOrder == "" {
+		req.SortOrder = "asc"
+	}
+
+	result, err := h.opcodeService.SearchSchoolsAdvanced(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"code":    5001,
+			"message": err.Error(),
+			"data":    nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"code":    200,
+		"message": "高级搜索成功",
+		"data":    result,
+	})
+}

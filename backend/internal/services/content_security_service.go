@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/google/uuid"
 	"github.com/microcosm-cc/bluemonday"
@@ -27,6 +26,7 @@ type ContentSecurityService struct {
 	strictSanitizer   *bluemonday.Policy // 严格HTML清理器
 	xssPatterns       []*regexp.Regexp   // XSS攻击模式
 	maxContentLength  int                // 最大内容长度
+	sensitiveWords    map[string]bool    // 敏感词映射表
 }
 
 // SecurityCheckResult 安全检查结果 - 增强XSS检测版本
@@ -728,11 +728,26 @@ func (s *ContentSecurityService) GetSecurityStatistics(days int) (map[string]int
 	return stats, nil
 }
 
+// loadSensitiveWords 从数据库加载敏感词到内存
+func (s *ContentSecurityService) loadSensitiveWords() error {
+	var words []models.SensitiveWord
+	if err := s.db.Where("is_active = ?", true).Find(&words).Error; err != nil {
+		log.Printf("Failed to load sensitive words: %v", err)
+		return err
+	}
+	
+	for _, word := range words {
+		s.sensitiveWords[strings.ToLower(word.Word)] = true
+	}
+	
+	log.Printf("Loaded %d sensitive words into memory", len(words))
+	return nil
+}
+
 // RefreshSensitiveWords 刷新敏感词库
 func (s *ContentSecurityService) RefreshSensitiveWords() error {
 	s.sensitiveWords = make(map[string]bool)
-	s.loadSensitiveWords()
-	return nil
+	return s.loadSensitiveWords()
 }
 
 // =============== 敏感词管理API方法 ===============

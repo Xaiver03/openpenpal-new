@@ -145,8 +145,8 @@ func logSecurityEvent(event SecurityEvent) {
 	log.Printf("[SECURITY_EVENT] %s", string(eventJSON))
 }
 
-// SecurityMonitoringMiddleware 安全监控中间件
-func SecurityMonitoringMiddleware() gin.HandlerFunc {
+// RequestMonitoringMiddleware 请求监控中间件
+func RequestMonitoringMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 记录请求开始
 		start := time.Now()
@@ -199,8 +199,8 @@ func GetSecurityMonitor() *SecurityMonitor {
 	return globalSecurityMonitor
 }
 
-// ThreatDetectionMiddleware 威胁检测中间件
-func ThreatDetectionMiddleware() gin.HandlerFunc {
+// SecurityMonitoringMiddleware 安全监控中间件 - 专门用于威胁检测和监控
+func SecurityMonitoringMiddleware() gin.HandlerFunc {
 	// 可疑User-Agent模式
 	suspiciousUserAgents := []string{
 		"sqlmap", "nikto", "nmap", "masscan", "zap",

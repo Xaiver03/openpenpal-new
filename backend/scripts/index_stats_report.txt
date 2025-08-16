@@ -1,0 +1,38 @@
+psql:scripts/analyze_indexes_stats.sql:23: ERROR:  column i.tablename does not exist
+LINE 10: ..._user_tables t ON i.schemaname = t.schemaname AND i.tablenam...
+                                                              ^
+psql:scripts/analyze_indexes_stats.sql:54: ERROR:  column "tablename" does not exist
+LINE 3:     tablename,
+            ^
+psql:scripts/analyze_indexes_stats.sql:83: ERROR:  column "tablename" does not exist
+LINE 4:         tablename,
+                ^
+                                 report_section                                 | details 
+--------------------------------------------------------------------------------+---------
+ INDEX ANALYSIS SUMMARY                                                         | 
+ ====================                                                           | 
+                                                                                | 
+ DUPLICATE INDEXES FOUND:                                                       | 
+ - courier_tasks: delivery_op_code has 2 duplicate indexes                      | 
+ - courier_tasks: pickup_op_code has 2 duplicate indexes                        | 
+ - couriers: managed_op_code_prefix has 2 duplicate indexes                     | 
+                                                                                | 
+ MISSING INDEXES (Foreign Keys without indexes):                                | 
+ - envelopes.design_id -> envelope_designs.id                                   | 
+ - museum_items.approved_by -> users.id                                         | 
+ - museum_items.source_id -> letters.id                                         | 
+ - museum_items.submitted_by -> users.id                                        | 
+                                                                                | 
+ WELL-INDEXED TABLES:                                                           | 
+ - letters: Comprehensive indexing with composite and partial indexes           | 
+ - users: Good coverage for authentication and queries                          | 
+ - courier_tasks: Excellent indexing for routing and status queries             | 
+ - letter_codes: Well-indexed for tracking and scanning                         | 
+                                                                                | 
+ RECOMMENDATIONS:                                                               | 
+ 1. Remove duplicate indexes to save space and improve write performance        | 
+ 2. Add missing foreign key indexes for better join performance                 | 
+ 3. Consider adding composite index on credit_transactions(user_id, created_at) | 
+ 4. Monitor sequential scan patterns on less-used tables                        | 
+(25 rows)
+

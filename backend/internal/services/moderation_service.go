@@ -263,7 +263,7 @@ func (s *ModerationService) checkSensitiveWords(content string) struct {
 	for _, word := range words {
 		if strings.Contains(contentLower, strings.ToLower(word.Word)) {
 			result.Reasons = append(result.Reasons, fmt.Sprintf("包含敏感词: %s", word.Word))
-			if word.Category != "" && !contains(result.Categories, word.Category) {
+			if word.Category != "" && !containsString(result.Categories, word.Category) {
 				result.Categories = append(result.Categories, word.Category)
 			}
 
@@ -581,8 +581,8 @@ type AIModerateResult struct {
 
 // 工具函数
 
-// contains 检查字符串数组是否包含某个元素
-func contains(slice []string, item string) bool {
+// containsString 检查字符串数组是否包含某个元素
+func containsString(slice []string, item string) bool {
 	for _, s := range slice {
 		if s == item {
 			return true

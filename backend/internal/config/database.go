@@ -151,6 +151,37 @@ func autoMigrate(db *gorm.DB) error {
 		&models.CreditTransaction{},
 		&models.CreditRule{},
 		&models.UserLevel{},
+		// 积分商城相关模型
+		&models.CreditShopProduct{},
+		&models.CreditRedemption{},
+		&models.CreditCart{},
+		&models.CreditCartItem{},
+		&models.CreditShopCategory{},
+		&models.UserRedemptionHistory{},
+		&models.CreditShopConfig{},
+		// 积分活动相关模型
+		&models.CreditActivity{},
+		&models.CreditActivityParticipation{},
+		&models.CreditActivityRule{},
+		&models.CreditActivitySchedule{},
+		&models.CreditActivityStatistics{},
+		&models.CreditActivityLog{},
+		&models.CreditActivityTemplate{},
+		// Phase 4.1: 积分过期相关模型
+		&models.CreditExpirationRule{},
+		&models.CreditExpirationBatch{},
+		&models.CreditExpirationLog{},
+		&models.CreditExpirationNotification{},
+		// Phase 4.2: 积分转赠相关模型
+		&models.CreditTransfer{},
+		&models.CreditTransferRule{},
+		&models.CreditTransferLimit{},
+		&models.CreditTransferNotification{},
+		// 积分任务相关模型
+		&models.CreditTask{},
+		&models.CreditTaskQueue{},
+		&models.CreditTaskRule{},
+		&models.CreditTaskBatch{},
 		// 系统配置相关模型
 		&models.SystemSettings{},
 	)

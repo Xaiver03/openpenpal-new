@@ -53,6 +53,9 @@ type ModerationRecord struct {
 	AIResponse    string           `json:"ai_response" gorm:"type:text"`
 	ReviewerID    *string          `json:"reviewer_id" gorm:"type:varchar(36)"`
 	ReviewNote    string           `json:"review_note" gorm:"type:text"`
+	Action        string           `json:"action" gorm:"type:varchar(20)"`        // 审核动作
+	Reason        string           `json:"reason" gorm:"type:text"`               // 审核原因
+	Notes         string           `json:"notes" gorm:"type:text"`                // 审核备注
 	ReviewedAt    *time.Time       `json:"reviewed_at"`
 	AutoModerated bool             `json:"auto_moderated" gorm:"default:true"`
 	CreatedAt     time.Time        `json:"created_at"`

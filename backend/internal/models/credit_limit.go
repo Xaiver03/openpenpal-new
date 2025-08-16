@@ -66,6 +66,9 @@ type CreditRiskUser struct {
 // CreditRiskLevel 风险等级
 type CreditRiskLevel string
 
+// RiskLevel 风险等级别名（兼容性）
+type RiskLevel = CreditRiskLevel
+
 const (
 	RiskLevelLow     CreditRiskLevel = "low"     // 低风险
 	RiskLevelMedium  CreditRiskLevel = "medium"  // 中风险
@@ -81,8 +84,10 @@ type LimitStatus struct {
 	MaxCount      int    `json:"max_count"`     // 最大次数
 	CurrentPoints int    `json:"current_points"` // 当前积分
 	MaxPoints     int    `json:"max_points"`     // 最大积分
-	IsLimited     bool   `json:"is_limited"`     // 是否已达限制
-	ResetAt       time.Time `json:"reset_at"`    // 重置时间
+	Allowed       bool   `json:"allowed"`       // 是否允许操作（与IsLimited相反）
+	IsLimited     bool   `json:"is_limited"`    // 是否已达限制
+	Reason        string `json:"reason"`        // 限制原因
+	ResetAt       time.Time `json:"reset_at"`   // 重置时间
 }
 
 // FraudAlert 作弊警报

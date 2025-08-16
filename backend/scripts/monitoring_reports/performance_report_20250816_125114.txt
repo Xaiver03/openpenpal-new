@@ -1,0 +1,158 @@
+📊 Active Queries (Running > 1 second):
+=======================================
+ pid | duration | usename | application_name | state | query_preview 
+-----+----------+---------+------------------+-------+---------------
+(0 rows)
+
+
+🐌 Top 10 Slowest Queries:
+==========================
+psql:performance_monitor.sql:45: NOTICE:  pg_stat_statements extension not available. Install with: CREATE EXTENSION pg_stat_statements;
+DO
+
+💾 Table Sizes and Bloat:
+========================
+ schemaname |         tablename         | total_size | table_size | indexes_size | live_rows | dead_rows | dead_percentage 
+------------+---------------------------+------------+------------+--------------+-----------+-----------+-----------------
+ public     | signal_codes              | 360 kB     | 128 kB     | 232 kB       |         0 |         0 |                
+ public     | postcode_schools          | 352 kB     | 144 kB     | 208 kB       |         0 |         0 |                
+ public     | op_code_schools           | 304 kB     | 128 kB     | 176 kB       |         0 |         0 |                
+ public     | letters                   | 280 kB     | 8192 bytes | 272 kB       |         0 |         2 |          100.00
+ public     | credit_shop_products      | 184 kB     | 8192 bytes | 176 kB       |         0 |         0 |                
+ public     | letter_codes              | 176 kB     | 8192 bytes | 168 kB       |         0 |         2 |          100.00
+ public     | users                     | 176 kB     | 8192 bytes | 168 kB       |         7 |         3 |           30.00
+ public     | schools                   | 128 kB     | 0 bytes    | 128 kB       |         0 |         0 |                
+ public     | couriers                  | 120 kB     | 0 bytes    | 120 kB       |         0 |         0 |                
+ public     | scan_events               | 112 kB     | 0 bytes    | 112 kB       |         0 |         0 |                
+ public     | credit_activity_templates | 112 kB     | 8192 bytes | 104 kB       |         0 |         0 |                
+ public     | courier_tasks             | 112 kB     | 0 bytes    | 112 kB       |         0 |         0 |                
+ public     | credit_transfers          | 104 kB     | 0 bytes    | 104 kB       |         0 |         0 |                
+ public     | ai_configs                | 96 kB      | 8192 bytes | 88 kB        |         0 |         1 |          100.00
+ public     | credit_transfer_rules     | 96 kB      | 8192 bytes | 88 kB        |         0 |         0 |                
+ public     | signal_code_batches       | 80 kB      | 8192 bytes | 72 kB        |         0 |         0 |                
+ public     | credit_expiration_rules   | 80 kB      | 8192 bytes | 72 kB        |         0 |         0 |                
+ public     | moderation_records        | 80 kB      | 8192 bytes | 72 kB        |         1 |         0 |            0.00
+ public     | credit_limit_rules        | 80 kB      | 8192 bytes | 72 kB        |         0 |         0 |                
+ public     | ai_content_templates      | 80 kB      | 8192 bytes | 72 kB        |         0 |         0 |                
+(20 rows)
+
+
+📈 Index Usage Statistics:
+=========================
+ schemaname |    tablename     |                 indexrelname                  | idx_scan | idx_tup_read | idx_tup_fetch | index_size | usage_category 
+------------+------------------+-----------------------------------------------+----------+--------------+---------------+------------+----------------
+ public     | status_logs      | idx_status_logs_letter_id                     |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | users            | idx_users_school_code                         |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | users            | idx_users_deleted_at                          |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | users            | idx_users_username                            |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | user_profiles    | user_profiles_pkey                            |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | envelope_designs | envelope_designs_pkey                         |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | users            | idx_users_email                               |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | envelope_designs | idx_envelope_designs_supported_op_code_prefix |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | envelope_designs | idx_envelope_designs_creator_id               |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | envelopes        | envelopes_pkey                                |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | envelopes        | uni_envelopes_barcode_id                      |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | envelopes        | idx_envelopes_sender_op_code                  |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | envelopes        | idx_envelopes_recipient_op_code               |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | envelopes        | idx_envelopes_letter_id                       |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | envelope_designs | idx_envelope_designs_deleted_at               |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | letters          | idx_letters_deleted_at                        |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letters          | idx_letters_envelope_id                       |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letters          | idx_letters_reply_to                          |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letters          | idx_letters_sender_op_code                    |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letters          | idx_letters_recipient_op_code                 |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letters          | idx_letters_author_id                         |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letters          | idx_letters_user_id                           |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letter_codes     | letter_codes_pkey                             |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letter_codes     | idx_letter_codes_envelope_id                  |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letter_codes     | idx_letter_codes_recipient_code               |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letter_codes     | idx_letter_codes_status                       |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letter_codes     | idx_letter_codes_code                         |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | letter_codes     | idx_letter_codes_letter_id                    |        0 |            0 |             0 | 16 kB      | UNUSED
+ public     | status_logs      | status_logs_pkey                              |        0 |            0 |             0 | 8192 bytes | UNUSED
+ public     | letter_photos    | letter_photos_pkey                            |        0 |            0 |             0 | 8192 bytes | UNUSED
+(30 rows)
+
+
+🎯 Cache Hit Ratios:
+====================
+ cache_level | disk_reads | cache_hits | cache_hit_ratio 
+-------------+------------+------------+-----------------
+ Database    |         14 |        136 |           90.67
+ Indexes     |        267 |      12244 |           97.87
+(2 rows)
+
+
+🔒 Current Locks:
+================
+ locktype | table_name | mode | granted | pid | blocked_by 
+----------+------------+------+---------+-----+------------
+(0 rows)
+
+
+🔌 Connection Statistics:
+========================
+  datname   | active_connections | max_connections | connection_percentage 
+------------+--------------------+-----------------+-----------------------
+ openpenpal |                  9 |             100 |                  9.00
+(1 row)
+
+
+📊 Table Access Patterns (Top 20):
+==================================
+ schemaname |         tablename         | seq_scan | seq_tup_read | idx_scan | idx_tup_fetch | inserts | updates | deletes | index_usage_percent 
+------------+---------------------------+----------+--------------+----------+---------------+---------+---------+---------+---------------------
+ public     | letters                   |       20 |            0 |      346 |             0 |       2 |       0 |       0 |               94.54
+ public     | content_violation_records |      350 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | user_daily_usages         |      347 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | delay_queue_records       |        0 |            0 |      301 |             0 |       0 |       0 |       0 |              100.00
+ public     | users                     |       89 |           65 |       16 |            11 |       8 |       2 |       0 |               15.24
+ public     | envelope_designs          |       46 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | couriers                  |       14 |            0 |        4 |             0 |       0 |       0 |       0 |               22.22
+ public     | envelopes                 |       17 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | ai_configs                |       15 |          147 |        0 |             0 |       0 |       1 |       0 |                0.00
+ public     | schools                   |       14 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | courier_tasks             |       13 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | scan_events               |       13 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | letter_codes              |       12 |            0 |        0 |             0 |       2 |       0 |       0 |                0.00
+ public     | credit_transfers          |       12 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | letter_templates          |        6 |            5 |        5 |             0 |       5 |       0 |       0 |               45.45
+ public     | scheduled_tasks           |        6 |            0 |        5 |             0 |       0 |       0 |       0 |               45.45
+ public     | user_credit_actions       |        9 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | credit_transactions       |        9 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | task_workers              |        3 |            3 |        6 |             2 |       2 |       2 |       0 |               66.67
+ public     | museum_items              |        8 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+(20 rows)
+
+
+🧹 Autovacuum Status:
+====================
+ schemaname | tablename | last_vacuum | last_autovacuum | vacuum_count | autovacuum_count | last_analyze | last_autoanalyze | dead_tuples | vacuum_status 
+------------+-----------+-------------+-----------------+--------------+------------------+--------------+------------------+-------------+---------------
+(0 rows)
+
+
+📈 Database Size:
+================
+  database  | total_size | table_count | index_count | total_rows 
+------------+------------+-------------+-------------+------------
+ openpenpal | 20 MB      |         159 |         641 |         15
+(1 row)
+
+
+💡 Performance Recommendations:
+===============================
+        recommendation        |        table_name         |     fk_columns      |                                              suggested_action                                              
+------------------------------+---------------------------+---------------------+------------------------------------------------------------------------------------------------------------
+ Missing index on foreign key | envelope_orders           | design_id           | CREATE INDEX idx_envelope_orders_design_id ON envelope_orders(design_id);
+ Missing index on foreign key | museum_submissions        | letter_id           | CREATE INDEX idx_museum_submissions_letter_id ON museum_submissions(letter_id);
+ Missing index on foreign key | level_upgrade_requests    | reviewed_by         | CREATE INDEX idx_level_upgrade_requests_reviewed_by ON level_upgrade_requests(reviewed_by);
+ Missing index on foreign key | school_admins             | department_id       | CREATE INDEX idx_school_admins_department_id ON school_admins(department_id);
+ Missing index on foreign key | school_applications       | generated_school_id | CREATE INDEX idx_school_applications_generated_school_id ON school_applications(generated_school_id);
+ Missing index on foreign key | privacy_cache             | viewer_user_id      | CREATE INDEX idx_privacy_cache_viewer_user_id ON privacy_cache(viewer_user_id);
+ Missing index on foreign key | privacy_cache             | target_user_id      | CREATE INDEX idx_privacy_cache_target_user_id ON privacy_cache(target_user_id);
+ Missing index on foreign key | credit_carts              | user_id, user_id    | CREATE INDEX idx_credit_carts_user_id_user_id ON credit_carts(user_id, user_id);
+ Missing index on foreign key | credit_redemptions        | user_id, user_id    | CREATE INDEX idx_credit_redemptions_user_id_user_id ON credit_redemptions(user_id, user_id);
+ Missing index on foreign key | user_redemption_histories | user_id, user_id    | CREATE INDEX idx_user_redemption_histories_user_id_user_id ON user_redemption_histories(user_id, user_id);
+(10 rows)
+

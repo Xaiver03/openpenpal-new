@@ -323,4 +323,5 @@ func (mc *MetricsCollector) GetMetricsRegistry() *prometheus.Registry {
 }
 
 // Default metrics collector instance
-var DefaultMetricsCollector = NewMetricsCollector()
+// Commented out to avoid duplicate registration
+// var DefaultMetricsCollector = NewMetricsCollector()

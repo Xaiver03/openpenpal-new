@@ -1392,3 +1392,136 @@ func (s *MuseumService) GetMuseumStats(ctx context.Context) (map[string]interfac
 
 	return stats, nil
 }
+
+// BatchOperateMuseumItems 批量操作博物馆条目
+func (s *MuseumService) BatchOperateMuseumItems(ctx context.Context, userID string, userRole models.UserRole, itemIDs []string, operation string, data map[string]interface{}) error {
+	if len(itemIDs) == 0 {
+		return fmt.Errorf("no item IDs provided")
+	}
+
+	// 开始事务
+	tx := s.db.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	switch operation {
+	case "delete":
+		// 根据权限删除条目
+		query := tx.Model(&models.MuseumItem{}).Where("id IN (?)", itemIDs)
+		
+		// 非管理员只能删除自己的条目
+		if !s.isAdminRole(userRole) {
+			query = query.Where("user_id = ?", userID)
+		}
+		
+		// 软删除
+		if err := query.Update("deleted_at", time.Now()).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to delete museum items: %w", err)
+		}
+
+	case "approve":
+		// 只有管理员可以批量审核
+		if !s.isAdminRole(userRole) {
+			return fmt.Errorf("permission denied: only admins can approve items")
+		}
+		
+		if err := tx.Model(&models.MuseumItem{}).
+			Where("id IN (?)", itemIDs).
+			Update("status", models.MuseumItemApproved).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to approve museum items: %w", err)
+		}
+
+	case "reject":
+		// 只有管理员可以批量拒绝
+		if !s.isAdminRole(userRole) {
+			return fmt.Errorf("permission denied: only admins can reject items")
+		}
+		
+		if err := tx.Model(&models.MuseumItem{}).
+			Where("id IN (?)", itemIDs).
+			Update("status", models.MuseumItemRejected).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to reject museum items: %w", err)
+		}
+
+	case "hide":
+		// 管理员可以隐藏任何条目，用户只能隐藏自己的条目
+		query := tx.Model(&models.MuseumItem{}).Where("id IN (?)", itemIDs)
+		
+		if !s.isAdminRole(userRole) {
+			query = query.Where("user_id = ?", userID)
+		}
+		
+		if err := query.Update("visibility", models.MuseumItemPrivate).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to hide museum items: %w", err)
+		}
+
+	case "show":
+		// 管理员可以显示任何条目，用户只能显示自己的条目
+		query := tx.Model(&models.MuseumItem{}).Where("id IN (?)", itemIDs)
+		
+		if !s.isAdminRole(userRole) {
+			query = query.Where("user_id = ?", userID)
+		}
+		
+		if err := query.Update("visibility", models.MuseumItemPublic).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to show museum items: %w", err)
+		}
+
+	case "archive":
+		// 管理员可以归档任何条目，用户只能归档自己的条目
+		query := tx.Model(&models.MuseumItem{}).Where("id IN (?)", itemIDs)
+		
+		if !s.isAdminRole(userRole) {
+			query = query.Where("user_id = ?", userID)
+		}
+		
+		if err := query.Update("status", models.MuseumItemArchived).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to archive museum items: %w", err)
+		}
+
+	case "unarchive":
+		// 管理员可以取消归档任何条目，用户只能取消归档自己的条目
+		query := tx.Model(&models.MuseumItem{}).Where("id IN (?)", itemIDs)
+		
+		if !s.isAdminRole(userRole) {
+			query = query.Where("user_id = ?", userID)
+		}
+		
+		if err := query.Update("status", models.MuseumItemApproved).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to unarchive museum items: %w", err)
+		}
+
+	default:
+		return fmt.Errorf("unsupported operation: %s", operation)
+	}
+
+	return tx.Commit().Error
+}
+
+// isAdminRole 检查是否为管理员角色
+func (s *MuseumService) isAdminRole(role models.UserRole) bool {
+	adminRoles := []models.UserRole{
+		models.RolePlatformAdmin,
+		models.RoleSuperAdmin,
+		models.RoleCourierLevel3,
+		models.RoleCourierLevel4,
+	}
+	
+	for _, adminRole := range adminRoles {
+		if role == adminRole {
+			return true
+		}
+	}
+	
+	return false
+}

@@ -26,7 +26,7 @@ const nextConfig = {
   // 禁用Google字体优化以避免超时
   optimizeFonts: false,
   
-  // 实验性功能
+  // 实验性功能 - 禁用Service Worker
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
@@ -40,7 +40,7 @@ const nextConfig = {
   // 压缩配置
   compress: true,
   
-  // PWA支持
+  // PWA和Service Worker禁用
   generateEtags: false,
   
   // TypeScript严格检查已启用

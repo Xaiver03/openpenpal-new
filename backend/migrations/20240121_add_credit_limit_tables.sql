@@ -145,3 +145,41 @@ BEGIN
         END IF;
     END IF;
 END $$;
+
+-- Phase 1.3: 防作弊检测日志表
+CREATE TABLE IF NOT EXISTS fraud_detection_logs (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    risk_score DECIMAL(3,2) NOT NULL DEFAULT 0.00,
+    is_anomalous BOOLEAN NOT NULL DEFAULT FALSE,
+    detected_patterns TEXT, -- JSON array of detected patterns
+    evidence TEXT,          -- JSON object containing evidence data
+    recommendations TEXT,   -- JSON array of recommendations
+    alert_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 为检测日志表创建索引
+CREATE INDEX IF NOT EXISTS idx_fraud_detection_logs_user_id ON fraud_detection_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_fraud_detection_logs_created_at ON fraud_detection_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_fraud_detection_logs_risk_score ON fraud_detection_logs(risk_score);
+CREATE INDEX IF NOT EXISTS idx_fraud_detection_logs_anomalous ON fraud_detection_logs(is_anomalous);
+CREATE INDEX IF NOT EXISTS idx_fraud_detection_logs_user_time ON fraud_detection_logs(user_id, created_at);
+
+-- 为检测日志表添加外键（如果用户表存在）
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users') THEN
+        IF NOT EXISTS (
+            SELECT constraint_name 
+            FROM information_schema.table_constraints 
+            WHERE table_name = 'fraud_detection_logs' 
+            AND constraint_name = 'fk_fraud_detection_logs_user_id'
+        ) THEN
+            ALTER TABLE fraud_detection_logs 
+            ADD CONSTRAINT fk_fraud_detection_logs_user_id 
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+        END IF;
+    END IF;
+END $$;

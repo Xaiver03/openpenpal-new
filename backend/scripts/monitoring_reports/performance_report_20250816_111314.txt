@@ -1,0 +1,127 @@
+📊 Active Queries (Running > 1 second):
+=======================================
+ pid | duration | usename | application_name | state | query_preview 
+-----+----------+---------+------------------+-------+---------------
+(0 rows)
+
+
+🐌 Top 10 Slowest Queries:
+==========================
+psql:performance_monitor.sql:45: NOTICE:  pg_stat_statements extension not available. Install with: CREATE EXTENSION pg_stat_statements;
+DO
+
+💾 Table Sizes and Bloat:
+========================
+ schemaname |         tablename         | total_size | table_size | indexes_size | live_rows | dead_rows | dead_percentage 
+------------+---------------------------+------------+------------+--------------+-----------+-----------+-----------------
+ public     | schools                   | 656 kB     | 184 kB     | 472 kB       |       966 |         8 |            0.82
+ public     | signal_codes              | 360 kB     | 128 kB     | 232 kB       |       610 |         0 |            0.00
+ public     | postcode_schools          | 352 kB     | 144 kB     | 208 kB       |       966 |         0 |            0.00
+ public     | op_code_schools           | 304 kB     | 128 kB     | 176 kB       |       947 |        18 |            1.87
+ public     | letters                   | 288 kB     | 8192 bytes | 280 kB       |         3 |         3 |           50.00
+ public     | couriers                  | 224 kB     | 8192 bytes | 216 kB       |         3 |         0 |            0.00
+ public     | credit_shop_products      | 184 kB     | 8192 bytes | 176 kB       |        10 |         3 |           23.08
+ public     | users                     | 176 kB     | 8192 bytes | 168 kB       |        10 |        18 |           64.29
+ public     | school_departments        | 112 kB     | 8192 bytes | 104 kB       |         8 |         0 |            0.00
+ public     | scan_events               | 112 kB     | 0 bytes    | 112 kB       |         0 |         0 |                
+ public     | courier_tasks             | 112 kB     | 0 bytes    | 112 kB       |         0 |         0 |                
+ public     | credit_activity_templates | 112 kB     | 8192 bytes | 104 kB       |         5 |         0 |            0.00
+ public     | credit_transactions       | 104 kB     | 8192 bytes | 96 kB        |         1 |         0 |            0.00
+ public     | letter_codes              | 104 kB     | 0 bytes    | 104 kB       |         0 |         0 |                
+ public     | user_relationships        | 104 kB     | 8192 bytes | 96 kB        |         2 |         0 |            0.00
+ public     | credit_transfers          | 104 kB     | 0 bytes    | 104 kB       |         0 |         0 |                
+ public     | school_settings           | 96 kB      | 8192 bytes | 88 kB        |        30 |         0 |            0.00
+ public     | credit_transfer_rules     | 96 kB      | 8192 bytes | 88 kB        |         5 |         0 |            0.00
+ public     | user_achievements         | 96 kB      | 8192 bytes | 88 kB        |         7 |         3 |           30.00
+ public     | ai_configs                | 96 kB      | 8192 bytes | 88 kB        |        12 |         0 |            0.00
+(20 rows)
+
+
+📈 Index Usage Statistics:
+=========================
+psql:performance_monitor.sql:103: ERROR:  column "indexrelid" does not exist
+LINE 27:     pg_relation_size(indexrelid) DESC
+                              ^
+
+🎯 Cache Hit Ratios:
+====================
+ cache_level | disk_reads | cache_hits | cache_hit_ratio 
+-------------+------------+------------+-----------------
+ Database    |        118 |    5735864 |          100.00
+ Indexes     |        943 |  170406864 |          100.00
+(2 rows)
+
+
+🔒 Current Locks:
+================
+ locktype | table_name | mode | granted | pid | blocked_by 
+----------+------------+------+---------+-----+------------
+(0 rows)
+
+
+🔌 Connection Statistics:
+========================
+  datname   | active_connections | max_connections | connection_percentage 
+------------+--------------------+-----------------+-----------------------
+ openpenpal |                 22 |             100 |                 22.00
+(1 row)
+
+
+📊 Table Access Patterns (Top 20):
+==================================
+ schemaname |         tablename         | seq_scan | seq_tup_read | idx_scan | idx_tup_fetch | inserts | updates | deletes | index_usage_percent 
+------------+---------------------------+----------+--------------+----------+---------------+---------+---------+---------+---------------------
+ public     | letters                   |  5705577 |     15630312 | 14330352 |           474 |       6 |       0 |       0 |               71.52
+ public     | user_daily_usages         | 20034586 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | content_violation_records | 20034568 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | delay_queue_records       |        4 |            0 | 11624996 |             0 |       0 |       0 |       0 |              100.00
+ public     | task_workers              |     4974 |       161994 |      115 |            52 |      62 |    4878 |       0 |                2.26
+ public     | scheduled_tasks           |       88 |            0 |     2568 |             0 |       0 |       0 |       0 |               96.69
+ public     | users                     |     1141 |         6574 |      265 |           794 |      12 |     105 |       0 |               18.85
+ public     | op_code_areas             |       11 |          240 |     1143 |           310 |      40 |       0 |       0 |               99.05
+ public     | op_code_schools           |      106 |        78412 |      984 |            30 |     954 |      17 |       6 |               90.28
+ public     | schools                   |       31 |         6983 |     1016 |          1044 |     974 |       0 |       0 |               97.04
+ public     | postcode_schools          |       12 |         3932 |      974 |           562 |     966 |       0 |       0 |               98.78
+ public     | letter_templates          |      313 |         1194 |      395 |           390 |       5 |       0 |       0 |               55.79
+ public     | envelope_designs          |      568 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | performance_metrics       |      502 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | ai_configs                |      500 |         5754 |        0 |             0 |      12 |       0 |       0 |                0.00
+ public     | couriers                  |      246 |          263 |      128 |            15 |       3 |       0 |       0 |               34.22
+ public     | envelopes                 |      274 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | museum_items              |      197 |           22 |        0 |             0 |       1 |       0 |       0 |                0.00
+ public     | level_upgrade_requests    |      190 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+ public     | user_profiles             |      185 |            0 |        0 |             0 |       0 |       0 |       0 |                0.00
+(20 rows)
+
+
+🧹 Autovacuum Status:
+====================
+ schemaname | tablename | last_vacuum | last_autovacuum | vacuum_count | autovacuum_count | last_analyze | last_autoanalyze | dead_tuples | vacuum_status 
+------------+-----------+-------------+-----------------+--------------+------------------+--------------+------------------+-------------+---------------
+(0 rows)
+
+
+📈 Database Size:
+================
+  database  | total_size | table_count | index_count | total_rows 
+------------+------------+-------------+-------------+------------
+ openpenpal | 21 MB      |         159 |         641 |       3791
+(1 row)
+
+
+💡 Performance Recommendations:
+===============================
+        recommendation        |        table_name         |     fk_columns      |                                              suggested_action                                              
+------------------------------+---------------------------+---------------------+------------------------------------------------------------------------------------------------------------
+ Missing index on foreign key | envelope_orders           | design_id           | CREATE INDEX idx_envelope_orders_design_id ON envelope_orders(design_id);
+ Missing index on foreign key | museum_submissions        | letter_id           | CREATE INDEX idx_museum_submissions_letter_id ON museum_submissions(letter_id);
+ Missing index on foreign key | level_upgrade_requests    | reviewed_by         | CREATE INDEX idx_level_upgrade_requests_reviewed_by ON level_upgrade_requests(reviewed_by);
+ Missing index on foreign key | school_admins             | department_id       | CREATE INDEX idx_school_admins_department_id ON school_admins(department_id);
+ Missing index on foreign key | school_applications       | generated_school_id | CREATE INDEX idx_school_applications_generated_school_id ON school_applications(generated_school_id);
+ Missing index on foreign key | privacy_cache             | viewer_user_id      | CREATE INDEX idx_privacy_cache_viewer_user_id ON privacy_cache(viewer_user_id);
+ Missing index on foreign key | privacy_cache             | target_user_id      | CREATE INDEX idx_privacy_cache_target_user_id ON privacy_cache(target_user_id);
+ Missing index on foreign key | credit_carts              | user_id, user_id    | CREATE INDEX idx_credit_carts_user_id_user_id ON credit_carts(user_id, user_id);
+ Missing index on foreign key | credit_redemptions        | user_id, user_id    | CREATE INDEX idx_credit_redemptions_user_id_user_id ON credit_redemptions(user_id, user_id);
+ Missing index on foreign key | user_redemption_histories | user_id, user_id    | CREATE INDEX idx_user_redemption_histories_user_id_user_id ON user_redemption_histories(user_id, user_id);
+(10 rows)
+

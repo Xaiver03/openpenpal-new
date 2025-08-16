@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -23,8 +23,8 @@ type DatabaseConfig struct {
 func DefaultConfig() *DatabaseConfig {
 	return &DatabaseConfig{
 		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnv("DB_PORT", "3306"),
-		User:     getEnv("DB_USER", "root"),
+		Port:     getEnv("DB_PORT", "5432"),
+		User:     getEnv("DB_USER", "openpenpal_user"),
 		Password: getEnv("DB_PASSWORD", ""),
 		Database: getEnv("DB_NAME", "openpenpal"),
 	}
@@ -33,10 +33,10 @@ func DefaultConfig() *DatabaseConfig {
 // NewDB creates a new database connection
 func NewDB() (*gorm.DB, error) {
 	config := DefaultConfig()
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		config.User, config.Password, config.Host, config.Port, config.Database)
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=require",
+		config.Host, config.Port, config.User, config.Password, config.Database)
 	
-	return gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
 }
 
 // getEnv helper function

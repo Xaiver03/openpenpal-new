@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/services"

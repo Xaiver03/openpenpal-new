@@ -14,6 +14,7 @@ import (
 type CreditService struct {
 	db              *gorm.DB
 	notificationSvc *NotificationService
+	expirationSvc   *CreditExpirationService // Phase 4.1: 积分过期服务
 }
 
 // NewCreditService 创建积分服务
@@ -26,6 +27,16 @@ func NewCreditService(db *gorm.DB) *CreditService {
 // SetNotificationService 设置通知服务
 func (s *CreditService) SetNotificationService(notificationSvc *NotificationService) {
 	s.notificationSvc = notificationSvc
+}
+
+// GetDB 获取数据库实例（用于其他服务访问）
+func (s *CreditService) GetDB() *gorm.DB {
+	return s.db
+}
+
+// SetCreditExpirationService 设置积分过期服务（Phase 4.1）
+func (s *CreditService) SetCreditExpirationService(expirationSvc *CreditExpirationService) {
+	s.expirationSvc = expirationSvc
 }
 
 // 积分奖励规则 - 严格按照FSD规格配置
@@ -139,6 +150,18 @@ func (s *CreditService) AddPoints(userID string, points int, description, refere
 	}
 
 	tx.Commit()
+
+	// Phase 4.1: 为新增积分添加过期时间（异步处理）
+	if s.expirationSvc != nil {
+		go func() {
+			// 确定积分类型
+			creditType := s.determineCreditType(description)
+			if err := s.expirationSvc.AddExpirationToTransaction(&transaction, creditType); err != nil {
+				// 记录错误但不影响主流程
+				fmt.Printf("Warning: Failed to add expiration to transaction %s: %v\n", transaction.ID, err)
+			}
+		}()
+	}
 
 	// 发送通知
 	if s.notificationSvc != nil {
@@ -431,4 +454,68 @@ func (s *CreditService) GetLeaderboard(limit int) ([]models.UserCredit, error) {
 		return nil, fmt.Errorf("failed to get leaderboard: %w", err)
 	}
 	return leaderboard, nil
+}
+
+// GetUserCredit 获取用户积分信息 - 别名方法
+func (s *CreditService) GetUserCredit(userID string) (*models.UserCredit, error) {
+	return s.GetUserCreditInfo(userID)
+}
+
+// AddCredits 增加积分 - 别名方法
+func (s *CreditService) AddCredits(userID string, credits int, description, reference string) error {
+	return s.AddPoints(userID, credits, description, reference)
+}
+
+// DeductCredits 扣除积分 - 别名方法
+func (s *CreditService) DeductCredits(userID string, credits int, description, reference string) error {
+	return s.SpendPoints(userID, credits, description, reference)
+}
+
+// determineCreditType 根据描述确定积分类型（Phase 4.1）
+func (s *CreditService) determineCreditType(description string) string {
+	// 根据积分描述映射到积分类型，用于确定过期规则
+	switch {
+	case description == "创建信件" || description == "生成信件编号":
+		return "letter_create"
+	case description == "信件送达" || description == "信件被阅读":
+		return "letter_delivery"
+	case description == "收到信件" || description == "创建回信":
+		return "letter_receive"
+	case description == "公开信被点赞":
+		return "social_interaction"
+	case description == "参与写作挑战并完成投稿":
+		return "writing_challenge"
+	case description == "使用AI笔友并留下评价":
+		return "ai_interaction"
+	case description == "成为信使后首次完成任务" || description == "信使成功送达一封信":
+		return "courier_activity"
+	case description == "提交博物馆作品" || description == "博物馆作品通过审核" || description == "博物馆作品获得点赞":
+		return "museum_activity"
+	case description == "点位申请审核成功":
+		return "opcode_activity"
+	case description == "被授予社区贡献徽章":
+		return "community_badge"
+	case contains(description, "管理员奖励"):
+		return "admin_reward"
+	case contains(description, "购买") || contains(description, "绑定信封"):
+		return "commerce_activity"
+	default:
+		return "default" // 默认类型
+	}
+}
+
+// contains 检查字符串是否包含子字符串（辅助函数）
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && s[:len(substr)] == substr ||
+		   len(s) > len(substr) && findSubstring(s, substr)
+}
+
+// findSubstring 简单的子字符串查找
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

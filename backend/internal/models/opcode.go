@@ -277,3 +277,15 @@ type OPCodeStats struct {
 	ByArea          map[string]int `json:"by_area"`
 	UtilizationRate float64        `json:"utilization_rate"`
 }
+
+// AdvancedSchoolSearchRequest 高级学校搜索请求
+type AdvancedSchoolSearchRequest struct {
+	SchoolName string `form:"school_name" json:"school_name"`
+	City       string `form:"city" json:"city"`
+	Province   string `form:"province" json:"province"`
+	SchoolCode string `form:"school_code" json:"school_code"`
+	Page       int    `form:"page,default=1" json:"page"`
+	Limit      int    `form:"limit,default=20" json:"limit"`
+	SortBy     string `form:"sort_by,default=school_name" json:"sort_by"`
+	SortOrder  string `form:"sort_order,default=asc" json:"sort_order"`
+}

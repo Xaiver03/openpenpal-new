@@ -15,6 +15,12 @@ const (
 	StatusInTransit LetterStatus = "in_transit"
 	StatusDelivered LetterStatus = "delivered"
 	StatusRead      LetterStatus = "read"
+	
+	// 审核状态常量
+	StatusApproved  LetterStatus = "approved"
+	StatusRejected  LetterStatus = "rejected"
+	StatusFlagged   LetterStatus = "flagged"
+	StatusArchived  LetterStatus = "archived"
 
 	// AI相关状态别名
 	LetterStatusDraft LetterStatus = "draft"
@@ -51,11 +57,14 @@ const (
 
 // Letter 信件模型
 type Letter struct {
-	ID         string                 `json:"id" gorm:"primaryKey;type:varchar(36)"`
-	UserID     string                 `json:"user_id" gorm:"type:varchar(36);not null;index"`
-	AuthorID   string                 `json:"author_id" gorm:"type:varchar(36);index;default:''"`
-	Title      string                 `json:"title" gorm:"type:varchar(255)"`
-	Content    string                 `json:"content" gorm:"type:text;not null"`
+	ID          string                 `json:"id" gorm:"primaryKey;type:varchar(36)"`
+	UserID      string                 `json:"user_id" gorm:"type:varchar(36);not null;index"`
+	AuthorID    string                 `json:"author_id" gorm:"type:varchar(36);index;default:''"`
+	RecipientID string                 `json:"recipient_id" gorm:"type:varchar(36);index"`  // 收件人用户ID
+	Title       string                 `json:"title" gorm:"type:varchar(255)"`
+	Content     string                 `json:"content" gorm:"type:text;not null"`
+	AuthorName  string                 `json:"author_name" gorm:"type:varchar(100)"`      // 作者名称
+	ScheduledAt *time.Time             `json:"scheduled_at" gorm:"index"`                 // 定时发送时间
 	Style      LetterStyle            `json:"style" gorm:"type:varchar(20);not null;default:'classic'"`
 	Status     LetterStatus           `json:"status" gorm:"type:varchar(20);not null;default:'draft'"`
 	Visibility LetterVisibility       `json:"visibility" gorm:"type:varchar(20);not null;default:'private'"`

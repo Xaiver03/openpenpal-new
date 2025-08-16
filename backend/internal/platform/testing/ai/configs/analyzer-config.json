@@ -1,0 +1,31 @@
+{
+  "analyzer": {
+    "max_complexity": 15,
+    "enable_deep_analysis": true,
+    "analyze_test_files": false,
+    "ignore_patterns": [
+      "_test.go",
+      "mock_*.go",
+      "vendor/**",
+      "node_modules/**"
+    ],
+    "focus_patterns": [
+      "*.go",
+      "internal/**/*.go",
+      "pkg/**/*.go"
+    ],
+    "risk_threshold": {
+      "low": 5,
+      "medium": 10,
+      "high": 15,
+      "critical": 25
+    },
+    "pattern_weights": {
+      "constructor_pattern": 1.2,
+      "validation_pattern": 1.5,
+      "error_handling": 1.8,
+      "api_handler": 2.0,
+      "database_operation": 2.2
+    }
+  }
+}

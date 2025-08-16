@@ -1,0 +1,342 @@
+               constraint_name                |            table_name            |        referenced_table        |       columns       | referenced_columns | delete_action | update_action 
+----------------------------------------------+----------------------------------+--------------------------------+---------------------+--------------------+---------------+---------------
+ fk_cart_items_product                        | cart_items                       | products                       | product_id          | id                 | a             | a
+ fk_carts_items                               | cart_items                       | carts                          | cart_id             | id                 | a             | a
+ fk_carts_user                                | carts                            | users                          | user_id             | id                 | a             | a
+ fk_comment_likes_user                        | comment_likes                    | users                          | user_id             | id                 | c             | a
+ fk_comments_likes                            | comment_likes                    | comments                       | comment_id          | id                 | c             | a
+ fk_comments_letter                           | comments                         | letters                        | letter_id           | id                 | c             | a
+ fk_comments_replies                          | comments                         | comments                       | parent_id           | id                 | a             | a
+ fk_comments_user                             | comments                         | users                          | user_id             | id                 | c             | a
+ fk_courier_tasks_courier                     | courier_tasks                    | users                          | courier_id          | id                 | a             | a
+ fk_courier_tasks_letter                      | courier_tasks                    | letter_codes                   | letter_code         | code               | a             | a
+ fk_couriers_children                         | couriers                         | couriers                       | parent_id           | id                 | a             | a
+ fk_couriers_created_by                       | couriers                         | users                          | created_by_id       | id                 | a             | a
+ fk_couriers_user                             | couriers                         | users                          | user_id             | id                 | a             | a
+ fk_participations_activity                   | credit_activity_participations   | credit_activities              | activity_id         | id                 | c             | a
+ fk_rewards_activity                          | credit_activity_rewards          | credit_activities              | activity_id         | id                 | c             | a
+ fk_rewards_participation                     | credit_activity_rewards          | credit_activity_participations | participation_id    | id                 | n             | a
+ fk_activity_rules_activity                   | credit_activity_rules            | credit_activities              | activity_id         | id                 | c             | a
+ fk_activity_schedules_activity               | credit_activity_schedules        | credit_activities              | activity_id         | id                 | c             | a
+ fk_target_audiences_activity                 | credit_activity_target_audiences | credit_activities              | activity_id         | id                 | c             | a
+ fk_credit_cart_items_product                 | credit_cart_items                | credit_shop_products           | product_id          | id                 | a             | a
+ fk_credit_carts_items                        | credit_cart_items                | credit_carts                   | cart_id             | id                 | a             | a
+ fk_credit_carts_user                         | credit_carts                     | users                          | user_id             | id                 | a             | a
+ fk_credit_carts_user_id                      | credit_carts                     | users                          | user_id             | id                 | c             | a
+ fk_expiration_logs_batch                     | credit_expiration_logs           | credit_expiration_batches      | batch_id            | id                 | c             | a
+ fk_expiration_logs_transaction               | credit_expiration_logs           | credit_transactions            | transaction_id      | id                 | c             | a
+ fk_credit_redemptions_product                | credit_redemptions               | credit_shop_products           | product_id          | id                 | a             | a
+ fk_credit_redemptions_user                   | credit_redemptions               | users                          | user_id             | id                 | a             | a
+ fk_credit_redemptions_user_id                | credit_redemptions               | users                          | user_id             | id                 | c             | a
+ fk_credit_risk_users_user_id                 | credit_risk_users                | users                          | user_id             | id                 | c             | a
+ fk_credit_shop_categories_children           | credit_shop_categories           | credit_shop_categories         | parent_id           | id                 | a             | a
+ fk_transfer_notification_transfer            | credit_transfer_notifications    | credit_transfers               | transfer_id         | id                 | c             | a
+ fk_envelope_orders_design                    | envelope_orders                  | envelope_designs               | design_id           | id                 | a             | a
+ fk_envelopes_design                          | envelopes                        | envelope_designs               | design_id           | id                 | n             | c
+ follow_activities_actor_id_fkey              | follow_activities                | users                          | actor_id            | id                 | c             | a
+ follow_activities_target_id_fkey             | follow_activities                | users                          | target_id           | id                 | c             | a
+ fk_fraud_detection_logs_user_id              | fraud_detection_logs             | users                          | user_id             | id                 | c             | a
+ fk_letter_codes_envelope                     | letter_codes                     | envelopes                      | envelope_id         | id                 | n             | a
+ fk_letters_code                              | letter_codes                     | letters                        | letter_id           | id                 | c             | a
+ fk_letter_likes_user                         | letter_likes                     | users                          | user_id             | id                 | c             | a
+ fk_letters_likes                             | letter_likes                     | letters                        | letter_id           | id                 | c             | a
+ fk_letters_photos                            | letter_photos                    | letters                        | letter_id           | id                 | c             | a
+ fk_letter_shares_user                        | letter_shares                    | users                          | user_id             | id                 | c             | a
+ fk_letters_shares                            | letter_shares                    | letters                        | letter_id           | id                 | c             | a
+ fk_letter_templates_creator                  | letter_templates                 | users                          | created_by          | id                 | n             | a
+ fk_letters_envelope                          | letters                          | envelopes                      | envelope_id         | id                 | a             | a
+ fk_users_authored_letters                    | letters                          | users                          | author_id           | id                 | a             | a
+ fk_users_sent_letters                        | letters                          | users                          | user_id             | id                 | a             | a
+ fk_level_upgrade_requests_courier            | level_upgrade_requests           | couriers                       | courier_id          | id                 | a             | a
+ fk_level_upgrade_requests_reviewer           | level_upgrade_requests           | users                          | reviewed_by         | id                 | a             | a
+ fk_moderation_queues_record                  | moderation_queues                | moderation_records             | record_id           | id                 | a             | a
+ fk_museum_items_approved_by_user             | museum_items                     | users                          | approved_by         | id                 | a             | a
+ fk_museum_items_letter                       | museum_items                     | letters                        | source_id           | id                 | a             | a
+ fk_museum_items_submitted_by_user            | museum_items                     | users                          | submitted_by        | id                 | a             | a
+ fk_museum_submissions_letter                 | museum_submissions               | letters                        | letter_id           | id                 | a             | a
+ fk_order_items_product                       | order_items                      | products                       | product_id          | id                 | a             | a
+ fk_orders_items                              | order_items                      | orders                         | order_id            | id                 | a             | a
+ fk_orders_user                               | orders                           | users                          | user_id             | id                 | a             | a
+ privacy_audit_logs_user_id_fkey              | privacy_audit_logs               | users                          | user_id             | id                 | c             | a
+ privacy_cache_target_user_id_fkey            | privacy_cache                    | users                          | target_user_id      | id                 | c             | a
+ privacy_cache_viewer_user_id_fkey            | privacy_cache                    | users                          | viewer_user_id      | id                 | c             | a
+ privacy_settings_user_id_fkey                | privacy_settings                 | users                          | user_id             | id                 | c             | a
+ fk_product_favorites_product                 | product_favorites                | products                       | product_id          | id                 | a             | a
+ fk_product_favorites_user                    | product_favorites                | users                          | user_id             | id                 | a             | a
+ fk_product_reviews_order                     | product_reviews                  | orders                         | order_id            | id                 | a             | a
+ fk_product_reviews_product                   | product_reviews                  | products                       | product_id          | id                 | a             | a
+ fk_product_reviews_user                      | product_reviews                  | users                          | user_id             | id                 | a             | a
+ fk_scan_events_letter_code                   | scan_events                      | letter_codes                   | letter_code_id      | id                 | c             | a
+ fk_scan_events_scanner                       | scan_events                      | users                          | scanned_by          | id                 | n             | a
+ school_admins_department_id_fkey             | school_admins                    | school_departments             | department_id       | id                 | n             | a
+ school_admins_school_id_fkey                 | school_admins                    | schools                        | school_id           | id                 | c             | a
+ school_applications_generated_school_id_fkey | school_applications              | schools                        | generated_school_id | id                 | n             | a
+ school_departments_parent_id_fkey            | school_departments               | school_departments             | parent_id           | id                 | n             | a
+ school_departments_school_id_fkey            | school_departments               | schools                        | school_id           | id                 | c             | a
+ school_settings_school_id_fkey               | school_settings                  | schools                        | school_id           | id                 | c             | a
+ fk_letters_status_logs                       | status_logs                      | letters                        | letter_id           | id                 | c             | a
+ fk_storage_operations_file                   | storage_operations               | storage_files                  | file_id             | id                 | a             | a
+ fk_task_executions_task                      | task_executions                  | scheduled_tasks                | task_id             | id                 | a             | a
+ fk_user_profiles_extended_achievements       | user_achievements                | user_profiles_extended         | user_id             | user_id            | a             | a
+ fk_user_credit_actions_user_id               | user_credit_actions              | users                          | user_id             | id                 | c             | a
+ user_follow_stats_user_id_fkey               | user_follow_stats                | users                          | user_id             | id                 | c             | a
+ fk_user_profiles_extended_privacy            | user_privacy_settings            | user_profiles_extended         | user_id             | user_id            | a             | a
+ fk_user_profiles_user                        | user_profiles                    | users                          | user_id             | id                 | a             | a
+ fk_user_profiles_extended_user               | user_profiles_extended           | users                          | user_id             | id                 | a             | a
+ fk_user_redemption_histories_user            | user_redemption_histories        | users                          | user_id             | id                 | a             | a
+ fk_user_redemption_histories_user_id         | user_redemption_histories        | users                          | user_id             | id                 | c             | a
+ user_relationships_follower_id_fkey          | user_relationships               | users                          | follower_id         | id                 | c             | a
+ user_relationships_following_id_fkey         | user_relationships               | users                          | following_id        | id                 | c             | a
+ fk_user_profiles_extended_stats              | user_stats                       | user_profiles_extended         | user_id             | user_id            | a             | a
+ user_suggestions_suggested_user_id_fkey      | user_suggestions                 | users                          | suggested_user_id   | id                 | c             | a
+ user_suggestions_user_id_fkey                | user_suggestions                 | users                          | user_id             | id                 | c             | a
+(90 rows)
+
+           table_name            |     column_name     | likely_ref_table  | fk_status  
+---------------------------------+---------------------+-------------------+------------
+ ai_config_histories             | config_id           | configs           | MISSING FK
+ ai_curations                    | exhibition_id       | exhibitions       | MISSING FK
+ ai_curations                    | letter_id           | letters           | MISSING FK
+ ai_inspirations                 | user_id             | users             | MISSING FK
+ ai_matches                      | letter_id           | letters           | MISSING FK
+ ai_matches                      | matched_user_id     | matched_users     | MISSING FK
+ ai_replies                      | original_letter_id  | original_letters  | MISSING FK
+ ai_replies                      | reply_letter_id     | reply_letters     | MISSING FK
+ ai_reply_advices                | letter_id           | letters           | MISSING FK
+ ai_reply_advices                | user_id             | users             | MISSING FK
+ ai_usage_logs                   | task_id             | tasks             | MISSING FK
+ ai_usage_logs                   | user_id             | users             | MISSING FK
+ batch_analytics                 | batch_id            | batchs            | MISSING FK
+ batch_distribution_records      | batch_id            | batchs            | MISSING FK
+ batch_events                    | batch_id            | batchs            | MISSING FK
+ batch_events                    | user_id             | users             | MISSING FK
+ batch_health_metrics            | batch_id            | batchs            | MISSING FK
+ batch_milestones                | batch_id            | batchs            | MISSING FK
+ batch_notification_history      | batch_id            | batchs            | MISSING FK
+ batch_notification_history      | template_id         | templates         | MISSING FK
+ batch_notification_history      | user_id             | users             | MISSING FK
+ batch_permissions               | batch_id            | batchs            | MISSING FK
+ batch_permissions               | user_id             | users             | MISSING FK
+ cloud_letters                   | persona_id          | personas          | MISSING FK
+ cloud_letters                   | reviewer_id         | reviewers         | MISSING FK
+ cloud_letters                   | user_id             | users             | MISSING FK
+ cloud_personas                  | user_id             | users             | MISSING FK
+ content_violation_records       | content_id          | contents          | MISSING FK
+ content_violation_records       | user_id             | users             | MISSING FK
+ courier_badge_earneds           | badge_id            | badges            | MISSING FK
+ courier_badge_earneds           | courier_id          | couriers          | MISSING FK
+ courier_points                  | courier_id          | couriers          | MISSING FK
+ courier_points_histories        | courier_id          | couriers          | MISSING FK
+ courier_points_histories        | task_id             | tasks             | MISSING FK
+ courier_points_transactions     | courier_id          | couriers          | MISSING FK
+ courier_rankings                | courier_id          | couriers          | MISSING FK
+ courier_statistics              | courier_id          | couriers          | MISSING FK
+ courier_zones                   | courier_id          | couriers          | MISSING FK
+ courier_zones                   | zone_id             | zones             | MISSING FK
+ credit_activity_participations  | user_id             | users             | MISSING FK
+ credit_activity_rewards         | transaction_id      | transactions      | MISSING FK
+ credit_activity_rewards         | user_id             | users             | MISSING FK
+ credit_expiration_logs          | user_id             | users             | MISSING FK
+ credit_expiration_notifications | user_id             | users             | MISSING FK
+ credit_transactions             | user_id             | users             | MISSING FK
+ credit_transfer_limits          | user_id             | users             | MISSING FK
+ credit_transfer_notifications   | user_id             | users             | MISSING FK
+ credit_transfers                | from_transaction_id | from_transactions | MISSING FK
+ credit_transfers                | from_user_id        | from_users        | MISSING FK
+ credit_transfers                | reference_id        | references        | MISSING FK
+ credit_transfers                | to_transaction_id   | to_transactions   | MISSING FK
+ credit_transfers                | to_user_id          | to_users          | MISSING FK
+ distribution_plans              | batch_id            | batchs            | MISSING FK
+ email_logs                      | notification_id     | notifications     | MISSING FK
+ email_logs                      | template_id         | templates         | MISSING FK
+ email_logs                      | user_id             | users             | MISSING FK
+ envelope_designs                | creator_id          | creators          | MISSING FK
+ envelope_orders                 | payment_id          | payments          | MISSING FK
+ envelope_orders                 | user_id             | users             | MISSING FK
+ envelope_votes                  | design_id           | designs           | MISSING FK
+ envelope_votes                  | user_id             | users             | MISSING FK
+ envelopes                       | barcode_id          | barcodes          | MISSING FK
+ envelopes                       | letter_id           | letters           | MISSING FK
+ envelopes                       | user_id             | users             | MISSING FK
+ inspiration_usage_records       | request_id          | requests          | MISSING FK
+ inspiration_usage_records       | user_id             | users             | MISSING FK
+ letter_code_usage_logs          | batch_id            | batchs            | MISSING FK
+ letter_code_usage_logs          | letter_code_id      | letter_codes      | MISSING FK
+ letter_replies                  | author_id           | authors           | MISSING FK
+ letter_replies                  | thread_id           | threads           | MISSING FK
+ letters                         | courier_id          | couriers          | MISSING FK
+ letters                         | recipient_id        | recipients        | MISSING FK
+ moderation_records              | content_id          | contents          | MISSING FK
+ moderation_records              | reviewer_id         | reviewers         | MISSING FK
+ moderation_records              | user_id             | users             | MISSING FK
+ museum_entries                  | curator_id          | curators          | MISSING FK
+ museum_entries                  | letter_id           | letters           | MISSING FK
+ museum_entries                  | submission_id       | submissions       | MISSING FK
+ museum_exhibition_entries       | collection_id       | collections       | MISSING FK
+ museum_exhibition_entries       | item_id             | items             | MISSING FK
+ museum_exhibitions              | creator_id          | creators          | MISSING FK
+ museum_interactions             | entry_id            | entrys            | MISSING FK
+ museum_interactions             | user_id             | users             | MISSING FK
+ museum_reactions                | entry_id            | entrys            | MISSING FK
+ museum_reactions                | user_id             | users             | MISSING FK
+ notification_batches            | template_id         | templates         | MISSING FK
+ notification_preferences        | user_id             | users             | MISSING FK
+ notifications                   | user_id             | users             | MISSING FK
+ orders                          | payment_id          | payments          | MISSING FK
+ pending_school_reviews          | applicant_id        | applicants        | MISSING FK
+ performance_alerts              | session_id          | sessions          | MISSING FK
+ performance_alerts              | user_id             | users             | MISSING FK
+ performance_metrics             | f_id                | fs                | MISSING FK
+ performance_metrics             | session_id          | sessions          | MISSING FK
+ performance_metrics             | user_id             | users             | MISSING FK
+ postal_code_applications        | area_id             | areas             | MISSING FK
+ postal_code_applications        | reviewer_id         | reviewers         | MISSING FK
+ postal_code_applications        | school_id           | schools           | MISSING FK
+ postal_code_applications        | user_id             | users             | MISSING FK
+ postal_code_assignments         | area_id             | areas             | MISSING FK
+ postal_code_assignments         | building_id         | buildings         | MISSING FK
+ postal_code_assignments         | school_id           | schools           | MISSING FK
+ postal_code_assignments         | user_id             | users             | MISSING FK
+ postal_code_rules               | school_id           | schools           | MISSING FK
+ postal_code_zones               | manager_id          | managers          | MISSING FK
+ postal_code_zones               | school_id           | schools           | MISSING FK
+ postal_code_zones               | zone_id             | zones             | MISSING FK
+ privacy_audit_logs              | target_user_id      | target_users      | MISSING FK
+ scan_events                     | barcode_id          | barcodes          | MISSING FK
+ scan_records                    | courier_id          | couriers          | MISSING FK
+ scan_records                    | letter_id           | letters           | MISSING FK
+ scan_records                    | task_id             | tasks             | MISSING FK
+ school_admins                   | user_id             | users             | MISSING FK
+ school_applications             | applicant_id        | applicants        | MISSING FK
+ school_applications             | reviewer_id         | reviewers         | MISSING FK
+ signal_code_batches             | area_id             | areas             | MISSING FK
+ signal_code_batches             | school_id           | schools           | MISSING FK
+ signal_code_rules               | school_id           | schools           | MISSING FK
+ signal_code_usage_logs          | target_id           | targets           | MISSING FK
+ signal_code_usage_logs          | user_id             | users             | MISSING FK
+ signal_codes                    | area_id             | areas             | MISSING FK
+ signal_codes                    | building_id         | buildings         | MISSING FK
+ signal_codes                    | letter_id           | letters           | MISSING FK
+ signal_codes                    | school_id           | schools           | MISSING FK
+ storage_files                   | related_id          | relateds          | MISSING FK
+ storage_operations              | user_id             | users             | MISSING FK
+ task_assignment_histories       | assigned_courier_id | assigned_couriers | MISSING FK
+ task_assignment_histories       | previous_courier_id | previous_couriers | MISSING FK
+ task_assignment_histories       | task_id             | tasks             | MISSING FK
+ task_executions                 | process_p_id        | process_ps        | MISSING FK
+ task_executions                 | worker_id           | workers           | MISSING FK
+ tasks                           | courier_id          | couriers          | MISSING FK
+ tasks                           | letter_id           | letters           | MISSING FK
+ tasks                           | task_id             | tasks             | MISSING FK
+ user_analytics                  | user_id             | users             | MISSING FK
+ user_credit_actions             | device_id           | devices           | MISSING FK
+ user_credits                    | user_id             | users             | MISSING FK
+ user_daily_usages               | user_id             | users             | MISSING FK
+ v_credit_activity_stats         | activity_id         | activitys         | MISSING FK
+ v_transfer_rule_effectiveness   | rule_id             | rules             | MISSING FK
+ v_user_activity_summary         | user_id             | users             | MISSING FK
+ v_user_transfer_stats           | total_fees_paid     | total_fees_paid   | MISSING FK
+ v_user_transfer_stats           | user_id             | users             | MISSING FK
+(143 rows)
+
+psql:analyze_foreign_keys.sql:112: ERROR:  column l.sender_id does not exist
+LINE 8: WHERE l.sender_id IS NOT NULL 
+              ^
+ column_check | duplicates 
+--------------+------------
+(0 rows)
+
+               constraint_name                |            table_name            |        referenced_table        | delete_action | risk_level  
+----------------------------------------------+----------------------------------+--------------------------------+---------------+-------------
+ fk_envelopes_design                          | envelopes                        | envelope_designs               | SET NULL      | MEDIUM RISK
+ fk_letter_codes_envelope                     | letter_codes                     | envelopes                      | SET NULL      | MEDIUM RISK
+ fk_letter_templates_creator                  | letter_templates                 | users                          | SET NULL      | MEDIUM RISK
+ school_departments_parent_id_fkey            | school_departments               | school_departments             | SET NULL      | MEDIUM RISK
+ school_admins_department_id_fkey             | school_admins                    | school_departments             | SET NULL      | MEDIUM RISK
+ school_applications_generated_school_id_fkey | school_applications              | schools                        | SET NULL      | MEDIUM RISK
+ fk_scan_events_scanner                       | scan_events                      | users                          | SET NULL      | MEDIUM RISK
+ fk_rewards_participation                     | credit_activity_rewards          | credit_activity_participations | SET NULL      | MEDIUM RISK
+ fk_user_profiles_user                        | user_profiles                    | users                          | NO ACTION     | LOW RISK
+ fk_letters_envelope                          | letters                          | envelopes                      | NO ACTION     | LOW RISK
+ fk_users_authored_letters                    | letters                          | users                          | NO ACTION     | LOW RISK
+ fk_users_sent_letters                        | letters                          | users                          | NO ACTION     | LOW RISK
+ fk_couriers_children                         | couriers                         | couriers                       | NO ACTION     | LOW RISK
+ fk_couriers_created_by                       | couriers                         | users                          | NO ACTION     | LOW RISK
+ fk_couriers_user                             | couriers                         | users                          | NO ACTION     | LOW RISK
+ fk_courier_tasks_letter                      | courier_tasks                    | letter_codes                   | NO ACTION     | LOW RISK
+ fk_courier_tasks_courier                     | courier_tasks                    | users                          | NO ACTION     | LOW RISK
+ fk_envelope_orders_design                    | envelope_orders                  | envelope_designs               | NO ACTION     | LOW RISK
+ fk_museum_items_submitted_by_user            | museum_items                     | users                          | NO ACTION     | LOW RISK
+ fk_museum_items_letter                       | museum_items                     | letters                        | NO ACTION     | LOW RISK
+ fk_museum_items_approved_by_user             | museum_items                     | users                          | NO ACTION     | LOW RISK
+ fk_moderation_queues_record                  | moderation_queues                | moderation_records             | NO ACTION     | LOW RISK
+ fk_task_executions_task                      | task_executions                  | scheduled_tasks                | NO ACTION     | LOW RISK
+ fk_storage_operations_file                   | storage_operations               | storage_files                  | NO ACTION     | LOW RISK
+ fk_museum_submissions_letter                 | museum_submissions               | letters                        | NO ACTION     | LOW RISK
+ fk_level_upgrade_requests_courier            | level_upgrade_requests           | couriers                       | NO ACTION     | LOW RISK
+ fk_level_upgrade_requests_reviewer           | level_upgrade_requests           | users                          | NO ACTION     | LOW RISK
+ fk_comments_replies                          | comments                         | comments                       | NO ACTION     | LOW RISK
+ fk_carts_user                                | carts                            | users                          | NO ACTION     | LOW RISK
+ fk_carts_items                               | cart_items                       | carts                          | NO ACTION     | LOW RISK
+ fk_cart_items_product                        | cart_items                       | products                       | NO ACTION     | LOW RISK
+ fk_orders_user                               | orders                           | users                          | NO ACTION     | LOW RISK
+ fk_orders_items                              | order_items                      | orders                         | NO ACTION     | LOW RISK
+ fk_order_items_product                       | order_items                      | products                       | NO ACTION     | LOW RISK
+ fk_product_reviews_user                      | product_reviews                  | users                          | NO ACTION     | LOW RISK
+ fk_product_reviews_product                   | product_reviews                  | products                       | NO ACTION     | LOW RISK
+ fk_product_reviews_order                     | product_reviews                  | orders                         | NO ACTION     | LOW RISK
+ fk_product_favorites_product                 | product_favorites                | products                       | NO ACTION     | LOW RISK
+ fk_product_favorites_user                    | product_favorites                | users                          | NO ACTION     | LOW RISK
+ fk_user_profiles_extended_user               | user_profiles_extended           | users                          | NO ACTION     | LOW RISK
+ fk_user_profiles_extended_stats              | user_stats                       | user_profiles_extended         | NO ACTION     | LOW RISK
+ fk_user_profiles_extended_privacy            | user_privacy_settings            | user_profiles_extended         | NO ACTION     | LOW RISK
+ fk_user_profiles_extended_achievements       | user_achievements                | user_profiles_extended         | NO ACTION     | LOW RISK
+ fk_credit_shop_categories_children           | credit_shop_categories           | credit_shop_categories         | NO ACTION     | LOW RISK
+ fk_credit_carts_user                         | credit_carts                     | users                          | NO ACTION     | LOW RISK
+ fk_credit_cart_items_product                 | credit_cart_items                | credit_shop_products           | NO ACTION     | LOW RISK
+ fk_credit_carts_items                        | credit_cart_items                | credit_carts                   | NO ACTION     | LOW RISK
+ fk_credit_redemptions_product                | credit_redemptions               | credit_shop_products           | NO ACTION     | LOW RISK
+ fk_credit_redemptions_user                   | credit_redemptions               | users                          | NO ACTION     | LOW RISK
+ fk_user_redemption_histories_user            | user_redemption_histories        | users                          | NO ACTION     | LOW RISK
+ fk_letters_code                              | letter_codes                     | letters                        | CASCADE       | HIGH RISK
+ fk_letters_status_logs                       | status_logs                      | letters                        | CASCADE       | HIGH RISK
+ fk_letters_photos                            | letter_photos                    | letters                        | CASCADE       | HIGH RISK
+ fk_letter_likes_user                         | letter_likes                     | users                          | CASCADE       | HIGH RISK
+ fk_letters_likes                             | letter_likes                     | letters                        | CASCADE       | HIGH RISK
+ fk_letters_shares                            | letter_shares                    | letters                        | CASCADE       | HIGH RISK
+ fk_letter_shares_user                        | letter_shares                    | users                          | CASCADE       | HIGH RISK
+ fk_comments_letter                           | comments                         | letters                        | CASCADE       | HIGH RISK
+ fk_comments_user                             | comments                         | users                          | CASCADE       | HIGH RISK
+ fk_comments_likes                            | comment_likes                    | comments                       | CASCADE       | HIGH RISK
+ fk_comment_likes_user                        | comment_likes                    | users                          | CASCADE       | HIGH RISK
+ school_departments_school_id_fkey            | school_departments               | schools                        | CASCADE       | HIGH RISK
+ school_admins_school_id_fkey                 | school_admins                    | schools                        | CASCADE       | HIGH RISK
+ school_settings_school_id_fkey               | school_settings                  | schools                        | CASCADE       | HIGH RISK
+ fk_scan_events_letter_code                   | scan_events                      | letter_codes                   | CASCADE       | HIGH RISK
+ user_relationships_follower_id_fkey          | user_relationships               | users                          | CASCADE       | HIGH RISK
+ user_relationships_following_id_fkey         | user_relationships               | users                          | CASCADE       | HIGH RISK
+ user_follow_stats_user_id_fkey               | user_follow_stats                | users                          | CASCADE       | HIGH RISK
+ follow_activities_actor_id_fkey              | follow_activities                | users                          | CASCADE       | HIGH RISK
+ follow_activities_target_id_fkey             | follow_activities                | users                          | CASCADE       | HIGH RISK
+ user_suggestions_user_id_fkey                | user_suggestions                 | users                          | CASCADE       | HIGH RISK
+ user_suggestions_suggested_user_id_fkey      | user_suggestions                 | users                          | CASCADE       | HIGH RISK
+ privacy_settings_user_id_fkey                | privacy_settings                 | users                          | CASCADE       | HIGH RISK
+ privacy_audit_logs_user_id_fkey              | privacy_audit_logs               | users                          | CASCADE       | HIGH RISK
+ privacy_cache_target_user_id_fkey            | privacy_cache                    | users                          | CASCADE       | HIGH RISK
+ privacy_cache_viewer_user_id_fkey            | privacy_cache                    | users                          | CASCADE       | HIGH RISK
+ fk_user_credit_actions_user_id               | user_credit_actions              | users                          | CASCADE       | HIGH RISK
+ fk_credit_risk_users_user_id                 | credit_risk_users                | users                          | CASCADE       | HIGH RISK
+ fk_fraud_detection_logs_user_id              | fraud_detection_logs             | users                          | CASCADE       | HIGH RISK
+ fk_credit_carts_user_id                      | credit_carts                     | users                          | CASCADE       | HIGH RISK
+ fk_credit_redemptions_user_id                | credit_redemptions               | users                          | CASCADE       | HIGH RISK
+ fk_user_redemption_histories_user_id         | user_redemption_histories        | users                          | CASCADE       | HIGH RISK
+ fk_participations_activity                   | credit_activity_participations   | credit_activities              | CASCADE       | HIGH RISK
+ fk_rewards_activity                          | credit_activity_rewards          | credit_activities              | CASCADE       | HIGH RISK
+ fk_activity_rules_activity                   | credit_activity_rules            | credit_activities              | CASCADE       | HIGH RISK
+ fk_target_audiences_activity                 | credit_activity_target_audiences | credit_activities              | CASCADE       | HIGH RISK
+ fk_activity_schedules_activity               | credit_activity_schedules        | credit_activities              | CASCADE       | HIGH RISK
+ fk_expiration_logs_transaction               | credit_expiration_logs           | credit_transactions            | CASCADE       | HIGH RISK
+ fk_expiration_logs_batch                     | credit_expiration_logs           | credit_expiration_batches      | CASCADE       | HIGH RISK
+ fk_transfer_notification_transfer            | credit_transfer_notifications    | credit_transfers               | CASCADE       | HIGH RISK
+(90 rows)
+

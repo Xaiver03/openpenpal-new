@@ -139,6 +139,12 @@ export function middleware(request: NextRequest) {
   
   console.log('🛡️ Middleware processing:', pathname)
   
+  // Redirect /postcode to /opcode (OP Code system replacement)
+  if (pathname === '/postcode') {
+    console.log('🔄 Redirecting /postcode to /opcode')
+    return NextResponse.redirect(new URL('/opcode', request.url))
+  }
+  
   // Apply security middleware first (HTTPS, security headers)
   const securityResponse = securityMiddleware(request)
   

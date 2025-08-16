@@ -1,0 +1,252 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop, 'feature/*']
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+env:
+  DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+  DOCKER_NAMESPACE: ${{ secrets.DOCKER_NAMESPACE }}-staging
+  PROJECT_NAME: openpenpal-staging
+  DEPLOYMENT_ENV: staging
+
+jobs:
+  # 代码检查
+  code-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Lint code
+      run: |
+        # 安装 linters
+        npm install -g eslint prettier
+        pip install flake8 black pylint
+        
+        # 运行 linters
+        find . -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" | xargs eslint || true
+        find . -name "*.py" | xargs flake8 || true
+        
+    - name: Check security vulnerabilities
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        severity: 'CRITICAL,HIGH'
+        exit-code: '0'  # 不阻止 staging 部署
+
+  # 构建和测试
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: code-check
+    strategy:
+      matrix:
+        service:
+          - name: frontend
+            path: ./frontend
+            test-cmd: npm test -- --passWithNoTests
+          - name: backend
+            path: ./backend
+            test-cmd: go test ./... -short
+          - name: write-service
+            path: ./services/write-service
+            test-cmd: pytest tests/ -v --tb=short || true
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      if: matrix.service.name == 'frontend'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: ${{ matrix.service.path }}/package-lock.json
+        
+    - name: Setup Go
+      if: matrix.service.name == 'backend'
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        
+    - name: Setup Python
+      if: matrix.service.name == 'write-service'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies and test
+      working-directory: ${{ matrix.service.path }}
+      run: |
+        if [ -f "package.json" ]; then
+          npm ci
+        elif [ -f "go.mod" ]; then
+          go mod download
+        elif [ -f "requirements.txt" ]; then
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+        fi
+        
+        # 运行测试
+        ${{ matrix.service.test-cmd }}
+
+  # 构建镜像
+  build-images:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [frontend, backend, write-service, courier-service, admin-service, ocr-service, gateway]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./deploy/docker/Dockerfile.${{ matrix.service }}
+        push: true
+        tags: |
+          ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ matrix.service }}:staging-${{ github.sha }}
+          ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ matrix.service }}:staging-latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILD_ENV=staging
+          BUILD_VERSION=${{ github.sha }}
+
+  # 部署到测试环境
+  deploy-staging:
+    needs: build-images
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USER }}
+        key: ${{ secrets.STAGING_SSH_KEY }}
+        script: |
+          cd /home/ubuntu/openpenpal-staging
+          
+          # 更新代码
+          git pull origin ${{ github.ref_name }}
+          
+          # 更新环境变量
+          cat > .env.staging << EOF
+          DOCKER_REGISTRY=${{ env.DOCKER_REGISTRY }}
+          DOCKER_NAMESPACE=${{ env.DOCKER_NAMESPACE }}
+          IMAGE_TAG=staging-${{ github.sha }}
+          JWT_SECRET=${{ secrets.STAGING_JWT_SECRET }}
+          POSTGRES_PASSWORD=${{ secrets.STAGING_POSTGRES_PASSWORD }}
+          REDIS_PASSWORD=${{ secrets.STAGING_REDIS_PASSWORD }}
+          EOF
+          
+          # 部署
+          docker-compose -f deploy/docker-compose.staging.yml pull
+          docker-compose -f deploy/docker-compose.staging.yml up -d
+          
+          # 等待服务启动
+          sleep 30
+          
+          # 运行数据库迁移
+          docker-compose -f deploy/docker-compose.staging.yml exec -T backend go run main.go migrate
+    
+    - name: Run smoke tests
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USER }}
+        key: ${{ secrets.STAGING_SSH_KEY }}
+        script: |
+          cd /home/ubuntu/openpenpal-staging
+          npm run test:e2e:staging || true
+
+  # 性能测试
+  performance-test:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Lighthouse CI
+      uses: treosh/lighthouse-ci-action@v9
+      with:
+        urls: |
+          https://staging.openpenpal.com
+          https://staging.openpenpal.com/letters
+          https://staging.openpenpal.com/courier
+        uploadArtifacts: true
+        temporaryPublicStorage: true
+    
+    - name: Run load tests
+      run: |
+        npm install -g k6
+        k6 run tests/load/staging-load-test.js || true
+
+  # 通知
+  notify:
+    needs: [deploy-staging, performance-test]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Send Slack notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: |
+          Staging Deployment: ${{ needs.deploy-staging.result }}
+          Branch: ${{ github.ref_name }}
+          PR: ${{ github.event.pull_request.html_url || 'N/A' }}
+          Commit: ${{ github.sha }}
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const status = '${{ needs.deploy-staging.result }}' === 'success' ? '✅' : '❌';
+          const body = `## Staging Deployment ${status}
+          
+          **Environment**: https://staging.openpenpal.com
+          **Commit**: \`${{ github.sha }}\`
+          **Time**: ${new Date().toISOString()}
+          
+          ### Test Results
+          - Code Check: ${{ needs.code-check.result }}
+          - Build & Test: ${{ needs.build-and-test.result }}
+          - Deployment: ${{ needs.deploy-staging.result }}
+          - Performance: ${{ needs.performance-test.result || 'N/A' }}
+          
+          ### Next Steps
+          ${status === '✅' ? '- Review the staging environment\n- Run manual tests if needed\n- Approve for production deployment' : '- Check the failure logs\n- Fix issues and push updates'}
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          })

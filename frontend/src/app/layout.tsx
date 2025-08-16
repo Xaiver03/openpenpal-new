@@ -13,13 +13,16 @@ import { TokenRefreshProvider } from '@/components/providers/token-refresh-provi
 import { TokenProvider } from '@/contexts/token-context'
 import dynamic from 'next/dynamic'
 
-const ClientBoundary = dynamic(
-  () => import('@/components/providers/client-boundary').then(mod => ({ default: mod.ClientBoundary })),
-  { 
-    ssr: false,
-    loading: () => <div className="relative flex min-h-screen flex-col"><main className="flex-1"></main></div>
-  }
-)
+// Temporarily import directly to fix originalFactory.call error
+import { ClientBoundary } from '@/components/providers/client-boundary'
+
+// const ClientBoundary = dynamic(
+//   () => import('@/components/providers/client-boundary').then(mod => ({ default: mod.ClientBoundary })),
+//   { 
+//     ssr: false,
+//     loading: () => <div className="relative flex min-h-screen flex-col"><main className="flex-1"></main></div>
+//   }
+// )
 
 const inter = Inter({
   subsets: ['latin'],

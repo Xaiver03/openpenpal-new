@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RefreshCw, LogIn, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context-new'
 import { TokenManager } from '@/lib/auth/cookie-token-manager'
-import { authSyncService } from '@/lib/auth/auth-sync-service'
+import { getAuthSyncService } from '@/lib/auth/auth-sync-service'
 import { toast } from 'sonner'
 
 interface AuthFixBannerProps {
@@ -22,7 +22,7 @@ export function AuthFixBanner({ onFixed }: AuthFixBannerProps) {
     
     try {
       // 使用强化的认证同步服务进行修复
-      const success = await authSyncService.fixAuth()
+      const success = await getAuthSyncService().fixAuth()
       
       if (success) {
         toast.success('认证状态已修复！')

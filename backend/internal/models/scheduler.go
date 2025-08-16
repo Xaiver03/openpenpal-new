@@ -33,6 +33,9 @@ const (
 	SchedulerTaskStatusSkipped   SchedulerTaskStatus = "skipped"   // 已跳过
 )
 
+// TaskStatus 任务状态别名（兼容性）
+type TaskStatus = SchedulerTaskStatus
+
 // TaskPriority 任务优先级
 type TaskPriority string
 

@@ -355,4 +355,5 @@ func DefaultMonitoringConfig() *MonitoringConfig {
 }
 
 // Global monitoring service instance
-var DefaultMonitoringService = NewMonitoringService(DefaultMonitoringConfig())
+// Commented out to avoid duplicate registration
+// var DefaultMonitoringService = NewMonitoringService(DefaultMonitoringConfig())

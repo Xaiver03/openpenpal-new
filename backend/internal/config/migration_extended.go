@@ -13,20 +13,17 @@ func MigrateExtendedModels(db *gorm.DB) error {
 	log.Println("Starting extended model migration...")
 	// 博物馆扩展模型
 	log.Println("Migrating museum extended models...")
-	err := db.AutoMigrate(
+	museumModels := []interface{}{
 		&models.MuseumTag{},
 		&models.MuseumInteraction{},
 		&models.MuseumReaction{},
 		&models.MuseumSubmission{},
 		&models.MuseumExhibitionEntry{},
-	)
+	}
+	err := migrateModelsWithErrorHandling(db, museumModels)
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			log.Printf("Museum tables already exist, continuing: %v", err)
-		} else {
-			log.Printf("Museum extended models migration error: %v", err)
-			return err
-		}
+		log.Printf("Museum extended models migration error: %v", err)
+		return err
 	}
 	log.Println("Museum extended models migrated successfully")
 
@@ -34,14 +31,11 @@ func MigrateExtendedModels(db *gorm.DB) error {
 	log.Println("Migrating letter extended models...")
 
 	// 先迁移表结构
-	err = db.AutoMigrate(&models.LetterTemplate{})
+	letterTemplateModels := []interface{}{&models.LetterTemplate{}}
+	err = migrateModelsWithErrorHandling(db, letterTemplateModels)
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			log.Printf("Letter template table already exists, continuing: %v", err)
-		} else {
-			log.Printf("Letter template migration error: %v", err)
-			return err
-		}
+		log.Printf("Letter template migration error: %v", err)
+		return err
 	}
 
 	// 然后更新现有的 letter_templates 表的 content 字段
@@ -50,68 +44,89 @@ func MigrateExtendedModels(db *gorm.DB) error {
 		log.Printf("Warning: Could not update existing letter templates: %v", err)
 	}
 
-	err = db.AutoMigrate(
+	letterExtendedModels := []interface{}{
 		&models.LetterLike{},
 		&models.LetterShare{},
-	)
+	}
+	err = migrateModelsWithErrorHandling(db, letterExtendedModels)
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			log.Printf("Letter extended models already exist, continuing: %v", err)
-		} else {
-			log.Printf("Letter extended models migration error: %v", err)
-			return err
-		}
+		log.Printf("Letter extended models migration error: %v", err)
+		return err
 	}
 	log.Println("Letter extended models migrated successfully")
 
 	// 用户扩展模型
 	log.Println("Migrating user extended models...")
-	err = db.AutoMigrate(
+	userExtendedModels := []interface{}{
 		&models.UserProfileExtended{},
 		&models.UserStatsData{},
 		&models.UserPrivacy{},
 		&models.UserAchievement{},
-	)
+	}
+	err = migrateModelsWithErrorHandling(db, userExtendedModels)
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			log.Printf("User extended models already exist, continuing: %v", err)
-		} else {
-			log.Printf("User extended models migration error: %v", err)
-			return err
-		}
+		log.Printf("User extended models migration error: %v", err)
+		return err
 	}
 	log.Println("User extended models migrated successfully")
 
 	// 扫描历史系统模型 - PRD要求
 	log.Println("Migrating scan event models...")
-	err = db.AutoMigrate(
+	scanModels := []interface{}{
 		&models.ScanEvent{},
-	)
+	}
+	err = migrateModelsWithErrorHandling(db, scanModels)
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			log.Printf("Scan event models already exist, continuing: %v", err)
-		} else {
-			log.Printf("Scan event models migration error: %v", err)
-			return err
-		}
+		log.Printf("Scan event models migration error: %v", err)
+		return err
 	}
 	log.Println("Scan event models migrated successfully")
 
 	// 云中锦书模型 - Cloud Letter System
 	log.Println("Migrating cloud letter models...")
-	err = db.AutoMigrate(
+	cloudModels := []interface{}{
 		&models.CloudPersona{},
 		&models.CloudLetter{},
-	)
+	}
+	err = migrateModelsWithErrorHandling(db, cloudModels)
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			log.Printf("Cloud letter models already exist, continuing: %v", err)
-		} else {
-			log.Printf("Cloud letter models migration error: %v", err)
-			return err
-		}
+		log.Printf("Cloud letter models migration error: %v", err)
+		return err
 	}
 	log.Println("Cloud letter models migrated successfully")
+
+	// Phase 1: 积分限制与防作弊系统模型 
+	log.Println("Migrating credit limits and fraud detection models...")
+	creditLimitModels := []interface{}{
+		&models.CreditLimitRule{},
+		&models.UserCreditAction{},
+		&models.CreditRiskUser{},
+		&models.FraudDetectionLog{},
+	}
+	err = migrateModelsWithErrorHandling(db, creditLimitModels)
+	if err != nil {
+		log.Printf("Credit limits models migration error: %v", err)
+		return err
+	}
+	log.Println("Credit limits and fraud detection models migrated successfully")
+
+	// Phase 2: 积分商城系统模型
+	log.Println("Migrating credit shop system models...")
+	creditShopModels := []interface{}{
+		&models.CreditShopCategory{},
+		&models.CreditShopProduct{},
+		&models.CreditCart{},
+		&models.CreditCartItem{},
+		&models.CreditRedemption{},
+		&models.UserRedemptionHistory{},
+		&models.CreditShopConfig{},
+	}
+	err = migrateModelsWithErrorHandling(db, creditShopModels)
+	if err != nil {
+		log.Printf("Credit shop models migration error: %v", err)
+		return err
+	}
+	log.Println("Credit shop system models migrated successfully")
 
 	// 创建默认模板
 	log.Println("Creating default templates...")
@@ -252,4 +267,38 @@ func createDefaultTemplates(db *gorm.DB) {
 			}
 		}
 	}
+}
+
+// migrateModelsWithErrorHandling migrates models with enhanced error handling
+func migrateModelsWithErrorHandling(db *gorm.DB, models []interface{}) error {
+	err := db.AutoMigrate(models...)
+	if err != nil {
+		errStr := err.Error()
+		if strings.Contains(errStr, "already exists") {
+			log.Printf("Some models already exist, continuing: %v", err)
+		} else if strings.Contains(errStr, "constraint") && strings.Contains(errStr, "does not exist") {
+			log.Printf("Constraint-related error, trying individual migration: %v", err)
+			// Try individual migration for constraint issues
+			for i, model := range models {
+				if err := db.AutoMigrate(model); err != nil {
+					errStr := err.Error()
+					if strings.Contains(errStr, "constraint") && strings.Contains(errStr, "does not exist") {
+						log.Printf("Constraint error for model %T (continuing): %v", model, err)
+						continue
+					} else if strings.Contains(errStr, "already exists") {
+						log.Printf("Model %T already exists (continuing): %v", model, err)
+						continue
+					} else {
+						log.Printf("Failed to migrate model %T: %v", model, err)
+						return err
+					}
+				} else {
+					log.Printf("Successfully migrated model %d: %T", i+1, model)
+				}
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
 }

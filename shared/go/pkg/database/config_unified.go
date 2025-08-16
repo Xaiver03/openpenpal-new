@@ -56,15 +56,15 @@ type Config struct {
 
 // DefaultConfig 默认配置
 var DefaultConfig = &Config{
-	Type:         MySQL,
+	Type:         PostgreSQL,
 	Host:         "localhost",
-	Port:         3306,
+	Port:         5432,
 	Database:     "openpenpal",
-	Username:     "root",
+	Username:     "openpenpal_user",
 	Password:     "",
-	SSLMode:      "disable",
-	Charset:      "utf8mb4",
-	Timezone:     "UTC",
+	SSLMode:      "require",
+	Charset:      "utf8",
+	Timezone:     "Asia/Shanghai",
 	
 	MaxOpenConns:    25,
 	MaxIdleConns:    10,

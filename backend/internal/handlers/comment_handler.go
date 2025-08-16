@@ -313,6 +313,42 @@ func (h *CommentHandler) GetCommentStats(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Comment stats retrieved successfully", result)
 }
 
+// BatchOperateComments 批量操作评论
+// POST /api/v1/comments/batch
+func (h *CommentHandler) BatchOperateComments(c *gin.Context) {
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		utils.UnauthorizedResponse(c, "User not authenticated")
+		return
+	}
+
+	// 获取用户角色
+	userRole, exists := middleware.GetUserRole(c)
+	if !exists {
+		utils.BadRequestResponse(c, "User role not found", nil)
+		return
+	}
+
+	var req struct {
+		CommentIDs []string               `json:"comment_ids" binding:"required"`
+		Operation  string                 `json:"operation" binding:"required,oneof=delete approve reject hide show moderate"`
+		Data       map[string]interface{} `json:"data"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ParseAndRespondValidationError(c, err, utils.LetterValidationMsg)
+		return
+	}
+
+	err := h.commentService.BatchOperateComments(c.Request.Context(), userID, models.UserRole(userRole), req.CommentIDs, req.Operation, req.Data)
+	if err != nil {
+		utils.BadRequestResponse(c, "Batch operation failed", err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Batch operation completed successfully", nil)
+}
+
 // RegisterCommentRoutes 注册评论相关路由
 func RegisterCommentRoutes(router *gin.RouterGroup, commentHandler *CommentHandler) {
 	comments := router.Group("/comments")
@@ -324,6 +360,9 @@ func RegisterCommentRoutes(router *gin.RouterGroup, commentHandler *CommentHandl
 		comments.DELETE("/:id", commentHandler.DeleteComment)          // 删除评论
 		comments.POST("/:id/like", commentHandler.LikeComment)         // 点赞/取消点赞
 		comments.GET("/:id/replies", commentHandler.GetCommentReplies) // 获取回复列表
+		
+		// 批量操作
+		comments.POST("/batch", commentHandler.BatchOperateComments)   // 批量操作评论
 	}
 
 	letters := router.Group("/letters")

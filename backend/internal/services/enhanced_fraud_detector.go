@@ -2,9 +2,7 @@ package services
 
 import (
 	"fmt"
-	"log"
 	"math"
-	"sort"
 	"time"
 
 	"openpenpal-backend/internal/models"

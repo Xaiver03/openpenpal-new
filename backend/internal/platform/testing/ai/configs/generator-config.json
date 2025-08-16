@@ -1,0 +1,43 @@
+{
+  "generator": {
+    "max_test_cases": 50,
+    "min_coverage_target": 0.85,
+    "complexity_threshold": 15,
+    "enable_pattern_learning": true,
+    "enable_coverage_opt": true,
+    "test_data_size": 1000,
+    "random_seed": 42,
+    "generation_strategy": {
+      "prioritize_critical": true,
+      "include_edge_cases": true,
+      "generate_negative_tests": true,
+      "mock_external_dependencies": true
+    },
+    "ml_models": {
+      "complexity_model": {
+        "enabled": true,
+        "model_path": "models/complexity_predictor.pkl",
+        "confidence_threshold": 0.7
+      },
+      "priority_model": {
+        "enabled": true,
+        "model_path": "models/priority_classifier.pkl", 
+        "decision_tree_depth": 10
+      },
+      "pattern_recognizer": {
+        "enabled": true,
+        "ngram_size": 3,
+        "min_pattern_frequency": 2
+      },
+      "coverage_optimizer": {
+        "enabled": true,
+        "genetic_algorithm": {
+          "population_size": 50,
+          "generations": 100,
+          "mutation_rate": 0.1,
+          "crossover_rate": 0.8
+        }
+      }
+    }
+  }
+}

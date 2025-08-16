@@ -266,7 +266,10 @@ func (cbmi *CircuitBreakerMetricsIntegration) GetIntegrationStatus() map[string]
 }
 
 // Default integration instance
+// Commented out to avoid duplicate registration
+/*
 var DefaultCircuitBreakerMetricsIntegration = NewCircuitBreakerMetricsIntegration(
 	DefaultMetricsCollector,
 	resilience.DefaultCircuitBreakerManager,
 )
+*/

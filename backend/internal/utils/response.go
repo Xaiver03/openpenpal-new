@@ -2,6 +2,7 @@ package utils
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -97,6 +98,15 @@ type Pagination struct {
 	TotalPages int   `json:"total_pages"`
 }
 
+// SuccessResponseWithPagination 带分页的成功响应
+func SuccessResponseWithPagination(c *gin.Context, data interface{}, pagination *Pagination) {
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    data,
+		"pagination": pagination,
+	})
+}
+
 // CalculatePagination 计算分页信息
 func CalculatePagination(page, limit int, total int64) *Pagination {
 	if page < 1 {
@@ -112,4 +122,17 @@ func CalculatePagination(page, limit int, total int64) *Pagination {
 		Total:      total,
 		TotalPages: totalPages,
 	}
+}
+
+// ParseIntQuery 解析查询参数为整数
+func ParseIntQuery(c *gin.Context, key string, defaultValue int) int {
+	value := c.Query(key)
+	if value == "" {
+		return defaultValue
+	}
+	result, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return result
 }
