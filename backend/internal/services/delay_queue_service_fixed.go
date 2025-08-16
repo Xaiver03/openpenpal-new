@@ -7,7 +7,6 @@ import (
 	"openpenpal-backend/internal/config"
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/utils"
-	"os"
 	"strconv"
 	"time"
 
@@ -442,7 +441,7 @@ func (s *DelayQueueServiceFixed) isCircuitOpen(key string) bool {
 func (s *DelayQueueServiceFixed) recordCircuitFailure(key string) {
 	cb, exists := s.circuitBreaker[key]
 	if !exists {
-		cb = &CircuitBreaker{
+		cb = &DelayQueueCircuitBreaker{
 			Threshold: 5,
 			Timeout:   10 * time.Minute,
 			State:     "closed",
@@ -475,7 +474,9 @@ func (s *DelayQueueServiceFixed) recordCircuitSuccess(key string) {
 		cb.FailureCount = 0
 		s.smartLogger.LogInfo(fmt.Sprintf("Circuit breaker closed for %s", key))
 	} else if cb.State == "closed" {
-		cb.FailureCount = max(0, cb.FailureCount-1)
+		if cb.FailureCount > 0 {
+			cb.FailureCount--
+		}
 	}
 }
 
