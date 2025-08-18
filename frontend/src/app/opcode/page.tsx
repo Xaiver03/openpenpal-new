@@ -151,18 +151,30 @@ export default function OPCodePage() {
     setSelection({ ...selection, school, district: undefined, building: undefined, deliveryPoint: undefined })
     setLoading(true)
     try {
-      const response = await apiClient.get(`/api/v1/opcode/districts/${school.school_code}`)
-      if ((response.data as any).success) {
-        setDistricts((response.data as any).data.districts || [])
+      const response = await fetch(`/api/schools/districts?school_code=${school.school_code}`)
+      const data = await response.json()
+      
+      if (data.success || data.code === 0) {
+        const districtsData = data.data?.districts || data.data?.areas || []
+        // 转换数据格式
+        const formattedDistricts = districtsData.map((d: any) => ({
+          code: d.area_code || d.code,
+          name: d.area_name || d.name,
+          description: d.description || ''
+        }))
+        setDistricts(formattedDistricts)
+      } else {
+        throw new Error('Failed to fetch districts')
       }
     } catch (error) {
+      console.error('Failed to fetch districts:', error)
       // 使用模拟数据
       setDistricts([
-        { code: '1', name: '东区', description: '宿舍楼1-5栋' },
-        { code: '2', name: '西区', description: '宿舍楼6-10栋' },
-        { code: '3', name: '南区', description: '宿舍楼11-15栋' },
-        { code: '4', name: '北区', description: '宿舍楼16-20栋' },
-        { code: '5', name: '中心区', description: '教学楼、图书馆' }
+        { code: '01', name: '东区', description: '宿舍楼1-5栋' },
+        { code: '02', name: '西区', description: '宿舍楼6-10栋' },
+        { code: '03', name: '南区', description: '宿舍楼11-15栋' },
+        { code: '04', name: '北区', description: '宿舍楼16-20栋' },
+        { code: '05', name: '中心区', description: '教学楼、图书馆' }
       ])
     } finally {
       setLoading(false)
@@ -175,11 +187,16 @@ export default function OPCodePage() {
     setLoading(true)
     try {
       const schoolCode = selection.school?.school_code
-      const response = await apiClient.get(`/api/v1/opcode/buildings/${schoolCode}/${district.code}`)
-      if ((response.data as any).success) {
-        setBuildings((response.data as any).data.buildings || [])
+      const response = await fetch(`/api/schools/buildings?school_code=${schoolCode}&district_code=${district.code}`)
+      const data = await response.json()
+      
+      if (data.success || data.code === 0) {
+        setBuildings(data.data?.buildings || [])
+      } else {
+        throw new Error('Failed to fetch buildings')
       }
     } catch (error) {
+      console.error('Failed to fetch buildings:', error)
       // 使用模拟数据
       setBuildings([
         { code: 'A', name: 'A栋', type: 'dormitory' },
@@ -200,14 +217,19 @@ export default function OPCodePage() {
     setLoading(true)
     try {
       const prefix = `${selection.school?.school_code}${selection.district?.code}${building.code}`
-      const response = await apiClient.get(`/api/v1/opcode/delivery-points/${prefix}`)
-      if ((response.data as any).success) {
-        setDeliveryPoints((response.data as any).data.points || [])
+      const response = await fetch(`/api/schools/delivery-points?prefix=${prefix}`)
+      const data = await response.json()
+      
+      if (data.success || data.code === 0) {
+        setDeliveryPoints(data.data?.points || [])
         // 获取推荐的未占用编码
-        const available = (response.data as any).data.points.filter((p: DeliveryPoint) => p.available)
+        const available = (data.data?.points || []).filter((p: DeliveryPoint) => p.available)
         setRecommendedCodes(available.slice(0, 5).map((p: DeliveryPoint) => `${prefix}${p.code}`))
+      } else {
+        throw new Error('Failed to fetch delivery points')
       }
     } catch (error) {
+      console.error('Failed to fetch delivery points:', error)
       // 使用模拟数据
       const points: DeliveryPoint[] = []
       for (let floor = 1; floor <= 6; floor++) {

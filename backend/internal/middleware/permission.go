@@ -124,3 +124,37 @@ func SameSchoolMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// CheckOPCodePermission 检查OP Code权限的辅助函数
+func CheckOPCodePermission(user *models.User, targetOPCode string, requiredPermission string) bool {
+	// 提取信使信息
+	courier := GetCourierInfoFromUser(user)
+	
+	// 管理员拥有所有权限
+	if user.Role == models.RolePlatformAdmin || user.Role == models.RoleSuperAdmin {
+		return true
+	}
+	
+	// 非信使角色无OP Code权限
+	if courier.Level == 0 {
+		return false
+	}
+	
+	// 验证OP Code权限
+	permissions := ValidateOPCodeAccess(courier, targetOPCode)
+	
+	switch requiredPermission {
+	case "view":
+		return permissions.CanView
+	case "edit":
+		return permissions.CanEdit
+	case "create":
+		return permissions.CanCreate
+	case "delete":
+		return permissions.CanDelete
+	case "batch":
+		return permissions.CanBatch
+	default:
+		return false
+	}
+}

@@ -151,6 +151,13 @@ export default function CourierPage() {
       color: 'bg-yellow-600 hover:bg-yellow-700'
     },
     {
+      title: 'OP Code管理',
+      description: '管理地理编码系统',
+      href: '/courier/opcode-manage',
+      icon: MapPin,
+      color: 'bg-purple-600 hover:bg-purple-700'
+    },
+    {
       title: '晋升之路',
       description: '查看晋升要求和申请晋级',
       href: '/courier/growth',
