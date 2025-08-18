@@ -7,6 +7,7 @@ import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import type {
   UserCredit,
+  UserCreditLeaderboard,
   CreditTransaction,
   CreditTask,
   CreditTaskStatistics,
@@ -22,7 +23,7 @@ interface CreditState {
   // 积分信息
   userCredit: UserCredit | null
   creditSummary: CreditSummary | null
-  leaderboard: UserCredit[]
+  leaderboard: UserCreditLeaderboard[]
   
   // 积分历史
   transactions: CreditTransaction[]

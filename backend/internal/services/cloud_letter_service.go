@@ -509,11 +509,22 @@ func (s *CloudLetterService) sendReviewNotification(ctx context.Context, letter 
 		letter.PersonaID)
 
 	// 发送通知
-	// 注意：这里需要根据实际的NotificationService接口调整
 	log.Printf("📧 [CloudLetter] Sending review notification to courier %s: %s", reviewer.UserID, message)
 	
-	// TODO: 调用实际的通知服务方法
-	// s.notificationSvc.SendNotification(ctx, reviewer.UserID, "CloudLetter审核", message)
+	if s.notificationSvc != nil {
+		notificationData := map[string]interface{}{
+			"title":          "CloudLetter审核",
+			"content":        message,
+			"type":           "cloud_letter_review",
+			"letter_id":      letter.ID,
+			"persona_id":     letter.PersonaID,
+			"action_required": true,
+		}
+		
+		if err := s.notificationSvc.NotifyUser(reviewer.UserID, "cloud_letter_review", notificationData); err != nil {
+			log.Printf("❌ [CloudLetter] Failed to send review notification to %s: %v", reviewer.UserID, err)
+		}
+	}
 }
 
 // max 辅助函数
@@ -638,8 +649,20 @@ func (s *CloudLetterService) sendReviewResultNotification(ctx context.Context, l
 
 	log.Printf("📧 [CloudLetter] Sending review result notification to user %s: %s", letter.UserID, title)
 	
-	// TODO: 调用实际的通知服务方法
-	// s.notificationSvc.SendNotification(ctx, letter.UserID, title, message)
+	if s.notificationSvc != nil {
+		notificationData := map[string]interface{}{
+			"title":        title,
+			"content":      message,
+			"type":         "cloud_letter_review_result",
+			"letter_id":    letter.ID,
+			"decision":     decision,
+			"comments":     comments,
+		}
+		
+		if err := s.notificationSvc.NotifyUser(letter.UserID, "cloud_letter_review_result", notificationData); err != nil {
+			log.Printf("❌ [CloudLetter] Failed to send review result notification to %s: %v", letter.UserID, err)
+		}
+	}
 }
 
 // processApprovedLetter 处理已批准的信件

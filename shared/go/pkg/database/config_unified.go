@@ -11,20 +11,16 @@ import (
 	"sync"
 	"time"
 
-	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres" 
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-// DatabaseType 数据库类型
+// DatabaseType 数据库类型 - 只支持PostgreSQL
 type DatabaseType string
 
 const (
-	MySQL      DatabaseType = "mysql"
 	PostgreSQL DatabaseType = "postgres" 
-	SQLite     DatabaseType = "sqlite"
 )
 
 // Config 数据库配置
@@ -36,6 +32,9 @@ type Config struct {
 	Username     string       `json:"username" yaml:"username"`
 	Password     string       `json:"password" yaml:"password"`
 	SSLMode      string       `json:"ssl_mode" yaml:"ssl_mode"`
+	SSLCert      string       `json:"ssl_cert" yaml:"ssl_cert"`         // SSL证书路径
+	SSLKey       string       `json:"ssl_key" yaml:"ssl_key"`           // SSL私钥路径
+	SSLRootCert  string       `json:"ssl_root_cert" yaml:"ssl_root_cert"` // CA证书路径
 	Charset      string       `json:"charset" yaml:"charset"`
 	Timezone     string       `json:"timezone" yaml:"timezone"`
 	
@@ -62,7 +61,7 @@ var DefaultConfig = &Config{
 	Database:     "openpenpal",
 	Username:     "openpenpal_user",
 	Password:     "",
-	SSLMode:      "require",
+	SSLMode:      "disable", // 开发环境默认禁用SSL
 	Charset:      "utf8",
 	Timezone:     "Asia/Shanghai",
 	
@@ -257,47 +256,57 @@ func (m *Manager) GetStats() map[string]interface{} {
 	return stats
 }
 
-// createConnection 创建数据库连接
+// createConnection 创建PostgreSQL数据库连接
 func (m *Manager) createConnection(config *Config) (*gorm.DB, error) {
-	var dialector gorm.Dialector
-	
-	switch config.Type {
-	case MySQL:
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=%s",
-			config.Username,
-			config.Password,
-			config.Host,
-			config.Port,
-			config.Database,
-			config.Charset,
-			config.Timezone,
-		)
-		dialector = mysql.Open(dsn)
-		
-	case PostgreSQL:
-		// 处理时区，默认使用 Asia/Shanghai
-		timezone := config.Timezone
-		if timezone == "" {
-			timezone = "Asia/Shanghai"
-		}
-		
-		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
-			config.Host,
-			config.Username,
-			config.Password,
-			config.Database,
-			config.Port,
-			config.SSLMode,
-			timezone,
-		)
-		dialector = postgres.Open(dsn)
-		
-	case SQLite:
-		dialector = sqlite.Open(config.Database)
-		
-	default:
-		return nil, fmt.Errorf("unsupported database type: %s", config.Type)
+	// 只支持PostgreSQL
+	if config.Type != PostgreSQL {
+		return nil, fmt.Errorf("only PostgreSQL is supported, got: %s", config.Type)
 	}
+	
+	// 处理时区，默认使用 Asia/Shanghai
+	timezone := config.Timezone
+	if timezone == "" {
+		timezone = "Asia/Shanghai"
+	}
+	
+	// 处理SSL模式，根据环境设置默认值
+	sslMode := config.SSLMode
+	if sslMode == "" {
+		// 根据环境选择默认SSL模式
+		switch config.Timezone {
+		case "Asia/Shanghai":
+			// 国内环境默认禁用SSL
+			sslMode = "disable"
+		default:
+			// 其他环境默认使用require
+			sslMode = "require"
+		}
+	}
+	
+	// 构建基础DSN
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s",
+		config.Host,
+		config.Username,
+		config.Password,
+		config.Database,
+		config.Port,
+		sslMode,
+		timezone,
+	)
+	
+	// 添加SSL证书参数
+	if sslMode != "disable" && sslMode != "allow" {
+		if config.SSLRootCert != "" {
+			dsn += fmt.Sprintf(" sslrootcert=%s", config.SSLRootCert)
+		}
+		if config.SSLCert != "" {
+			dsn += fmt.Sprintf(" sslcert=%s", config.SSLCert)
+		}
+		if config.SSLKey != "" {
+			dsn += fmt.Sprintf(" sslkey=%s", config.SSLKey)
+		}
+	}
+	dialector := postgres.Open(dsn)
 	
 	// GORM配置
 	gormConfig := &gorm.Config{
@@ -307,19 +316,22 @@ func (m *Manager) createConnection(config *Config) (*gorm.DB, error) {
 	return gorm.Open(dialector, gormConfig)
 }
 
-// validateConfig 验证配置
+// validateConfig 验证PostgreSQL配置
 func validateConfig(config *Config) error {
 	if config.Type == "" {
 		return fmt.Errorf("database type is required")
 	}
 	
-	if config.Type != SQLite {
-		if config.Host == "" {
-			return fmt.Errorf("host is required for %s", config.Type)
-		}
-		if config.Username == "" {
-			return fmt.Errorf("username is required for %s", config.Type)
-		}
+	// 只支持PostgreSQL
+	if config.Type != PostgreSQL {
+		return fmt.Errorf("only PostgreSQL is supported, got: %s", config.Type)
+	}
+	
+	if config.Host == "" {
+		return fmt.Errorf("host is required for PostgreSQL")
+	}
+	if config.Username == "" {
+		return fmt.Errorf("username is required for PostgreSQL")
 	}
 	
 	if config.Database == "" {

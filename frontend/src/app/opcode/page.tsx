@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { 
   MapPin, 
   Building, 
@@ -17,33 +18,221 @@ import {
   BookOpen,
   Settings,
   Search,
-  School
+  School,
+  ArrowRight,
+  Home,
+  Loader2,
+  Package
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context-new'
-import { OPCodeDisplay } from '@/components/user/opcode-display'
+import { apiClient } from '@/lib/api-client-enhanced'
+import { useToast } from '@/hooks/use-toast'
+
+// 类型定义
+interface School {
+  school_code: string
+  school_name: string
+  city: string
+  province: string
+  full_name?: string
+}
+
+interface District {
+  code: string
+  name: string
+  description?: string
+}
+
+interface Building {
+  code: string
+  name: string
+  type: string // dormitory, teaching, dining, etc
+}
+
+interface DeliveryPoint {
+  code: string
+  name: string
+  available: boolean
+  type: string
+}
+
+interface OPCodeSelection {
+  city?: string
+  school?: School
+  district?: District
+  building?: Building
+  deliveryPoint?: DeliveryPoint
+  finalCode?: string
+}
 
 export default function OPCodePage() {
   const { user, isAuthenticated } = useAuth()
-  const [activeTab, setActiveTab] = useState('overview')
-  const [searchCity, setSearchCity] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
+  const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState('apply')
   const [loading, setLoading] = useState(false)
+  
+  // 层级选择状态
+  const [selection, setSelection] = useState<OPCodeSelection>({})
+  const [searchCity, setSearchCity] = useState('')
+  const [cities, setCities] = useState<string[]>([])
+  const [schools, setSchools] = useState<School[]>([])
+  const [districts, setDistricts] = useState<District[]>([])
+  const [buildings, setBuildings] = useState<Building[]>([])
+  const [deliveryPoints, setDeliveryPoints] = useState<DeliveryPoint[]>([])
+  const [recommendedCodes, setRecommendedCodes] = useState<string[]>([])
 
-  // 城市搜索功能
-  const handleCitySearch = async () => {
-    if (!searchCity.trim()) return
+  // 加载城市列表
+  useEffect(() => {
+    loadCities()
+  }, [])
+
+  const loadCities = async () => {
+    try {
+      const response = await apiClient.get('/api/v1/opcode/cities')
+      if ((response.data as any).success) {
+        setCities((response.data as any).data.cities || ['北京', '上海', '广州', '深圳', '成都', '杭州', '南京', '武汉', '西安', '长沙'])
+      }
+    } catch (error) {
+      // 使用默认城市列表
+      setCities(['北京', '上海', '广州', '深圳', '成都', '杭州', '南京', '武汉', '西安', '长沙'])
+    }
+  }
+
+  // 搜索城市学校
+  const searchSchoolsByCity = async (city: string) => {
+    setLoading(true)
+    try {
+      const response = await apiClient.get(`/api/v1/opcode/search/schools/by-city?city=${encodeURIComponent(city)}`)
+      if ((response.data as any).success) {
+        setSchools((response.data as any).data.schools || [])
+        setSelection({ ...selection, city })
+      }
+    } catch (error) {
+      toast({
+        title: '搜索失败',
+        description: '无法获取学校列表',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 选择学校后加载片区
+  const selectSchool = async (school: School) => {
+    setSelection({ ...selection, school, district: undefined, building: undefined, deliveryPoint: undefined })
+    setLoading(true)
+    try {
+      const response = await apiClient.get(`/api/v1/opcode/districts/${school.school_code}`)
+      if ((response.data as any).success) {
+        setDistricts((response.data as any).data.districts || [])
+      }
+    } catch (error) {
+      // 使用模拟数据
+      setDistricts([
+        { code: '1', name: '东区', description: '宿舍楼1-5栋' },
+        { code: '2', name: '西区', description: '宿舍楼6-10栋' },
+        { code: '3', name: '南区', description: '宿舍楼11-15栋' },
+        { code: '4', name: '北区', description: '宿舍楼16-20栋' },
+        { code: '5', name: '中心区', description: '教学楼、图书馆' }
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 选择片区后加载楼栋
+  const selectDistrict = async (district: District) => {
+    setSelection({ ...selection, district, building: undefined, deliveryPoint: undefined })
+    setLoading(true)
+    try {
+      const schoolCode = selection.school?.school_code
+      const response = await apiClient.get(`/api/v1/opcode/buildings/${schoolCode}/${district.code}`)
+      if ((response.data as any).success) {
+        setBuildings((response.data as any).data.buildings || [])
+      }
+    } catch (error) {
+      // 使用模拟数据
+      setBuildings([
+        { code: 'A', name: 'A栋', type: 'dormitory' },
+        { code: 'B', name: 'B栋', type: 'dormitory' },
+        { code: 'C', name: 'C栋', type: 'dormitory' },
+        { code: 'D', name: 'D栋', type: 'teaching' },
+        { code: 'E', name: 'E栋', type: 'dining' },
+        { code: 'F', name: 'F栋', type: 'dormitory' }
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 选择楼栋后加载投递点
+  const selectBuilding = async (building: Building) => {
+    setSelection({ ...selection, building, deliveryPoint: undefined })
+    setLoading(true)
+    try {
+      const prefix = `${selection.school?.school_code}${selection.district?.code}${building.code}`
+      const response = await apiClient.get(`/api/v1/opcode/delivery-points/${prefix}`)
+      if ((response.data as any).success) {
+        setDeliveryPoints((response.data as any).data.points || [])
+        // 获取推荐的未占用编码
+        const available = (response.data as any).data.points.filter((p: DeliveryPoint) => p.available)
+        setRecommendedCodes(available.slice(0, 5).map((p: DeliveryPoint) => `${prefix}${p.code}`))
+      }
+    } catch (error) {
+      // 使用模拟数据
+      const points: DeliveryPoint[] = []
+      for (let floor = 1; floor <= 6; floor++) {
+        for (let room = 1; room <= 10; room++) {
+          const code = `${floor}${room.toString().padStart(2, '0')}`
+          points.push({
+            code: code.slice(-2),
+            name: `${floor}${room.toString().padStart(2, '0')}室`,
+            available: Math.random() > 0.3,
+            type: 'room'
+          })
+        }
+      }
+      setDeliveryPoints(points)
+      const prefix = `${selection.school?.school_code}${selection.district?.code}${building.code}`
+      const available = points.filter(p => p.available)
+      setRecommendedCodes(available.slice(0, 5).map(p => `${prefix}${p.code}`))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 选择投递点
+  const selectDeliveryPoint = (point: DeliveryPoint) => {
+    const finalCode = `${selection.school?.school_code}${selection.district?.code}${selection.building?.code}${point.code}`
+    setSelection({ ...selection, deliveryPoint: point, finalCode })
+  }
+
+  // 申请选定的OP Code
+  const applyForCode = async () => {
+    if (!selection.finalCode) return
     
     setLoading(true)
     try {
-      const response = await fetch(`/api/v1/opcode/search/schools/by-city?city=${encodeURIComponent(searchCity)}&limit=50`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          setSearchResults(data.data.schools || [])
-        }
+      const response = await apiClient.post('/api/v1/opcode/apply', {
+        code: selection.finalCode,
+        type: 'dormitory',
+        description: `${selection.school?.school_name} ${selection.district?.name} ${selection.building?.name} ${selection.deliveryPoint?.name}`
+      })
+      if ((response.data as any).success) {
+        toast({
+          title: '申请成功',
+          description: `OP Code ${selection.finalCode} 申请已提交`,
+        })
+        // 重置选择
+        setSelection({})
       }
     } catch (error) {
-      console.error('城市搜索失败:', error)
+      toast({
+        title: '申请失败',
+        description: '请稍后再试',
+        variant: 'destructive'
+      })
     } finally {
       setLoading(false)
     }
@@ -75,284 +264,367 @@ export default function OPCodePage() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <MapPin className="w-8 h-8 text-amber-600" />
-            <h1 className="text-3xl font-bold text-amber-900">OpenPenPal OP Code 系统</h1>
+            <h1 className="text-3xl font-bold text-amber-900">OP Code 地理编码系统</h1>
           </div>
           <p className="text-amber-700">
-            基于四级信使体系的统一地理编码管理平台 - 6位精准定位系统
+            通过层级选择精准定位投递地址 - 城市 → 学校 → 片区 → 楼栋 → 投递点
           </p>
         </div>
 
         {/* 主要功能标签页 */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-amber-100">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-amber-200">
-              系统概览
+            <TabsTrigger value="apply" className="data-[state=active]:bg-amber-200">
+              申请编码
             </TabsTrigger>
             <TabsTrigger value="search" className="data-[state=active]:bg-amber-200">
-              城市搜索
+              查询编码
             </TabsTrigger>
-            <TabsTrigger value="segmented" className="data-[state=active]:bg-amber-200">
-              分段查询
+            <TabsTrigger value="manage" className="data-[state=active]:bg-amber-200">
+              我的编码
             </TabsTrigger>
-            <TabsTrigger value="documentation" className="data-[state=active]:bg-amber-200">
-              使用文档
+            <TabsTrigger value="help" className="data-[state=active]:bg-amber-200">
+              使用帮助
             </TabsTrigger>
           </TabsList>
 
-          {/* 系统概览 */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* OP Code规则说明 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-amber-900">OP Code 编码规则</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-mono font-bold text-amber-800 mb-2 p-4 bg-amber-100 rounded-lg">
-                        PK 5F 3D
-                      </div>
-                      <div className="text-sm text-gray-600">示例：北京大学第五片区F栋3D宿舍</div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2 border rounded">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">PK</Badge>
-                          <span className="text-sm">学校代码</span>
-                        </div>
-                        <span className="text-sm text-gray-600">第1-2位</span>
-                      </div>
-
-                      <div className="flex items-center justify-between p-2 border rounded">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">5F</Badge>
-                          <span className="text-sm">片区代码</span>
-                        </div>
-                        <span className="text-sm text-gray-600">第3-4位</span>
-                      </div>
-
-                      <div className="flex items-center justify-between p-2 border rounded">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">3D</Badge>
-                          <span className="text-sm">位置代码</span>
-                        </div>
-                        <span className="text-sm text-gray-600">第5-6位</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* 权限层级说明 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-amber-900">四级信使权限对应</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-purple-50 border-purple-200">
-                      <div className="flex items-center gap-3">
-                        <Crown className="w-5 h-5 text-purple-600" />
-                        <div>
-                          <div className="font-semibold">四级信使</div>
-                          <div className="text-sm text-gray-600">城市总代</div>
-                        </div>
-                      </div>
-                      <Badge variant="outline">PK**** (全城)</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-blue-50 border-blue-200">
-                      <div className="flex items-center gap-3">
-                        <Building className="w-5 h-5 text-blue-600" />
-                        <div>
-                          <div className="font-semibold">三级信使</div>
-                          <div className="text-sm text-gray-600">校级负责人</div>
-                        </div>
-                      </div>
-                      <Badge variant="outline">PK** (学校级)</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50 border-green-200">
-                      <div className="flex items-center gap-3">
-                        <MapPin className="w-5 h-5 text-green-600" />
-                        <div>
-                          <div className="font-semibold">二级信使</div>
-                          <div className="text-sm text-gray-600">片区管理员</div>
-                        </div>
-                      </div>
-                      <Badge variant="outline">PK5F** (片区级)</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 border rounded-lg bg-amber-50 border-amber-200">
-                      <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5 text-amber-600" />
-                        <div>
-                          <div className="font-semibold">一级信使</div>
-                          <div className="text-sm text-gray-600">楼栋投递员</div>
-                        </div>
-                      </div>
-                      <Badge variant="outline">PK5F3D (精确位置)</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* 城市搜索 */}
-          <TabsContent value="search" className="space-y-6">
+          {/* 申请编码 - 层级选择 */}
+          <TabsContent value="apply" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-amber-900 flex items-center gap-2">
-                  <Search className="w-5 h-5" />
-                  城市级学校搜索
-                </CardTitle>
+                <CardTitle className="text-amber-900">申请新的 OP Code</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-4 mb-6">
-                  <Input
-                    placeholder="请输入城市名称（如：北京、上海、广州）"
-                    value={searchCity}
-                    onChange={(e) => setSearchCity(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleCitySearch()}
-                    className="flex-1"
-                  />
-                  <Button onClick={handleCitySearch} disabled={loading}>
-                    {loading ? '搜索中...' : '搜索'}
-                  </Button>
+                {/* 进度指示器 */}
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className={`flex items-center gap-2 ${selection.city ? 'text-green-600' : 'text-gray-400'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.city ? 'bg-green-100' : 'bg-gray-100'}`}>
+                        {selection.city ? <CheckCircle className="w-5 h-5" /> : '1'}
+                      </div>
+                      <span className="text-sm font-medium">选择城市</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                    <div className={`flex items-center gap-2 ${selection.school ? 'text-green-600' : 'text-gray-400'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.school ? 'bg-green-100' : 'bg-gray-100'}`}>
+                        {selection.school ? <CheckCircle className="w-5 h-5" /> : '2'}
+                      </div>
+                      <span className="text-sm font-medium">选择学校</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                    <div className={`flex items-center gap-2 ${selection.district ? 'text-green-600' : 'text-gray-400'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.district ? 'bg-green-100' : 'bg-gray-100'}`}>
+                        {selection.district ? <CheckCircle className="w-5 h-5" /> : '3'}
+                      </div>
+                      <span className="text-sm font-medium">选择片区</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                    <div className={`flex items-center gap-2 ${selection.building ? 'text-green-600' : 'text-gray-400'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.building ? 'bg-green-100' : 'bg-gray-100'}`}>
+                        {selection.building ? <CheckCircle className="w-5 h-5" /> : '4'}
+                      </div>
+                      <span className="text-sm font-medium">选择楼栋</span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                    <div className={`flex items-center gap-2 ${selection.deliveryPoint ? 'text-green-600' : 'text-gray-400'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.deliveryPoint ? 'bg-green-100' : 'bg-gray-100'}`}>
+                        {selection.deliveryPoint ? <CheckCircle className="w-5 h-5" /> : '5'}
+                      </div>
+                      <span className="text-sm font-medium">选择投递点</span>
+                    </div>
+                  </div>
                 </div>
 
-                {searchResults.length > 0 && (
-                  <div className="space-y-4">
-                    <div className="text-sm text-gray-600">
-                      找到 {searchResults.length} 所学校在 "{searchCity}" 地区
+                {/* 当前选择显示 */}
+                {selection.finalCode && (
+                  <Alert className="mb-6 bg-green-50 border-green-200">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      <div className="font-semibold mb-1">您选择的 OP Code：{selection.finalCode}</div>
+                      <div className="text-sm">
+                        {selection.school?.school_name} - {selection.district?.name} - {selection.building?.name} - {selection.deliveryPoint?.name}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* 步骤1：选择城市 */}
+                <div className="space-y-6">
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">步骤1：选择城市</Label>
+                    <div className="flex gap-2 mb-4">
+                      <Input
+                        placeholder="输入城市名称搜索..."
+                        value={searchCity}
+                        onChange={(e) => setSearchCity(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && searchCity) {
+                            searchSchoolsByCity(searchCity)
+                          }
+                        }}
+                      />
+                      <Button 
+                        onClick={() => searchCity && searchSchoolsByCity(searchCity)}
+                        disabled={loading || !searchCity}
+                      >
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                      </Button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {searchResults.map((school) => (
-                        <Card key={school.school_code} className="hover:shadow-md transition-shadow">
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-3">
-                              <School className="w-5 h-5 text-blue-600 mt-1" />
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-sm mb-1">{school.school_name}</h4>
-                                <div className="space-y-1">
-                                  <Badge variant="outline" className="text-xs">
+                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                      {cities.map((city) => (
+                        <Button
+                          key={city}
+                          variant={selection.city === city ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => searchSchoolsByCity(city)}
+                          disabled={loading}
+                        >
+                          {city}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 步骤2：选择学校 */}
+                  {schools.length > 0 && (
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">
+                        步骤2：选择学校（确定前2位编码）
+                      </Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                        {schools.map((school) => (
+                          <Card 
+                            key={school.school_code}
+                            className={`cursor-pointer transition-all ${
+                              selection.school?.school_code === school.school_code 
+                                ? 'ring-2 ring-amber-500 bg-amber-50' 
+                                : 'hover:shadow-md'
+                            }`}
+                            onClick={() => selectSchool(school)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                <School className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-sm mb-1 truncate">{school.school_name}</h4>
+                                  <Badge variant="outline" className="text-xs mb-1">
                                     {school.school_code}
                                   </Badge>
                                   <div className="text-xs text-gray-600">
                                     {school.city} · {school.province}
                                   </div>
-                                  {school.full_name && school.full_name !== school.school_name && (
-                                    <div className="text-xs text-gray-500 truncate">
-                                      {school.full_name}
-                                    </div>
-                                  )}
                                 </div>
                               </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 步骤3：选择片区 */}
+                  {districts.length > 0 && selection.school && (
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">
+                        步骤3：选择片区（确定第3位编码）
+                      </Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                        {districts.map((district) => (
+                          <Card 
+                            key={district.code}
+                            className={`cursor-pointer transition-all ${
+                              selection.district?.code === district.code 
+                                ? 'ring-2 ring-amber-500 bg-amber-50' 
+                                : 'hover:shadow-md'
+                            }`}
+                            onClick={() => selectDistrict(district)}
+                          >
+                            <CardContent className="p-4 text-center">
+                              <MapPin className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                              <h4 className="font-semibold text-sm">{district.name}</h4>
+                              <div className="text-xs text-gray-500 mt-1">{district.description}</div>
+                              <Badge variant="outline" className="mt-2 text-xs">{district.code}</Badge>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 步骤4：选择楼栋 */}
+                  {buildings.length > 0 && selection.district && (
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">
+                        步骤4：选择楼栋（确定第4位编码）
+                      </Label>
+                      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {buildings.map((building) => (
+                          <Card 
+                            key={building.code}
+                            className={`cursor-pointer transition-all ${
+                              selection.building?.code === building.code 
+                                ? 'ring-2 ring-amber-500 bg-amber-50' 
+                                : 'hover:shadow-md'
+                            }`}
+                            onClick={() => selectBuilding(building)}
+                          >
+                            <CardContent className="p-4 text-center">
+                              {building.type === 'dormitory' && <Home className="w-6 h-6 text-blue-600 mx-auto mb-2" />}
+                              {building.type === 'teaching' && <Building className="w-6 h-6 text-purple-600 mx-auto mb-2" />}
+                              {building.type === 'dining' && <Package className="w-6 h-6 text-orange-600 mx-auto mb-2" />}
+                              <h4 className="font-semibold text-sm">{building.name}</h4>
+                              <Badge variant="outline" className="mt-2 text-xs">{building.code}</Badge>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 步骤5：选择投递点 */}
+                  {deliveryPoints.length > 0 && selection.building && (
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">
+                        步骤5：选择投递点（确定第5-6位编码）
+                      </Label>
+                      
+                      {/* 推荐的可用编码 */}
+                      {recommendedCodes.length > 0 && (
+                        <Alert className="mb-4 bg-blue-50 border-blue-200">
+                          <AlertCircle className="h-4 w-4 text-blue-600" />
+                          <AlertDescription>
+                            <div className="font-medium text-blue-900 mb-2">推荐可用编码：</div>
+                            <div className="flex flex-wrap gap-2">
+                              {recommendedCodes.map((code) => (
+                                <Badge key={code} variant="secondary" className="bg-blue-100 text-blue-800">
+                                  {code}
+                                </Badge>
+                              ))}
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                          </AlertDescription>
+                        </Alert>
+                      )}
 
-                {searchCity && searchResults.length === 0 && !loading && (
-                  <div className="text-center py-8 text-gray-500">
-                    <School className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>未找到"{searchCity}"地区的学校</p>
-                    <p className="text-sm">请尝试调整搜索关键词</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-2 max-h-64 overflow-y-auto">
+                        {deliveryPoints.map((point) => (
+                          <Button
+                            key={point.code}
+                            variant={selection.deliveryPoint?.code === point.code ? "default" : point.available ? "outline" : "ghost"}
+                            size="sm"
+                            onClick={() => point.available && selectDeliveryPoint(point)}
+                            disabled={!point.available}
+                            className={`relative ${!point.available && 'opacity-50'}`}
+                          >
+                            {point.name}
+                            {!point.available && (
+                              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+                            )}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-          {/* 分段查询 */}
-          <TabsContent value="segmented" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-amber-900">OP Code 分段查询</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Alert>
-                    <MapPin className="h-4 w-4" />
-                    <AlertDescription>
-                      支持按学校、片区、具体位置进行分层查询，实现精准定位
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-mono font-bold text-blue-600">PK****</div>
-                      <div className="text-sm text-gray-600 mt-2">学校级查询</div>
-                      <div className="text-xs text-gray-500">查询北京大学所有位置</div>
+                  {/* 提交申请按钮 */}
+                  {selection.finalCode && (
+                    <div className="flex justify-center pt-4">
+                      <Button 
+                        size="lg" 
+                        onClick={applyForCode}
+                        disabled={loading}
+                        className="min-w-[200px]"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            申请中...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            申请 {selection.finalCode}
+                          </>
+                        )}
+                      </Button>
                     </div>
-                    
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-mono font-bold text-green-600">PK5F**</div>
-                      <div className="text-sm text-gray-600 mt-2">片区级查询</div>
-                      <div className="text-xs text-gray-500">查询5号楼F区所有位置</div>
-                    </div>
-                    
-                    <div className="text-center p-4 border rounded-lg">
-                      <div className="text-2xl font-mono font-bold text-amber-600">PK5F3D</div>
-                      <div className="text-sm text-gray-600 mt-2">精确查询</div>
-                      <div className="text-xs text-gray-500">查询具体宿舍位置</div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* 使用文档 */}
-          <TabsContent value="documentation" className="space-y-6">
+          {/* 查询编码 */}
+          <TabsContent value="search" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-amber-900 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5" />
-                  OP Code 使用文档
-                </CardTitle>
+                <CardTitle className="text-amber-900">查询 OP Code</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label>输入 OP Code 查询</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Input placeholder="例如：PK5F3D" className="max-w-xs" />
+                      <Button>查询</Button>
+                    </div>
+                  </div>
+                  
+                  <Alert>
+                    <MapPin className="h-4 w-4" />
+                    <AlertDescription>
+                      支持模糊查询：PK**** 查询北京大学所有位置
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* 我的编码 */}
+          <TabsContent value="manage" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-amber-900">我的 OP Code</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-gray-500">
+                  <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>您还没有申请任何 OP Code</p>
+                  <Button className="mt-4" onClick={() => setActiveTab('apply')}>
+                    申请新编码
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* 使用帮助 */}
+          <TabsContent value="help" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-amber-900">使用帮助</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm max-w-none">
-                  <h3>系统概述</h3>
+                  <h3>什么是 OP Code？</h3>
                   <p>
-                    OpenPenPal OP Code 系统是基于四级信使体系的统一地理编码管理平台，
-                    为校园信件投递提供6位精准定位和权限管理功能。
+                    OP Code 是 OpenPenPal 的 6 位地理编码系统，用于精准定位校园内的投递地址。
                   </p>
-
-                  <h3>核心特性</h3>
+                  
+                  <h3>编码结构</h3>
                   <ul>
-                    <li><strong>6位编码</strong>：AABBCC格式，支持学校-片区-位置三级结构</li>
-                    <li><strong>城市搜索</strong>：支持按城市名称快速查找所有学校</li>
-                    <li><strong>分段查询</strong>：支持通配符查询和层级权限控制</li>
-                    <li><strong>权限管理</strong>：基于四级信使体系的分层权限控制</li>
+                    <li><strong>第1-2位</strong>：学校代码（如 PK = 北京大学）</li>
+                    <li><strong>第3位</strong>：片区代码（如 5 = 第五片区）</li>
+                    <li><strong>第4位</strong>：楼栋代码（如 F = F栋）</li>
+                    <li><strong>第5-6位</strong>：具体投递点（如 3D = 303室）</li>
                   </ul>
-
-                  <h3>编码规则</h3>
+                  
+                  <h3>信使权限对应</h3>
                   <ul>
-                    <li><strong>AA</strong>：学校代码（如PK=北大，QH=清华）</li>
-                    <li><strong>BB</strong>：片区代码（如5F=5号楼F区）</li>
-                    <li><strong>CC</strong>：位置代码（如3D=303宿舍）</li>
-                  </ul>
-
-                  <h3>使用场景</h3>
-                  <ul>
-                    <li><strong>写信用户</strong>：通过OP Code精准指定收件地址</li>
-                    <li><strong>投递信使</strong>：根据权限等级接收和执行投递任务</li>
-                    <li><strong>管理人员</strong>：维护编码体系，处理申请和分配</li>
-                  </ul>
-
-                  <h3>新功能亮点</h3>
-                  <ul>
-                    <li><strong>城市级搜索</strong>：输入"北京"即可查看所有北京地区学校</li>
-                    <li><strong>智能匹配</strong>：支持模糊搜索和智能提示</li>
-                    <li><strong>实时同步</strong>：与信使系统实时同步，确保数据一致</li>
+                    <li><strong>四级信使</strong>：管理整个城市（所有学校）</li>
+                    <li><strong>三级信使</strong>：管理整个学校（PK****）</li>
+                    <li><strong>二级信使</strong>：管理学校片区（PK5***）</li>
+                    <li><strong>一级信使</strong>：管理具体楼栋（PK5F**）</li>
                   </ul>
                 </div>
               </CardContent>

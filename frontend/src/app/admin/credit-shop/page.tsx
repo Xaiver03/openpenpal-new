@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { apiClient } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -159,15 +160,12 @@ export default function AdminCreditShopPage() {
     
     setIsLoading(true)
     try {
-      const response = await fetch('/admin/credit-shop/stats', {
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      })
+      const response = await apiClient.get('/admin/credit-shop/stats')
       
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
+      if (response.success) {
+        setStats(response.data as CreditShopStats)
+      } else {
+        setError(response.message || '获取统计数据失败')
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error)
@@ -199,14 +197,10 @@ export default function AdminCreditShopPage() {
         params.append('keyword', productFilter.keyword)
       }
 
-      const response = await fetch(`/admin/credit-shop/products?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      })
+      const response = await apiClient.get(`/admin/credit-shop/products?${params}`)
       
-      if (response.ok) {
-        const data = await response.json()
+      if (response.success) {
+        const data = response.data as any
         setProducts(data.items || [])
       }
     } catch (error) {
@@ -236,14 +230,10 @@ export default function AdminCreditShopPage() {
         params.append('product_type', redemptionFilter.product_type)
       }
 
-      const response = await fetch(`/admin/credit-shop/redemptions?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      })
+      const response = await apiClient.get(`/admin/credit-shop/redemptions?${params}`)
       
-      if (response.ok) {
-        const data = await response.json()
+      if (response.success) {
+        const data = response.data as any
         setRedemptions(data.items || [])
       }
     } catch (error) {
@@ -265,22 +255,17 @@ export default function AdminCreditShopPage() {
       
       const method = editingProduct ? 'PUT' : 'POST'
       
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(productData)
-      })
+      const response = method === 'POST' 
+        ? await apiClient.post(url, productData)
+        : await apiClient.put(url, productData)
 
-      if (response.ok) {
+      if (response.success) {
         await fetchProducts()
         setShowProductDialog(false)
         setEditingProduct(null)
         setError(null)
       } else {
-        const errorData = await response.json()
+        const errorData = response.data as any
         setError(errorData.message || '操作失败')
       }
     } catch (error) {
@@ -295,18 +280,13 @@ export default function AdminCreditShopPage() {
     
     setIsLoading(true)
     try {
-      const response = await fetch(`/admin/credit-shop/products/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      })
+      const response = await apiClient.delete(`/admin/credit-shop/products/${productId}`)
 
-      if (response.ok) {
+      if (response.success) {
         await fetchProducts()
         setError(null)
       } else {
-        const errorData = await response.json()
+        const errorData = response.data as any
         setError(errorData.message || '删除失败')
       }
     } catch (error) {
@@ -321,25 +301,18 @@ export default function AdminCreditShopPage() {
     
     setIsLoading(true)
     try {
-      const response = await fetch(`/admin/credit-shop/redemptions/${redemptionId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status,
-          admin_note: adminNote || ''
-        })
+      const response = await apiClient.put(`/admin/credit-shop/redemptions/${redemptionId}/status`, {
+        status,
+        admin_note: adminNote || ''
       })
 
-      if (response.ok) {
+      if (response.success) {
         await fetchRedemptions()
         setShowRedemptionDialog(false)
         setSelectedRedemption(null)
         setError(null)
       } else {
-        const errorData = await response.json()
+        const errorData = response.data as any
         setError(errorData.message || '更新失败')
       }
     } catch (error) {

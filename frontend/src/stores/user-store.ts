@@ -40,6 +40,7 @@ export interface User {
   is_active?: boolean
   permissions: Permission[]
   courierInfo?: CourierInfo
+  token?: string // Temporary bridge for legacy code - use TokenManager.get() instead
 }
 
 export interface CourierInfo {
@@ -224,7 +225,12 @@ export const useUserStore = create<UserStoreState>()(
         const response = await EnhancedAuthService.login(credentials)
             
             if (response.success && response.data?.user) {
-              setUser(response.data.user as any)
+              // Add token to user object for legacy compatibility
+              const userWithToken = {
+                ...response.data.user,
+                token: response.data.token
+              }
+              setUser(userWithToken as any)
               setLoading({ isLoading: false })
               
               // 登录成功后启动token自动刷新

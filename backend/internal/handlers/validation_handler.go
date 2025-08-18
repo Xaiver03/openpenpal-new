@@ -5,27 +5,29 @@ import (
 	"time"
 
 	"openpenpal-backend/internal/middleware"
+	"openpenpal-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
 
 // ValidationHandler 安全验证处理器
 type ValidationHandler struct {
-	// 暂时禁用服务，直到它们被修复
-	// integrityService *services.IntegrityService
-	// auditService     *services.AuditService
+	integrityService *services.IntegrityService
+	auditService     *services.AuditService
 }
 
 // NewValidationHandler 创建新的验证处理器
-func NewValidationHandler(args ...interface{}) *ValidationHandler {
-	// 忽略参数，返回空的处理器
-	return &ValidationHandler{}
+func NewValidationHandler(integrityService *services.IntegrityService, auditService *services.AuditService) *ValidationHandler {
+	return &ValidationHandler{
+		integrityService: integrityService,
+		auditService:     auditService,
+	}
 }
 
 // RunSecurityValidation 运行完整安全验证
 func (vh *ValidationHandler) RunSecurityValidation(c *gin.Context) {
 	// 检查权限
-	_, exists := middleware.GetUserID(c)
+	userID, exists := middleware.GetUserID(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
@@ -34,20 +36,15 @@ func (vh *ValidationHandler) RunSecurityValidation(c *gin.Context) {
 		return
 	}
 
-	// 记录审计日志 - 暂时禁用
-	// TODO: Re-enable when audit service is fixed
-	/*
+	// 记录审计日志
 	if vh.auditService != nil {
 		vh.auditService.LogUserAction(c.Request.Context(), userID, services.AuditEventIntegrityCheck, "system", "full_validation", map[string]interface{}{
 			"type": "security_validation",
 			"ip":   c.ClientIP(),
 		})
 	}
-	*/
 
-	// 如果完整性服务可用，运行完整检查 - 暂时禁用
-	// TODO: Re-enable when integrity service is fixed
-	/*
+	// 运行完整性检查
 	if vh.integrityService != nil {
 		report, err := vh.integrityService.RunFullSystemCheck(c.Request.Context())
 		if err != nil {
@@ -66,7 +63,6 @@ func (vh *ValidationHandler) RunSecurityValidation(c *gin.Context) {
 		})
 		return
 	}
-	*/
 
 	// 如果服务不可用，返回基本结果
 	c.JSON(http.StatusOK, gin.H{

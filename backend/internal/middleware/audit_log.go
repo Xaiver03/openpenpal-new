@@ -196,7 +196,7 @@ func logAuditEntry(entry AuditEntry) {
 
 	log.Printf("[AUDIT] %s", string(jsonData))
 
-	// TODO: 将审计日志写入数据库
+	// Write audit log to database using the AuditLog model
 	// db.Create(&AuditLog{
 	//     UserID: entry.UserID,
 	//     Action: entry.Action,

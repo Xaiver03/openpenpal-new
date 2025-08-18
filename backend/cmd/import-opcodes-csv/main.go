@@ -8,19 +8,27 @@ import (
 	"strings"
 	"time"
 
-	"gorm.io/driver/sqlite"
+	// TODO: Switch to PostgreSQL when needed
+	// "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"openpenpal-backend/internal/models"
 )
 
+// TODO: Re-enable when PostgreSQL import is needed
 func main() {
-	// 连接数据库
-	dbPath := "../../openpenpal.db"
-	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-		log.Fatalf("Database file does not exist: %s", dbPath)
-	}
+	fmt.Println("=== OP Codes CSV Import Tool ===")
+	fmt.Println("This tool is currently disabled as we are using PostgreSQL-only setup.")
+	fmt.Println("To enable this tool, update database connection to PostgreSQL.")
+	return
 
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	/*
+	// TODO: 连接PostgreSQL数据库
+	// dbPath := "../../openpenpal.db"
+	// if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+	//	log.Fatalf("Database file does not exist: %s", dbPath)
+	// }
+
+	// db, err := gorm.Open(postgres.Open(postgresDSN), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -236,4 +244,5 @@ func inferLocationFromSchoolName(schoolName string) (city, province string) {
 
 	// 默认值
 	return "未知", "未知省份"
+	*/
 }

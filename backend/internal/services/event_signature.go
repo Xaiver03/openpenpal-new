@@ -61,7 +61,7 @@ type SignedEvent struct {
 func (ess *EventSignatureService) GenerateSignature(event *SignedEvent) (string, error) {
 	// Ensure event has required fields
 	if event.EventID == "" {
-		event.EventID = generateID()
+		event.EventID = generateEventID()
 	}
 	if event.Timestamp == 0 {
 		event.Timestamp = time.Now().Unix()
@@ -159,7 +159,7 @@ func (ess *EventSignatureService) VerifyWebhook(body []byte, signature string) (
 // SignWebhookPayload signs a webhook payload for outgoing requests
 func (ess *EventSignatureService) SignWebhookPayload(eventType string, payload map[string]interface{}) ([]byte, string, error) {
 	event := &SignedEvent{
-		EventID:   generateID(),
+		EventID:   generateEventID(),
 		EventType: eventType,
 		Timestamp: time.Now().Unix(),
 		Payload:   payload,
@@ -271,6 +271,10 @@ func (ess *EventSignatureService) VerifySignatureMiddleware() func(c interface{}
 
 // Helper functions
 
+func generateEventID() string {
+	return fmt.Sprintf("evt_%d", time.Now().UnixNano())
+}
+
 func generateSecretKey() string {
 	b := make([]byte, 32)
 	for i := range b {
@@ -288,13 +292,13 @@ func abs(n int64) int64 {
 
 // EventTriggerService handles secure event-based task triggering
 type EventTriggerService struct {
-	schedulerService *SchedulerService
+	schedulerService *EnhancedSchedulerService
 	signatureService *EventSignatureService
 }
 
 // NewEventTriggerService creates a new event trigger service
 func NewEventTriggerService(
-	schedulerService *SchedulerService,
+	schedulerService *EnhancedSchedulerService,
 	signatureService *EventSignatureService,
 ) *EventTriggerService {
 	return &EventTriggerService{

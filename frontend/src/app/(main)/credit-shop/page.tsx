@@ -36,6 +36,17 @@ import {
 } from 'lucide-react'
 import { BackButton } from '@/components/ui/back-button'
 import { useAuth } from '@/contexts/auth-context-new'
+import { 
+  getUserCreditBalance, 
+  getCreditCart, 
+  getCreditRedemptions,
+  addToCreditCart,
+  updateCreditCartItem,
+  removeFromCreditCart,
+  getCreditShopProducts,
+  createCreditRedemption,
+  createCreditRedemptionFromCart
+} from '@/lib/api/credit-shop'
 
 // 积分商城商品类型
 interface CreditShopProduct {
@@ -163,16 +174,8 @@ export default function CreditShopPage() {
     if (!user) return
     
     try {
-      const response = await fetch('/api/v1/credit-shop/balance', {
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setUserCredit(data)
-      }
+      const creditData = await getUserCreditBalance()
+      setUserCredit(creditData)
     } catch (error) {
       console.error('Failed to fetch user credit:', error)
     }
@@ -209,7 +212,7 @@ export default function CreditShopPage() {
         setProducts(data.items || [])
         
         // 提取分类
-        const uniqueCategories = [...new Set(data.items?.map((p: CreditShopProduct) => p.category).filter(Boolean))]
+        const uniqueCategories = [...new Set(data.items?.map((p: CreditShopProduct) => p.category).filter(Boolean))] as string[]
         setCategories(uniqueCategories)
       }
     } catch (error) {
@@ -224,16 +227,8 @@ export default function CreditShopPage() {
     if (!user) return
     
     try {
-      const response = await fetch('/api/v1/credit-shop/cart', {
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setCart(data)
-      }
+      const cartData = await getCreditCart()
+      setCart(cartData)
     } catch (error) {
       console.error('Failed to fetch cart:', error)
     }
@@ -243,16 +238,8 @@ export default function CreditShopPage() {
     if (!user) return
     
     try {
-      const response = await fetch('/api/v1/credit-shop/redemptions?page=1&limit=20', {
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setRedemptions(data.items || [])
-      }
+      const data = await getCreditRedemptions({ page: 1, limit: 20 })
+      setRedemptions((data as any).items || [])
     } catch (error) {
       console.error('Failed to fetch redemptions:', error)
     }
@@ -266,25 +253,13 @@ export default function CreditShopPage() {
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/v1/credit-shop/cart/items', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          product_id: product.id,
-          quantity: 1
-        })
+      await addToCreditCart({
+        product_id: product.id,
+        quantity: 1
       })
-
-      if (response.ok) {
-        await fetchCart()
-        setError(null)
-      } else {
-        const errorData = await response.json()
-        setError(errorData.message || '添加到购物车失败')
-      }
+      
+      await fetchCart()
+      setError(null)
     } catch (error) {
       setError('添加到购物车失败')
     } finally {
@@ -296,18 +271,8 @@ export default function CreditShopPage() {
     if (!user) return
 
     try {
-      const response = await fetch(`/api/v1/credit-shop/cart/items/${itemId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ quantity })
-      })
-
-      if (response.ok) {
-        await fetchCart()
-      }
+      await updateCreditCartItem(itemId, { quantity })
+      await fetchCart()
     } catch (error) {
       console.error('Failed to update cart item:', error)
     }
@@ -317,16 +282,8 @@ export default function CreditShopPage() {
     if (!user) return
 
     try {
-      const response = await fetch(`/api/v1/credit-shop/cart/items/${itemId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${user.token}`
-        }
-      })
-
-      if (response.ok) {
-        await fetchCart()
-      }
+      await removeFromCreditCart(itemId)
+      await fetchCart()
     } catch (error) {
       console.error('Failed to remove cart item:', error)
     }
@@ -337,29 +294,17 @@ export default function CreditShopPage() {
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/v1/credit-shop/redemptions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          product_id: productId,
-          quantity,
-          delivery_info: deliveryInfo,
-          notes: ''
-        })
+      await createCreditRedemption({
+        product_id: productId,
+        quantity,
+        delivery_info: deliveryInfo,
+        notes: ''
       })
 
-      if (response.ok) {
-        await fetchUserCredit()
-        await fetchCart()
-        setActiveTab('orders')
-        setError(null)
-      } else {
-        const errorData = await response.json()
-        setError(errorData.message || '兑换失败')
-      }
+      await fetchUserCredit()
+      await fetchCart()
+      setActiveTab('orders')
+      setError(null)
     } catch (error) {
       setError('兑换失败')
     } finally {
@@ -372,26 +317,14 @@ export default function CreditShopPage() {
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/v1/credit-shop/redemptions/from-cart', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          delivery_info: deliveryInfo
-        })
+      await createCreditRedemptionFromCart({
+        delivery_info: deliveryInfo
       })
 
-      if (response.ok) {
-        await fetchUserCredit()
-        await fetchCart()
-        setActiveTab('orders')
-        setError(null)
-      } else {
-        const errorData = await response.json()
-        setError(errorData.message || '批量兑换失败')
-      }
+      await fetchUserCredit()
+      await fetchCart()
+      setActiveTab('orders')
+      setError(null)
     } catch (error) {
       setError('批量兑换失败')
     } finally {

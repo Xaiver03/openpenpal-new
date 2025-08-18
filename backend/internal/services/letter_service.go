@@ -177,13 +177,22 @@ func (s *LetterService) GenerateCode(letterID string) (*models.LetterCode, error
 		return nil, fmt.Errorf("failed to generate qr code: %w", err)
 	}
 
+	// 生成安全签名
+	now := time.Now()
+	signatureKey := utils.GenerateSignatureKey()
+	securityHash := utils.GenerateSecurityHash(code, now, signatureKey)
+
 	// 保存到数据库
 	letterCode := &models.LetterCode{
-		ID:         uuid.New().String(),
-		LetterID:   letterID,
-		Code:       code,
-		QRCodeURL:  qrCodeURL,
-		QRCodePath: qrCodePath,
+		ID:           uuid.New().String(),
+		LetterID:     letterID,
+		Code:         code,
+		QRCodeURL:    qrCodeURL,
+		QRCodePath:   qrCodePath,
+		SecurityHash: securityHash,
+		SignatureKey: signatureKey,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
 	tx := s.db.Begin()

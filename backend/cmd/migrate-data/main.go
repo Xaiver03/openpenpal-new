@@ -10,12 +10,21 @@ import (
 	"openpenpal-backend/internal/models"
 
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
+	// TODO: Keep SQLite import for migration tool when needed
+	// "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
+// TODO: Re-enable migration tool when needed
+// This tool migrates data from SQLite to PostgreSQL
 func main() {
+	fmt.Println("=== SQLite to PostgreSQL Migration Tool ===")
+	fmt.Println("This tool is currently disabled as we are using PostgreSQL-only setup.")
+	fmt.Println("To enable this tool, uncomment the SQLite driver import and implementation.")
+	return
+
+	/*
 	if len(os.Args) < 2 {
 		fmt.Println("使用方法: go run main.go [sqlite-file]")
 		fmt.Println("示例: go run main.go ../openpenpal.db")
@@ -224,4 +233,5 @@ func showStatistics(db *gorm.DB) {
 			fmt.Printf("%s: %d 条\n", name, count)
 		}
 	}
+	*/
 }

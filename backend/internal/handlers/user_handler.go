@@ -15,6 +15,11 @@ import (
 	"github.com/google/uuid"
 )
 
+// 启用共享响应包集成
+func init() {
+	utils.BeginResponseMigration()
+}
+
 type UserHandler struct {
 	userService *services.UserService
 }
@@ -29,17 +34,17 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 func (h *UserHandler) Register(c *gin.Context) {
 	var req models.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.BadRequestResponse(c, "Invalid request data", err)
+		utils.SharedBadRequestResponse(c, "Invalid request data", err)
 		return
 	}
 
 	user, err := h.userService.Register(&req)
 	if err != nil {
-		utils.BadRequestResponse(c, "Registration failed", err)
+		utils.SharedBadRequestResponse(c, "Registration failed", err)
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusCreated, "User registered successfully", user)
+	utils.SharedSuccessResponse(c, http.StatusCreated, "User registered successfully", user)
 }
 
 // Login 用户登录

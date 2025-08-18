@@ -196,9 +196,9 @@ func (s *IntegrityService) checkDataConsistency(ctx context.Context) []Integrity
 	commentCountCheck := s.checkCommentCountConsistency(ctx)
 	checks = append(checks, commentCountCheck)
 
-	// 检查积分余额一致性
-	creditCheck := s.checkCreditBalanceConsistency(ctx)
-	checks = append(checks, creditCheck)
+	// 积分余额一致性检查暂时跳过（模型不存在）
+	// creditCheck := s.checkCreditBalanceConsistency(ctx)
+	// checks = append(checks, creditCheck)
 
 	return checks
 }
@@ -225,19 +225,20 @@ func (s *IntegrityService) checkUserStatisticsConsistency(ctx context.Context) I
 		return check
 	}
 
-	for _, user := range users {
-		var actualLetterCount int64
-		s.db.Model(&models.Letter{}).Where("user_id = ?", user.ID).Count(&actualLetterCount)
-		
-		if user.LetterCount != int(actualLetterCount) {
-			inconsistencies = append(inconsistencies, map[string]interface{}{
-				"user_id":       user.ID,
-				"stored_count":  user.LetterCount,
-				"actual_count":  actualLetterCount,
-				"difference":    int(actualLetterCount) - user.LetterCount,
-			})
-		}
-	}
+	// 注意：当前User模型没有LetterCount字段，跳过信件数量一致性检查
+	// for _, user := range users {
+	//	var actualLetterCount int64
+	//	s.db.Model(&models.Letter{}).Where("user_id = ?", user.ID).Count(&actualLetterCount)
+	//	
+	//	if user.LetterCount != int(actualLetterCount) {
+	//		inconsistencies = append(inconsistencies, map[string]interface{}{
+	//			"user_id":       user.ID,
+	//			"stored_count":  user.LetterCount,
+	//			"actual_count":  actualLetterCount,
+	//			"difference":    int(actualLetterCount) - user.LetterCount,
+	//		})
+	//	}
+	// }
 
 	if len(inconsistencies) > 0 {
 		check.Status = "warning"
@@ -276,21 +277,22 @@ func (s *IntegrityService) checkLetterStatisticsConsistency(ctx context.Context)
 		return check
 	}
 
-	for _, letter := range letters {
-		var actualCommentCount int64
-		s.db.Model(&models.Comment{}).
-			Where("letter_id = ? AND status = ?", letter.ID, models.CommentStatusActive).
-			Count(&actualCommentCount)
-		
-		if letter.CommentCount != int(actualCommentCount) {
-			inconsistencies = append(inconsistencies, map[string]interface{}{
-				"letter_id":     letter.ID,
-				"stored_count":  letter.CommentCount,
-				"actual_count":  actualCommentCount,
-				"difference":    int(actualCommentCount) - letter.CommentCount,
-			})
-		}
-	}
+	// 注意：当前Letter模型没有CommentCount字段，跳过评论数量一致性检查
+	// for _, letter := range letters {
+	//	var actualCommentCount int64
+	//	s.db.Model(&models.Comment{}).
+	//		Where("letter_id = ? AND status = ?", letter.ID, models.CommentStatusActive).
+	//		Count(&actualCommentCount)
+	//	
+	//	if letter.CommentCount != int(actualCommentCount) {
+	//		inconsistencies = append(inconsistencies, map[string]interface{}{
+	//			"letter_id":     letter.ID,
+	//			"stored_count":  letter.CommentCount,
+	//			"actual_count":  actualCommentCount,
+	//			"difference":    int(actualCommentCount) - letter.CommentCount,
+	//		})
+	//	}
+	// }
 
 	if len(inconsistencies) > 0 {
 		check.Status = "warning"
@@ -360,7 +362,7 @@ func (s *IntegrityService) checkCommentCountConsistency(ctx context.Context) Int
 	return check
 }
 
-// checkCreditBalanceConsistency 检查积分余额一致性
+// checkCreditBalanceConsistency 检查积分余额一致性（暂时禁用）
 func (s *IntegrityService) checkCreditBalanceConsistency(ctx context.Context) IntegrityCheckResult {
 	startTime := time.Now()
 	check := IntegrityCheckResult{
@@ -370,57 +372,12 @@ func (s *IntegrityService) checkCreditBalanceConsistency(ctx context.Context) In
 		Details:   make(map[string]interface{}),
 	}
 
-	var inconsistencies []map[string]interface{}
-	
-	// 检查用户积分余额与积分历史记录的一致性
-	var users []models.User
-	if err := s.db.WithContext(ctx).Find(&users).Error; err != nil {
-		check.Status = "failed"
-		check.Message = "Failed to fetch users"
-		check.Details["error"] = err.Error()
-		check.ExecutionTime = time.Since(startTime).Seconds()
-		return check
-	}
-
-	for _, user := range users {
-		// 计算积分历史记录的总和
-		var totalEarned, totalSpent int64
-		s.db.Model(&models.CreditHistory{}).
-			Where("user_id = ? AND type = ?", user.ID, "earn").
-			Select("COALESCE(SUM(amount), 0)").
-			Scan(&totalEarned)
-		
-		s.db.Model(&models.CreditHistory{}).
-			Where("user_id = ? AND type = ?", user.ID, "spend").
-			Select("COALESCE(SUM(amount), 0)").
-			Scan(&totalSpent)
-		
-		calculatedBalance := totalEarned - totalSpent
-		
-		if user.CreditBalance != int(calculatedBalance) {
-			inconsistencies = append(inconsistencies, map[string]interface{}{
-				"user_id":            user.ID,
-				"stored_balance":     user.CreditBalance,
-				"calculated_balance": calculatedBalance,
-				"difference":         int(calculatedBalance) - user.CreditBalance,
-				"total_earned":       totalEarned,
-				"total_spent":        totalSpent,
-			})
-		}
-	}
-
-	if len(inconsistencies) > 0 {
-		check.Status = "warning"
-		check.Message = fmt.Sprintf("Found %d users with inconsistent credit balances", len(inconsistencies))
-		check.Details["inconsistencies"] = inconsistencies
-		check.Details["total_users"] = len(users)
-	} else {
-		check.Status = "passed"
-		check.Message = "All credit balances are consistent"
-		check.Details["total_users"] = len(users)
-	}
-
+	// 当前模型中没有CreditHistory和CreditBalance字段，跳过此检查
+	check.Status = "skipped"
+	check.Message = "Credit balance consistency check skipped - models not available"
+	check.Details["reason"] = "CreditHistory model and CreditBalance field not found in current data models"
 	check.ExecutionTime = time.Since(startTime).Seconds()
+	
 	return check
 }
 
@@ -870,9 +827,8 @@ func (s *IntegrityService) checkSecuritySettings(ctx context.Context) IntegrityC
 
 	issues := []map[string]interface{}{}
 
-	// 检查是否有使用默认密码的用户
-	var defaultPasswordUsers int64
-	// 这里应该检查实际的密码哈希，暂时跳过
+	// 检查是否有使用默认密码的用户（暂时跳过）
+	// 这里应该检查实际的密码哈希，但需要更复杂的实现
 	
 	// 检查管理员账户
 	var adminCount int64
@@ -1037,31 +993,16 @@ func (s *IntegrityService) RepairDataConsistency(ctx context.Context, repairType
 	}
 }
 
-// repairUserStatistics 修复用户统计数据
+// repairUserStatistics 修复用户统计数据（暂时禁用）
 func (s *IntegrityService) repairUserStatistics(ctx context.Context) error {
-	// 更新所有用户的信件数量
-	return s.db.WithContext(ctx).Exec(`
-		UPDATE users u
-		SET letter_count = (
-			SELECT COUNT(*) 
-			FROM letters l 
-			WHERE l.user_id = u.id
-		)
-	`).Error
+	// 当前User模型没有letter_count字段，无法执行修复
+	return fmt.Errorf("user statistics repair not available - letter_count field not found in User model")
 }
 
-// repairLetterStatistics 修复信件统计数据
+// repairLetterStatistics 修复信件统计数据（暂时禁用）
 func (s *IntegrityService) repairLetterStatistics(ctx context.Context) error {
-	// 更新所有信件的评论数量
-	return s.db.WithContext(ctx).Exec(`
-		UPDATE letters l
-		SET comment_count = (
-			SELECT COUNT(*) 
-			FROM comments c 
-			WHERE c.letter_id = l.id 
-			AND c.status = ?
-		)
-	`, models.CommentStatusActive).Error
+	// 当前Letter模型没有comment_count字段，无法执行修复
+	return fmt.Errorf("letter statistics repair not available - comment_count field not found in Letter model")
 }
 
 // repairCommentCounts 修复评论计数
@@ -1079,35 +1020,8 @@ func (s *IntegrityService) repairCommentCounts(ctx context.Context) error {
 	`, models.CommentStatusActive).Error
 }
 
-// repairCreditBalances 修复积分余额
+// repairCreditBalances 修复积分余额（暂时禁用）
 func (s *IntegrityService) repairCreditBalances(ctx context.Context) error {
-	// 重新计算所有用户的积分余额
-	var users []models.User
-	if err := s.db.WithContext(ctx).Find(&users).Error; err != nil {
-		return err
-	}
-
-	for _, user := range users {
-		var totalEarned, totalSpent int64
-		
-		s.db.Model(&models.CreditHistory{}).
-			Where("user_id = ? AND type = ?", user.ID, "earn").
-			Select("COALESCE(SUM(amount), 0)").
-			Scan(&totalEarned)
-		
-		s.db.Model(&models.CreditHistory{}).
-			Where("user_id = ? AND type = ?", user.ID, "spend").
-			Select("COALESCE(SUM(amount), 0)").
-			Scan(&totalSpent)
-		
-		correctBalance := int(totalEarned - totalSpent)
-		
-		if user.CreditBalance != correctBalance {
-			if err := s.db.Model(&user).Update("credit_balance", correctBalance).Error; err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	// 当前模型中没有CreditHistory和CreditBalance字段，无法执行修复
+	return fmt.Errorf("credit balance repair not available - CreditHistory model and CreditBalance field not found")
 }

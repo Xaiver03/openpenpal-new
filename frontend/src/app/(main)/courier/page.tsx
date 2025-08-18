@@ -23,7 +23,8 @@ import {
   Crown,
   TrendingUp,
   UserCheck,
-  Package
+  Package,
+  Award
 } from 'lucide-react'
 import { useCourierPermission } from '@/hooks/use-courier-permission'
 import { useAuth } from '@/contexts/auth-context-new'

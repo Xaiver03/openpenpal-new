@@ -3,17 +3,27 @@ package config
 import (
 	"openpenpal-backend/internal/models"
 	"time"
+	"fmt"
 
-	"gorm.io/driver/sqlite"
+	// TODO: Use PostgreSQL for testing when available
+	// "gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 // SetupTestDB 设置测试数据库
+// TODO: Switch to PostgreSQL test database
 func SetupTestDB() (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent), // 测试时关闭日志
-	})
+	// TODO: Replace with PostgreSQL test connection
+	return nil, fmt.Errorf("test database setup disabled - PostgreSQL test environment needed")
+	
+	// TODO: Re-enable when PostgreSQL test environment is available
+	/*
+	var db *gorm.DB
+	var err error
+	
+	// Setup PostgreSQL test connection here
+	// db, err = gorm.Open(postgres.Open(testDSN), &gorm.Config{})
+	
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +67,7 @@ func SetupTestDB() (*gorm.DB, error) {
 	}
 
 	return db, nil
+	*/
 }
 
 // GetTestConfig 获取测试配置

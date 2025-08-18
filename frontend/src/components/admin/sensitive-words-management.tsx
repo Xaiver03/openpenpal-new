@@ -41,8 +41,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/hooks/use-auth"
-import api from "@/lib/api"
+import { useAuth } from "@/contexts/auth-context-new"
+import { enhancedApiClient as apiClient } from "@/lib/api-client-enhanced"
 import {
   Plus,
   Upload,
@@ -155,9 +155,11 @@ export function SensitiveWordsManagement() {
       if (categoryFilter !== 'all') params.append('category', categoryFilter)
       if (activeFilter !== 'all') params.append('is_active', activeFilter)
       
-      const response = await api.get(`/admin/sensitive-words?${params}`)
-      setWords(response.data.data)
-      setTotal(response.data.total)
+      const response = await apiClient.get<{ data: any[]; total: number }>(`/admin/sensitive-words?${params}`)
+      if (response.data) {
+        setWords(response.data.data)
+        setTotal(response.data.total)
+      }
     } catch (error) {
       toast({
         title: "加载失败",
@@ -174,8 +176,10 @@ export function SensitiveWordsManagement() {
     if (!hasPermission) return
     
     try {
-      const response = await api.get('/admin/sensitive-words/stats')
-      setStats(response.data.data)
+      const response = await apiClient.get<{ data: any }>('/admin/sensitive-words/stats')
+      if (response.data) {
+        setStats(response.data.data)
+      }
     } catch (error) {
       console.error('Failed to load stats:', error)
     }
@@ -193,7 +197,7 @@ export function SensitiveWordsManagement() {
   const handleAdd = async () => {
     setIsSubmitting(true)
     try {
-      await api.post('/admin/sensitive-words', formData)
+      await apiClient.post('/admin/sensitive-words', formData)
       toast({
         title: "添加成功",
         description: "敏感词已添加到列表",
@@ -219,7 +223,7 @@ export function SensitiveWordsManagement() {
     
     setIsSubmitting(true)
     try {
-      await api.put(`/admin/sensitive-words/${selectedWord.id}`, formData)
+      await apiClient.put(`/admin/sensitive-words/${selectedWord.id}`, formData)
       toast({
         title: "更新成功",
         description: "敏感词已更新",
@@ -243,7 +247,7 @@ export function SensitiveWordsManagement() {
     if (!confirm(`确定要删除敏感词"${word.word}"吗？`)) return
     
     try {
-      await api.delete(`/admin/sensitive-words/${word.id}`)
+      await apiClient.delete(`/admin/sensitive-words/${word.id}`)
       toast({
         title: "删除成功",
         description: "敏感词已删除",
@@ -272,7 +276,7 @@ export function SensitiveWordsManagement() {
           level: 'medium'
         }))
       
-      await api.post('/admin/sensitive-words/batch-import', { words })
+      await apiClient.post('/admin/sensitive-words/batch-import', { words })
       
       toast({
         title: "导入成功",
@@ -296,8 +300,8 @@ export function SensitiveWordsManagement() {
   // 导出敏感词
   const handleExport = async () => {
     try {
-      const response = await api.get('/admin/sensitive-words/export')
-      const words = response.data.data
+      const response = await apiClient.get<{ data: any[] }>('/admin/sensitive-words/export')
+      const words = response.data?.data || []
       
       // 生成CSV内容
       const csv = [
@@ -328,7 +332,7 @@ export function SensitiveWordsManagement() {
   // 刷新词库
   const handleRefresh = async () => {
     try {
-      await api.post('/admin/sensitive-words/refresh')
+      await apiClient.post('/admin/sensitive-words/refresh')
       toast({
         title: "刷新成功",
         description: "敏感词库已重新加载到内存",

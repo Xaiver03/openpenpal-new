@@ -7,14 +7,20 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/openpenpal/backend/internal/platform/testing/performance"
+	// TODO: Enable when performance testing package is available
+	// "github.com/openpenpal/backend/internal/platform/testing/performance"
 )
 
 // Phase 3.4 Demo: Performance Testing Enhancement with AI
+// TODO: Re-enable when performance testing package is available
 func main() {
 	fmt.Println("=== Phase 3.4: Performance Testing Enhancement Demo ===")
 	fmt.Println("Demonstrating AI-driven performance testing capabilities\n")
+	fmt.Println("⚠️  Demo disabled: Performance testing package not available")
+	fmt.Println("This demo will be enabled when the performance testing package is implemented.")
 
+	// TODO: Re-enable when performance testing package is available
+	/*
 	ctx := context.Background()
 
 	// Demo 1: AI-Driven Load Pattern Recognition
@@ -45,8 +51,11 @@ func main() {
 	fmt.Println("5. Comprehensive Performance Test")
 	fmt.Println("=================================")
 	demoComprehensivePerformanceTest(ctx)
+	*/
 }
 
+// TODO: Re-enable when performance testing package is available
+/*
 // demoLoadPatternRecognition demonstrates AI-driven pattern recognition
 func demoLoadPatternRecognition(ctx context.Context) {
 	// Create pattern recognizer
@@ -650,3 +659,4 @@ func min(a, b int) int {
 	}
 	return b
 }
+*/

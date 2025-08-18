@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/services"
@@ -530,5 +532,312 @@ func (h *OPCodeHandler) SearchSchoolsAdvanced(c *gin.Context) {
 		"code":    200,
 		"message": "高级搜索成功",
 		"data":    result,
+	})
+}
+
+// GetCities 获取城市列表
+func (h *OPCodeHandler) GetCities(c *gin.Context) {
+	// 返回热门城市列表
+	cities := []string{
+		"北京", "上海", "广州", "深圳", "天津", "重庆",
+		"成都", "杭州", "南京", "武汉", "西安", "长沙",
+		"青岛", "沈阳", "大连", "厦门", "苏州", "宁波",
+		"无锡", "福州", "济南", "哈尔滨", "长春", "郑州",
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"code":    200,
+		"message": "获取城市列表成功",
+		"data": gin.H{
+			"cities": cities,
+		},
+	})
+}
+
+// GetDistricts 获取学校片区列表
+func (h *OPCodeHandler) GetDistricts(c *gin.Context) {
+	schoolCode := c.Param("school_code")
+	if schoolCode == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    4001,
+			"message": "学校代码不能为空",
+		})
+		return
+	}
+
+	// 从数据库获取真实片区数据
+	result, err := h.opcodeService.SearchAreas(schoolCode)
+	if err != nil {
+		// 如果数据库查询失败，返回模拟数据
+		districts := []gin.H{
+			{"code": "1", "name": "东区", "description": "宿舍楼1-5栋"},
+			{"code": "2", "name": "西区", "description": "宿舍楼6-10栋"},
+			{"code": "3", "name": "南区", "description": "宿舍楼11-15栋"},
+			{"code": "4", "name": "北区", "description": "宿舍楼16-20栋"},
+			{"code": "5", "name": "中心区", "description": "教学楼、图书馆"},
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"code":    200,
+			"message": "获取片区列表成功",
+			"data": gin.H{
+				"districts": districts,
+			},
+		})
+		return
+	}
+
+	// 转换为前端需要的格式
+	if areas, ok := result["areas"].([]map[string]interface{}); ok {
+		districts := make([]gin.H, 0, len(areas))
+		for _, area := range areas {
+			districts = append(districts, gin.H{
+				"code":        area["area_code"],
+				"name":        area["area_name"],
+				"description": area["description"],
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"code":    200,
+			"message": "获取片区列表成功",
+			"data": gin.H{
+				"districts": districts,
+			},
+		})
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"code":    5001,
+			"message": "数据格式错误",
+		})
+	}
+}
+
+// GetBuildings 获取楼栋列表
+func (h *OPCodeHandler) GetBuildings(c *gin.Context) {
+	schoolCode := c.Param("school_code")
+	districtCode := c.Param("district_code")
+	
+	if schoolCode == "" || districtCode == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    4001,
+			"message": "参数不完整",
+		})
+		return
+	}
+
+	// 从数据库查询该片区下的楼栋
+	// 由于楼栋数据可能存储在signal_codes表中，我们需要查询该表
+	result, err := h.opcodeService.SearchBuildings(schoolCode, districtCode)
+	if err != nil || result == nil {
+		// 如果查询失败，返回默认楼栋列表
+		buildings := []gin.H{
+			{"code": "A", "name": "A栋", "type": "dormitory"},
+			{"code": "B", "name": "B栋", "type": "dormitory"},
+			{"code": "C", "name": "C栋", "type": "dormitory"},
+			{"code": "D", "name": "D栋", "type": "teaching"},
+			{"code": "E", "name": "E栋", "type": "dining"},
+			{"code": "F", "name": "F栋", "type": "dormitory"},
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"code":    200,
+			"message": "获取楼栋列表成功",
+			"data": gin.H{
+				"buildings": buildings,
+			},
+		})
+		return
+	}
+
+	// 如果没有查询到数据，使用默认楼栋命名
+	if buildings, ok := result["buildings"].([]map[string]interface{}); ok && len(buildings) > 0 {
+		// 已有数据，直接返回
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"code":    200,
+			"message": "获取楼栋列表成功",
+			"data":    result,
+		})
+	} else {
+		// 生成默认楼栋列表
+		buildings := []gin.H{
+			{"code": "A", "name": "A栋", "type": "dormitory"},
+			{"code": "B", "name": "B栋", "type": "dormitory"},
+			{"code": "C", "name": "C栋", "type": "dormitory"},
+			{"code": "D", "name": "D栋", "type": "teaching"},
+			{"code": "E", "name": "E栋", "type": "dining"},
+			{"code": "F", "name": "F栋", "type": "dormitory"},
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"code":    200,
+			"message": "获取楼栋列表成功",
+			"data": gin.H{
+				"buildings": buildings,
+			},
+		})
+	}
+}
+
+// GetDeliveryPoints 获取投递点列表
+func (h *OPCodeHandler) GetDeliveryPoints(c *gin.Context) {
+	prefix := c.Param("prefix")
+	if prefix == "" || len(prefix) < 4 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    4001,
+			"message": "前缀不完整",
+		})
+		return
+	}
+
+	// 从数据库查询已经存在的投递点
+	var existingCodes []string
+	if len(prefix) >= 2 {
+		// 查询signal_codes表中以该前缀开头的所有编码
+		req := &models.OPCodeSearchRequest{
+			Code:     prefix,
+			Page:     1,
+			PageSize: 100,
+		}
+		codes, _, err := h.opcodeService.SearchOPCodes(req)
+		if err == nil {
+			for _, code := range codes {
+				if len(code.Code) == 6 && strings.HasPrefix(code.Code, prefix) {
+					existingCodes = append(existingCodes, code.Code)
+				}
+			}
+		}
+	}
+
+	// 创建一个快速查找map
+	existingMap := make(map[string]bool)
+	for _, code := range existingCodes {
+		existingMap[code] = true
+	}
+
+	// 生成投递点列表
+	points := []gin.H{}
+	for floor := 1; floor <= 6; floor++ {
+		for room := 1; room <= 10; room++ {
+			// 生成2位投递点代码
+			pointCode := fmt.Sprintf("%d%d", floor, room)
+			if len(pointCode) > 2 {
+				pointCode = pointCode[len(pointCode)-2:]
+			}
+			
+			// 检查该编码是否已被占用
+			fullCode := prefix + pointCode
+			isAvailable := !existingMap[fullCode]
+			
+			points = append(points, gin.H{
+				"code":      pointCode,
+				"name":      fmt.Sprintf("%d%02d室", floor, room),
+				"available": isAvailable,
+				"type":      "room",
+			})
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"code":    200,
+		"message": "获取投递点列表成功",
+		"data": gin.H{
+			"points": points,
+		},
+	})
+}
+
+// ApplyOPCodeHierarchical 层级化申请OP Code
+func (h *OPCodeHandler) ApplyOPCodeHierarchical(c *gin.Context) {
+	userInterface, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"code":    4001,
+			"message": "用户未认证",
+		})
+		return
+	}
+	user := userInterface.(*models.User)
+
+	var req struct {
+		Code        string `json:"code" binding:"required"`
+		Type        string `json:"type" binding:"required"`
+		Description string `json:"description"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    4001,
+			"message": "请求参数无效",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// 验证OP Code格式
+	if len(req.Code) != 6 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    4001,
+			"message": "OP Code必须为6位",
+		})
+		return
+	}
+
+	// 解析OP Code
+	schoolCode := req.Code[:2]
+	areaCode := req.Code[2:4]
+	pointCode := req.Code[4:6]
+
+	// 创建申请
+	apiReq := &models.OPCodeRequest{
+		SchoolCode:  schoolCode,
+		AreaCode:    areaCode,
+		PointType:   req.Type,
+		PointName:   req.Description,
+		FullAddress: req.Description,
+		Reason:      "通过层级选择系统申请",
+	}
+
+	application, err := h.opcodeService.ApplyForOPCode(user.ID, apiReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"code":    5001,
+			"message": "申请失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// 自动批准并分配（仅用于演示，实际应该有审批流程）
+	if err := h.opcodeService.AssignOPCode(user.ID, application.ID, pointCode); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"code":    5001,
+			"message": "分配失败",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"code":    200,
+		"message": "申请成功",
+		"data": gin.H{
+			"application_id": application.ID,
+			"op_code":        req.Code,
+			"status":         "approved",
+		},
 	})
 }

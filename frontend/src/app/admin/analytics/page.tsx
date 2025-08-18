@@ -191,8 +191,8 @@ export default function AnalyticsPage() {
             userGrowthData: stats.users.growth_trend?.map(d => d.count) || [0, 0, 0, 0, 0, 0, 0],
             letterVolumeData: stats.letters.trend?.map(d => d.sent) || [0, 0, 0, 0, 0, 0, 0],
             courierPerformanceData: stats.letters.trend?.map(d => d.delivered) || [0, 0, 0, 0, 0, 0, 0],
-            // 地区数据 - 从学校统计中获取
-            regionData: Object.values(stats.letters.by_school || {}).slice(0, 5) as number[],
+            // 地区数据 - 从流行学校统计中获取
+            regionData: stats.letters.popular_schools?.map(s => s.count).slice(0, 5) || [0, 0, 0, 0, 0],
             // 状态数据
             statusData: [
               stats.letters.by_status?.draft || 0,
@@ -208,11 +208,9 @@ export default function AnalyticsPage() {
               level4: stats.users.by_role?.courier_level4 || 0
             },
             topCouriers: stats.couriers.top_performers?.map((c: any) => ({
-              id: c.courier_name,
               name: c.courier_name,
-              completedTasks: c.completed_tasks,
-              successRate: c.success_rate,
-              rating: 4.5 // 默认评分
+              score: c.success_rate || 0,
+              orders: c.completed_tasks || 0
             })) || []
           }
           

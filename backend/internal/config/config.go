@@ -23,7 +23,10 @@ type Config struct {
 	DBPort     string
 	DBUser     string
 	DBPassword string
-	DBSSLMode  string
+	DBSSLMode     string
+	DBSSLCert     string // SSL证书路径
+	DBSSLKey      string // SSL私钥路径
+	DBSSLRootCert string // CA证书路径
 
 	// App
 	AppName    string
@@ -61,6 +64,9 @@ type Config struct {
 	EtcdEndpoints   string
 	ConsulEndpoint  string
 	JWTExpiry       int
+	
+	// Performance
+	HighTrafficMode bool // 高流量模式
 }
 
 func Load() (*Config, error) {
@@ -83,7 +89,10 @@ func Load() (*Config, error) {
 		DBPort:     getEnv("DB_PORT", "5432"),
 		DBUser:     getEnv("DB_USER", "rocalight"),
 		DBPassword: getEnv("DB_PASSWORD", "password"),
-		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
+		DBSSLMode:     getEnv("DB_SSLMODE", "disable"),
+		DBSSLCert:     getEnv("DB_SSL_CERT", ""),
+		DBSSLKey:      getEnv("DB_SSL_KEY", ""),
+		DBSSLRootCert: getEnv("DB_SSL_ROOT_CERT", ""),
 
 		// App defaults
 		AppName:    getEnv("APP_NAME", "OpenPenPal"),
@@ -121,6 +130,9 @@ func Load() (*Config, error) {
 		EtcdEndpoints:  getEnv("ETCD_ENDPOINTS", "localhost:2379"),
 		ConsulEndpoint: getEnv("CONSUL_ENDPOINT", "localhost:8500"),
 		JWTExpiry:      getEnvAsInt("JWT_EXPIRY", 24),
+		
+		// Performance
+		HighTrafficMode: getEnv("HIGH_TRAFFIC_MODE", "false") == "true",
 	}
 
 	return config, nil

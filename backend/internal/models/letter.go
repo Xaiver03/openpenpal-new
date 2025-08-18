@@ -128,6 +128,10 @@ type LetterCode struct {
 	LastScannedAt *time.Time    `json:"last_scanned_at,omitempty"`                                  // 最后扫码时间
 	ScanCount     int           `json:"scan_count" gorm:"default:0"`                                // 扫码次数
 
+	// Anti-Forgery Security字段
+	SecurityHash string `json:"security_hash" gorm:"type:varchar(64)"` // SHA256哈希签名
+	SignatureKey string `json:"signature_key" gorm:"type:varchar(32)"` // 签名密钥
+
 	// 关联
 	Letter   Letter    `json:"letter,omitempty" gorm:"foreignKey:LetterID;references:ID;constraint:OnDelete:CASCADE;"`
 	Envelope *Envelope `json:"envelope,omitempty" gorm:"foreignKey:EnvelopeID;references:ID;constraint:OnDelete:SET NULL;"`

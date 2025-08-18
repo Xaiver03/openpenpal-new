@@ -89,6 +89,7 @@ func main() {
 	cloudLetterService := services.NewCloudLetterService(db, cfg) // 云中锦书服务 - 自定义现实角色
 	contentSecurityService := services.NewContentSecurityService(db, cfg, aiService) // 内容安全服务 - XSS防护和敏感词管理
 	tagService := services.NewTagService(db) // 标签服务 - 内容发现与分类
+	auditService := services.NewAuditService(db) // 审计服务 - 企业级安全审计
 
 	// Phase 4.1: 初始化积分过期服务
 	creditExpirationService := services.NewCreditExpirationService(db, creditService, notificationService)
@@ -97,16 +98,16 @@ func main() {
 	// Phase 4.2: 初始化积分转赠服务
 	creditTransferService := services.NewCreditTransferService(db, creditService, notificationService, creditLimiterService)
 
-	// 延迟队列服务 - 已修复数据库模型问题
-	log.Info("Initializing delay queue service with proper database models...")
+	// 延迟队列服务 - 使用修复版本防止无限循环
+	log.Info("Initializing fixed delay queue service with circuit breaker...")
 	
 	delayQueueService, err := services.NewDelayQueueService(db, cfg)
 	if err != nil {
-		log.Warn("Failed to initialize delay queue service: %v", err)
+		log.Warn("Failed to initialize fixed delay queue service: %v", err)
 	} else {
 		// 在后台启动延迟队列工作进程
 		go delayQueueService.StartWorker()
-		log.Info("Delay queue worker started successfully")
+		log.Info("Fixed delay queue worker started successfully")
 	}
 
 	// 初始化WebSocket服务
@@ -162,8 +163,7 @@ func main() {
 	}
 
 	// 注册默认调度任务
-	// TODO: Re-enable when scheduler tasks are fixed
-	/*
+	log.Info("Registering default scheduler tasks...")
 	futureLetterService := services.NewFutureLetterService(db, letterService, notificationService)
 	schedulerTasks := services.NewSchedulerTasks(
 		futureLetterService,
@@ -179,7 +179,6 @@ func main() {
 	} else {
 		log.Info("Default scheduler tasks registered successfully")
 	}
-	*/
 
 	// 初始化处理器
 	userHandler := handlers.NewUserHandler(userService)
@@ -211,6 +210,7 @@ func main() {
 	opcodeHandler := handlers.NewOPCodeHandler(opcodeService, courierService)
 	barcodeHandler := handlers.NewBarcodeHandler(letterService, opcodeService, scanEventService) // PRD条码系统处理器
 	scanEventHandler := handlers.NewScanEventHandler(scanEventService)                           // 扫描事件处理器
+	batchHandler := handlers.NewBatchHandler(letterService, courierService, opcodeService)       // 批量管理处理器
 	cloudLetterHandler := handlers.NewCloudLetterHandler(cloudLetterService)                     // 云中锦书处理器
 	shopHandler := handlers.NewShopHandler(shopService, userService)
 	creditShopHandler := handlers.NewCreditShopHandler(creditShopService, creditService) // Phase 2: 积分商城处理器
@@ -223,21 +223,18 @@ func main() {
 	privacyHandler := handlers.NewPrivacyHandler(privacyService) // 隐私设置处理器
 	userProfileHandler := handlers.NewUserProfileHandler(db) // 用户档案处理器
 	sensitiveWordHandler := handlers.NewSensitiveWordHandler(contentSecurityService) // 敏感词管理处理器
-	// 初始化完整性和审计服务 - 暂时禁用
-	// TODO: Re-enable when services are fixed
-	// integrityService := services.NewIntegrityService(db, cfg)
-	// auditService := services.NewAuditService(db)
+	// 初始化完整性服务
+	integrityService := services.NewIntegrityService(db, cfg)
 	
-	validationHandler := handlers.NewValidationHandler() // 安全验证处理器
+	validationHandler := handlers.NewValidationHandler(integrityService, auditService) // 安全验证处理器
 	tagHandler := handlers.NewTagHandler(tagService) // 标签处理器 - 内容发现与分类
+	auditHandler := handlers.NewAuditHandler(auditService) // 审计处理器 - 企业级安全审计
 
-	// QR扫描服务和处理器 - SOTA集成：复用现有依赖
-	// TODO: Re-enable when QR scan handler is fixed
-	/*
+	// QR/条码扫描服务 - SOTA集成：复用现有依赖
+	log.Info("Initializing QR/barcode scanning functionality...")
 	qrScanService := services.NewQRScanService(db, letterService, courierService, wsAdapter)
-	qrScanService.SetCreditTaskService(creditTaskService) // 新增：积分任务服务依赖
-	qrScanHandler := handlers.NewQRScanHandler(qrScanService, middleware.NewAuthMiddleware(cfg, db))
-	*/
+	qrScanService.SetCreditTaskService(creditTaskService) // 积分任务服务依赖
+	log.Info("QR scan service initialized successfully - using existing barcode handler for scanning")
 	wsHandler := wsService.GetHandler()
 
 	// SOTA管理API适配器 - 兼容Java前端
@@ -267,7 +264,8 @@ func main() {
 	router.Use(middleware.RequestIDMiddleware()) // 请求追踪
 	router.Use(middleware.LoggerMiddleware())    // 日志记录
 	router.Use(middleware.RecoveryMiddleware())  // 错误恢复
-	// router.Use(middleware.MetricsMiddleware())   // 性能监控 - TODO: Fix metrics middleware
+	metricsMiddleware := middleware.NewMetricsMiddleware("openpenpal-backend")
+	router.Use(metricsMiddleware.RequestMetrics())   // 性能监控 - 重新启用
 
 	// 2. 安全中间件
 	router.Use(middleware.SecurityHeadersMiddleware())                                  // 安全头
@@ -385,18 +383,18 @@ func main() {
 			museum.GET("/stats", museumHandler.GetMuseumStats)                     // 获取博物馆统计
 		}
 
-		// 公开的AI相关（无需认证）
-		ai := public.Group("/ai")
-		{
-			ai.POST("/match", aiHandler.MatchPenPal)
-			ai.POST("/reply", aiHandler.GenerateReply)
-			ai.POST("/reply-advice", aiHandler.GenerateReplyAdvice) // 新增：生成回信角度建议
-			ai.POST("/inspiration", aiHandler.GetInspiration)
-			ai.POST("/curate", aiHandler.CurateLetters)
-			ai.GET("/personas", aiHandler.GetPersonas)
-			ai.GET("/stats", aiHandler.GetAIStats)
-			ai.GET("/daily-inspiration", aiHandler.GetDailyInspiration)
-		}
+		// 公开的AI相关（无需认证）- 这些已移至ai_routes.go，需要认证
+		// ai := public.Group("/ai")
+		// {
+		//	ai.POST("/match", aiHandler.MatchPenPal) // 已移至ai_routes.go，需要认证
+		//	ai.POST("/reply", aiHandler.GenerateReply)
+		//	ai.POST("/reply-advice", aiHandler.GenerateReplyAdvice) // 新增：生成回信角度建议
+		//	ai.POST("/inspiration", aiHandler.GetInspiration)
+		//	ai.POST("/curate", aiHandler.CurateLetters)
+		//	ai.GET("/personas", aiHandler.GetPersonas)
+		//	ai.GET("/stats", aiHandler.GetAIStats)
+		//	ai.GET("/daily-inspiration", aiHandler.GetDailyInspiration)
+		// }
 
 		// 公开的商店信息（无需认证）
 		shop := public.Group("/shop")
@@ -552,6 +550,16 @@ func main() {
 				courier.GET("/scan-history", qrScanHandler.GetScanHistory)      // 获取扫描历史记录
 			*/
 
+			// 批量管理API (L3/L4信使专用)
+			batch := courier.Group("/batch")
+			{
+				batch.POST("/generate", batchHandler.GenerateBatch)           // 批量生成条码
+				batch.GET("", batchHandler.GetBatches)                       // 获取批次列表
+				batch.GET("/:id", batchHandler.GetBatchDetails)              // 获取批次详情
+				batch.GET("/stats", batchHandler.GetBatchStats)              // 获取统计信息
+				batch.PATCH("/:id/status", batchHandler.UpdateBatchStatus)   // 更新批次状态
+			}
+			
 			// 管理级别API
 			management := courier.Group("/management")
 			{
@@ -896,7 +904,7 @@ func main() {
 		opcode := protected.Group("/opcode")
 		{
 			// 用户功能
-			opcode.POST("/apply", opcodeHandler.ApplyOPCode)                // 申请OP Code
+			opcode.POST("/apply", opcodeHandler.ApplyOPCodeHierarchical)    // 层级化申请OP Code - 新增
 			opcode.GET("/validate", opcodeHandler.ValidateOPCode)           // 验证格式
 			opcode.GET("/search", opcodeHandler.SearchOPCodes)              // 搜索OP Code
 			opcode.GET("/search/schools", opcodeHandler.SearchSchools)      // 搜索学校
@@ -906,6 +914,13 @@ func main() {
 			opcode.GET("/search/buildings", opcodeHandler.SearchBuildings)  // 搜索楼栋
 			opcode.GET("/search/points", opcodeHandler.SearchPoints)        // 搜索投递点
 			opcode.GET("/stats/:school_code", opcodeHandler.GetOPCodeStats) // 获取统计
+			
+			// 层级选择系统新增路由
+			opcode.GET("/cities", opcodeHandler.GetCities)                                      // 获取城市列表
+			opcode.GET("/districts/:school_code", opcodeHandler.GetDistricts)                   // 获取学校片区列表
+			opcode.GET("/buildings/:school_code/:district_code", opcodeHandler.GetBuildings)    // 获取楼栋列表
+			opcode.GET("/delivery-points/:prefix", opcodeHandler.GetDeliveryPoints)             // 获取投递点列表（含可用性）
+			
 			opcode.GET("/:code", opcodeHandler.GetOPCode)                   // 获取OP Code信息
 
 			// 管理功能（需要额外权限验证）
@@ -923,6 +938,7 @@ func main() {
 			barcodes.PATCH("/:id/status", barcodeHandler.UpdateBarcodeStatus)       // 更新状态
 			barcodes.GET("/:id/status", barcodeHandler.GetBarcodeStatus)            // 获取状态
 			barcodes.POST("/:id/validate", barcodeHandler.ValidateBarcodeOperation) // 验证操作权限
+			barcodes.POST("/verify", barcodeHandler.VerifyBarcodeAuthenticity)      // 验证条码真实性
 		}
 
 		// 扫描事件系统 - PRD要求的完整扫描历史
@@ -1133,18 +1149,18 @@ func main() {
 			adminCredits.DELETE("/transfers/:id/cancel", creditTransferHandler.AdminCancelTransfer)            // 管理员取消转赠
 		}
 
-		// AI管理
-		adminAI := admin.Group("/ai")
-		{
-			adminAI.GET("/config", aiHandler.GetAIConfig)               // 获取AI配置
-			adminAI.PUT("/config", aiHandler.UpdateAIConfig)            // 更新AI配置
-			adminAI.GET("/templates", aiHandler.GetContentTemplates)    // 获取内容模板
-			adminAI.POST("/templates", aiHandler.CreateContentTemplate) // 创建内容模板
-			adminAI.GET("/monitoring", aiHandler.GetAIMonitoring)       // 获取AI监控数据
-			adminAI.GET("/analytics", aiHandler.GetAIAnalytics)         // 获取AI分析数据
-			adminAI.GET("/logs", aiHandler.GetAILogs)                   // 获取AI操作日志
-			adminAI.POST("/test-provider", aiHandler.TestAIProvider)    // 测试AI提供商连接
-		}
+		// AI管理 - 已移至ai_routes.go，避免重复注册
+		// adminAI := admin.Group("/ai")
+		// {
+		//	adminAI.GET("/config", aiHandler.GetAIConfig)               // 获取AI配置
+		//	adminAI.PUT("/config", aiHandler.UpdateAIConfig)            // 更新AI配置
+		//	adminAI.GET("/templates", aiHandler.GetContentTemplates)    // 获取内容模板
+		//	adminAI.POST("/templates", aiHandler.CreateContentTemplate) // 创建内容模板
+		//	adminAI.GET("/monitoring", aiHandler.GetAIMonitoring)       // 获取AI监控数据
+		//	adminAI.GET("/analytics", aiHandler.GetAIAnalytics)         // 获取AI分析数据
+		//	adminAI.GET("/logs", aiHandler.GetAILogs)                   // 获取AI操作日志
+		//	adminAI.POST("/test-provider", aiHandler.TestAIProvider)    // 测试AI提供商连接
+		// }
 
 		// 商店管理
 		adminShop := admin.Group("/shop")
@@ -1256,6 +1272,14 @@ func main() {
 			adminSecurity.POST("/validate/:component", validationHandler.ValidateSpecificComponent) // 验证特定组件
 			adminSecurity.POST("/validate/continuous", validationHandler.RunContinuousValidation) // 持续验证
 			adminSecurity.GET("/validate/health", validationHandler.GetValidationHealth) // 验证系统健康
+		}
+
+		// 审计日志管理（需要管理员权限）
+		adminAudit := admin.Group("/audit")
+		{
+			adminAudit.GET("/logs", auditHandler.GetAuditLogs)      // 获取审计日志
+			adminAudit.GET("/stats", auditHandler.GetAuditStats)    // 获取审计统计
+			adminAudit.GET("/export", auditHandler.ExportAuditLogs) // 导出审计日志
 		}
 
 		// 敏感词管理（独立路由组，需要四级信使或平台管理员权限）

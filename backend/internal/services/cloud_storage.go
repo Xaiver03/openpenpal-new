@@ -13,15 +13,12 @@ import (
 // Upload 上传文件到阿里云OSS
 func (p *AliOSSProvider) Upload(file *multipart.FileHeader, objectKey string) (*UploadResult, error) {
 	// TODO: 实现阿里云OSS上传
-	// 这里提供一个基础结构，实际需要集成阿里云OSS SDK
+	// 需要: 1. go get -u github.com/aliyun/aliyun-oss-go-sdk/oss
+	//       2. 配置 AccessKeyId, AccessKeySecret, Endpoint, BucketName
+	//       3. 实现上传逻辑
+	// 示例代码: https://github.com/aliyun/aliyun-oss-go-sdk
 
-	return &UploadResult{
-		ObjectKey:    objectKey,
-		PublicURL:    fmt.Sprintf("%s/%s", p.baseURL, objectKey),
-		PrivateURL:   "", // 需要生成签名URL
-		ThumbnailURL: "",
-		FileSize:     file.Size,
-	}, fmt.Errorf("阿里云OSS功能需要配置SDK")
+	return nil, fmt.Errorf("阿里云OSS上传功能尚未实现，请使用本地存储或配置阿里云OSS SDK")
 }
 
 // Download 从阿里云OSS下载文件

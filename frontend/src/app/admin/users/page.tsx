@@ -111,7 +111,13 @@ export default function UsersManagePage() {
   const [showUserDetail, setShowUserDetail] = useState(false)
   const [showBanDialog, setShowBanDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
-  const [editFormData, setEditFormData] = useState({
+  const [editFormData, setEditFormData] = useState<{
+    nickname: string
+    email: string
+    role: UserRole | ''
+    school_code: string
+    is_active: boolean
+  }>({
     nickname: '',
     email: '',
     role: '',
@@ -306,7 +312,7 @@ export default function UsersManagePage() {
       const response = await AdminService.updateUser(selectedUser.id, {
         nickname: editFormData.nickname,
         email: editFormData.email,
-        role: editFormData.role,
+        role: editFormData.role === '' ? undefined : editFormData.role,
         school_code: editFormData.school_code,
         is_active: editFormData.is_active
       })
@@ -941,7 +947,7 @@ export default function UsersManagePage() {
                 <Label htmlFor="edit-role">角色</Label>
                 <Select 
                   value={editFormData.role} 
-                  onValueChange={(value) => setEditFormData({ ...editFormData, role: value })}
+                  onValueChange={(value) => setEditFormData({ ...editFormData, role: value as UserRole | '' })}
                 >
                   <SelectTrigger id="edit-role">
                     <SelectValue placeholder="选择角色" />

@@ -50,7 +50,7 @@ export function CreditShopCard({
         limit: 3,
         in_stock_only: true
       })
-      setFeaturedProducts(productsResponse.items || [])
+      setFeaturedProducts((productsResponse as any).items || [])
 
       // 获取用户积分（如果需要显示）
       if (showBalance && user) {

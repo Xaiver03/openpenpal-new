@@ -8,20 +8,20 @@ import { WebSocketProvider } from '@/contexts/websocket-context'
 // 保持懒加载用于可选组件
 const PerformanceMonitor = React.lazy(() => 
   import('@/components/optimization/performance-monitor').then(module => ({
-    default: module.PerformanceMonitor || (() => null)
-  })).catch(() => ({ default: () => null }))
+    default: module.PerformanceMonitor || (() => React.createElement(React.Fragment))
+  })).catch(() => ({ default: () => React.createElement(React.Fragment) }))
 )
 
 const AuthDebugPanel = React.lazy(() => 
   import('@/components/debug/auth-debug-panel').then(module => ({
-    default: module.AuthDebugPanel || (() => null)
-  })).catch(() => ({ default: () => null }))
+    default: module.AuthDebugPanel || (() => React.createElement(React.Fragment))
+  })).catch(() => ({ default: () => React.createElement(React.Fragment) }))
 )
 
 const NotificationManager = React.lazy(() => 
   import('@/components/realtime/notification-center').then(module => ({
-    default: module.NotificationManager || module.NotificationCenter || (() => null)
-  })).catch(() => ({ default: () => null }))
+    default: module.NotificationManager || module.NotificationCenter || (() => React.createElement(React.Fragment))
+  })).catch(() => ({ default: () => React.createElement(React.Fragment) }))
 )
 
 interface ClientBoundaryProps {

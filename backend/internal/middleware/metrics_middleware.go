@@ -349,14 +349,16 @@ func (rww *responseWriterWrapper) WriteString(s string) (int, error) {
 
 // Helper function for tracking external API calls
 func TrackExternalAPICall(apiName string, statusCode int, duration time.Duration) {
-	// TODO: Re-enable when DefaultMetricsCollector is available
+	// Metrics collection is handled by MetricsMiddleware instance
+	// Direct collector calls are disabled to avoid duplicate registrations
 	// monitoring.DefaultMetricsCollector.IncrementExternalAPIRequests(apiName, strconv.Itoa(statusCode))
 	// monitoring.DefaultMetricsCollector.ObserveExternalAPILatency(apiName, duration)
 }
 
 // Helper function for tracking database operations
 func TrackDatabaseOperation(operation, table string, duration time.Duration, success bool) {
-	// TODO: Re-enable when DefaultMetricsCollector is available
+	// Metrics collection is handled by MetricsMiddleware instance
+	// Direct collector calls are disabled to avoid duplicate registrations
 	/*
 	monitoring.DefaultMetricsCollector.ObserveDBQueryDuration(operation, table, duration)
 	

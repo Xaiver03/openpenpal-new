@@ -60,6 +60,29 @@ export interface UserCredit {
 }
 
 /**
+ * 用户积分排行榜信息 - 扩展自 UserCredit
+ */
+export interface UserCreditLeaderboard extends UserCredit {
+  // 用户基本信息
+  username: string
+  avatarUrl?: string
+  
+  // 排行信息
+  rank: number           // 排名
+  rankChange?: number    // 排名变化
+  isRising?: boolean     // 是否上升
+  
+  // 积分详情
+  totalPoints: number    // 总积分（等同于 total）
+  weekPoints?: number    // 本周积分
+  monthPoints?: number   // 本月积分
+  
+  // 任务统计
+  completedTasks?: number   // 完成任务数
+  achievements?: string[]   // 成就列表
+}
+
+/**
  * 积分交易记录
  */
 export interface CreditTransaction {
@@ -145,6 +168,12 @@ export interface CreditSummary {
   month_earned: number
   pending_tasks: number
   completed_tasks_today: number
+  
+  // Courier 特定属性
+  today_deliveries?: number     // 今日配送数
+  first_deliveries?: number     // 首次配送数
+  on_time_rate?: number        // 准时率
+  
   current_level_progress: {
     current_points: number
     next_level_required: number

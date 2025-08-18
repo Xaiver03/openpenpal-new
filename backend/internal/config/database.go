@@ -3,15 +3,17 @@ package config
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"openpenpal-backend/internal/logger"
 	"openpenpal-backend/internal/models"
 
 	"github.com/google/uuid"
+	"shared/pkg/database"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	gormLogger "gorm.io/gorm/logger"
 )
 
 // SetupDatabaseDirect 直接初始化数据库连接，绕过共享包问题，配置生产级日志
@@ -24,15 +26,27 @@ func SetupDatabaseDirect(config *Config) (*gorm.DB, error) {
 	var db *gorm.DB
 	var err error
 
-	// 根据数据库类型建立连接
+	// 只支持PostgreSQL数据库连接
 	if config.DatabaseType == "postgres" || config.DatabaseType == "postgresql" {
+		// 构建基础DSN
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Shanghai",
 			config.DBHost, config.DBUser, config.DBPassword, config.DatabaseName, config.DBPort, config.DBSSLMode)
+		
+		// 添加SSL证书参数
+		if config.DBSSLMode != "disable" && config.DBSSLMode != "allow" {
+			if config.DBSSLRootCert != "" {
+				dsn += fmt.Sprintf(" sslrootcert=%s", config.DBSSLRootCert)
+			}
+			if config.DBSSLCert != "" {
+				dsn += fmt.Sprintf(" sslcert=%s", config.DBSSLCert)
+			}
+			if config.DBSSLKey != "" {
+				dsn += fmt.Sprintf(" sslkey=%s", config.DBSSLKey)
+			}
+		}
 		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
-	} else if config.DatabaseType == "sqlite" {
-		db, err = gorm.Open(sqlite.Open(config.DatabaseURL), gormConfig)
 	} else {
-		return nil, fmt.Errorf("unsupported database type: %s", config.DatabaseType)
+		return nil, fmt.Errorf("only PostgreSQL is supported, got: %s", config.DatabaseType)
 	}
 
 	if err != nil {
@@ -45,10 +59,27 @@ func SetupDatabaseDirect(config *Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to get database instance: %w", err)
 	}
 
-	// 设置连接池参数
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	// 根据环境获取优化的连接池配置
+	var poolConfig *PoolConfig
+	switch config.Environment {
+	case "production":
+		poolConfig = GetPoolPreset(PoolPresetProduction)
+	case "staging":
+		poolConfig = GetPoolPreset(PoolPresetStaging)
+	case "test":
+		poolConfig = GetPoolPreset(PoolPresetTesting)
+	default:
+		poolConfig = GetPoolPreset(PoolPresetDevelopment)
+	}
+	
+	// 应用连接池配置
+	sqlDB.SetMaxOpenConns(poolConfig.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(poolConfig.MaxIdleConns)
+	sqlDB.SetConnMaxLifetime(poolConfig.ConnMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(poolConfig.ConnMaxIdleTime)
+	
+	log.Printf("Database connection pool configured: MaxOpen=%d, MaxIdle=%d, MaxLifetime=%s",
+		poolConfig.MaxOpenConns, poolConfig.MaxIdleConns, poolConfig.ConnMaxLifetime)
 
 	// 执行数据库迁移
 	if err := autoMigrate(db); err != nil {
@@ -78,6 +109,11 @@ func performSafeMigration(db *gorm.DB) error {
 	
 	log.Println("Safe migration completed successfully")
 	return nil
+}
+
+// GetAllModels 返回所有需要迁移的模型 (导出版本)
+func GetAllModels() []interface{} {
+	return getAllModels()
 }
 
 // getAllModels 返回所有需要迁移的模型
@@ -186,6 +222,9 @@ func getAllModels() []interface{} {
 		&models.OPCodeArea{},
 		&models.OPCodeApplication{},
 		&models.OPCodePermission{},
+		
+		// 审计日志系统
+		&models.AuditLog{},
 	}
 }
 
@@ -258,10 +297,79 @@ func SetupDatabase(config *Config) (*gorm.DB, error) {
 
 // SetupDatabaseWithSharedPackage 使用共享包的数据库连接
 func SetupDatabaseWithSharedPackage(config *Config) (*gorm.DB, error) {
-	log.Println("Attempting to use shared/pkg/database...")
-	// 这里可以添加共享包的具体实现
-	// 暂时返回错误，回退到直接方式
-	return nil, fmt.Errorf("shared package integration pending")
+	log.Println("Using shared database package for unified database management...")
+	
+	// 创建数据库管理器
+	manager := database.GetDefaultManager()
+	
+	// 解析端口
+	port := 5432 // 默认PostgreSQL端口
+	if config.DBPort != "" {
+		if p, err := strconv.Atoi(config.DBPort); err == nil {
+			port = p
+		}
+	}
+	
+	// 构建共享包配置
+	sharedConfig := &database.Config{
+		Type:     database.PostgreSQL,
+		Host:     config.DBHost,
+		Port:     port,
+		Database: config.DatabaseName,
+		Username: config.DBUser,
+		Password: config.DBPassword,
+		SSLMode:  config.DBSSLMode,
+		SSLCert:  config.DBSSLCert,
+		SSLKey:   config.DBSSLKey,
+		SSLRootCert: config.DBSSLRootCert,
+		Timezone: "Asia/Shanghai",
+		
+		// 根据环境获取优化的连接池配置
+		MaxOpenConns:    getPoolConfigForEnv(config.Environment).MaxOpenConns,
+		MaxIdleConns:    getPoolConfigForEnv(config.Environment).MaxIdleConns,
+		ConnMaxLifetime: getPoolConfigForEnv(config.Environment).ConnMaxLifetime,
+		ConnMaxIdleTime: getPoolConfigForEnv(config.Environment).ConnMaxIdleTime,
+		
+		// 日志和健康检查配置
+		LogLevel:            gormLogger.Warn,
+		HealthCheckInterval: 30 * time.Second,
+		MaxRetries:         3,
+		RetryInterval:      5 * time.Second,
+	}
+	
+	// 添加配置到管理器
+	if err := manager.AddConfig("main", sharedConfig); err != nil {
+		return nil, fmt.Errorf("failed to add database config: %w", err)
+	}
+	
+	// 连接数据库
+	db, err := manager.Connect("main")
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect via shared package: %w", err)
+	}
+	
+	// 执行数据库迁移
+	if err := autoMigrate(db); err != nil {
+		log.Printf("Migration error: %v", err)
+		return nil, fmt.Errorf("failed to auto migrate: %w", err)
+	}
+
+	log.Println("✅ Database connected successfully via shared package")
+	return db, nil
+}
+
+// getPoolConfigForEnv 根据环境获取连接池配置
+func getPoolConfigForEnv(env string) *PoolConfig {
+	switch env {
+	case "production":
+		return GetPoolPreset(PoolPresetProduction)
+	case "staging":
+		return GetPoolPreset(PoolPresetStaging)
+	case "test":
+		return GetPoolPreset(PoolPresetTesting)
+	default:
+		return GetPoolPreset(PoolPresetDevelopment)
+	}
 }
 
 // autoMigrate 自动迁移数据库表结构

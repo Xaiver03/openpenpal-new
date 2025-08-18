@@ -304,11 +304,10 @@ export default function SystemSettingsPage() {
         <div className="flex items-center gap-4">
           <SafeBackButton 
             href="/admin" 
+            label="返回管理控制台"
             hasUnsavedChanges={hasChanges}
-            unsavedMessage="您有未保存的系统设置更改。确定要离开吗？"
-          >
-            返回管理控制台
-          </SafeBackButton>
+            confirmDescription="您有未保存的系统设置更改。确定要离开吗？"
+          />
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Settings className="w-8 h-8" />

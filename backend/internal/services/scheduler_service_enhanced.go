@@ -5,17 +5,20 @@ import (
 	"fmt"
 	"log"
 	"openpenpal-backend/internal/models"
+	"os"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
 )
 
-// EnhancedSchedulerService extends SchedulerService with distributed locking
+// EnhancedSchedulerService provides distributed scheduling with locking
 type EnhancedSchedulerService struct {
-	*SchedulerService
-	lockManager   *DistributedLockManager
+	baseScheduler  *SchedulerService
+	lockManager    *DistributedLockManager
 	schedulerTasks *SchedulerTasks
+	db             *gorm.DB
 }
 
 // NewEnhancedSchedulerService creates a new enhanced scheduler service
@@ -46,13 +49,11 @@ func NewEnhancedSchedulerService(
 	)
 	
 	enhanced := &EnhancedSchedulerService{
-		SchedulerService: baseScheduler,
-		lockManager:     lockManager,
-		schedulerTasks:  schedulerTasks,
+		baseScheduler:  baseScheduler,
+		lockManager:    lockManager,
+		schedulerTasks: schedulerTasks,
+		db:            db,
 	}
-	
-	// Override the executeTask method to use distributed locking
-	baseScheduler.executeTask = enhanced.executeTaskWithLock
 	
 	return enhanced
 }
@@ -61,12 +62,12 @@ func NewEnhancedSchedulerService(
 func (es *EnhancedSchedulerService) executeTaskWithLock(task *models.ScheduledTask) {
 	ctx := context.Background()
 	execution := &models.TaskExecution{
-		ID:        generateID(),
+		ID:        generateExecutionID(),
 		TaskID:    task.ID,
 		Status:    models.SchedulerTaskStatusRunning,
 		StartedAt: time.Now(),
-		WorkerID:  es.workerID,
-		ProcessPID: es.getProcessPID(),
+		WorkerID:  es.getWorkerID(),
+		ProcessPID: os.Getpid(),
 	}
 
 	// Try to acquire distributed lock for this task
@@ -148,7 +149,7 @@ func (es *EnhancedSchedulerService) executeTaskWithLock(task *models.ScheduledTa
 
 // RegisterFSDTasks registers all FSD-required tasks
 func (es *EnhancedSchedulerService) RegisterFSDTasks() error {
-	return es.schedulerTasks.RegisterDefaultTasks(es.SchedulerService)
+	return es.schedulerTasks.RegisterDefaultTasks(es.baseScheduler)
 }
 
 // GetLockStatus returns the status of distributed locks
@@ -178,10 +179,7 @@ func (es *EnhancedSchedulerService) GetLockStatus(ctx context.Context) (map[stri
 func (es *EnhancedSchedulerService) ForceReleaseLock(ctx context.Context, taskID string) error {
 	lockKey := fmt.Sprintf("task:%s", taskID)
 	
-	// Create a lock instance just to release it
-	lock := es.lockManager.NewLock(lockKey, 1*time.Second)
-	
-	// Force delete the key regardless of value
+	// Force delete the key regardless of value (bypassing lock instance)
 	err := es.lockManager.client.Del(ctx, es.lockManager.prefix+lockKey).Err()
 	if err != nil {
 		return fmt.Errorf("failed to force release lock: %w", err)
@@ -189,4 +187,34 @@ func (es *EnhancedSchedulerService) ForceReleaseLock(ctx context.Context, taskID
 	
 	log.Printf("Force released lock for task: %s", taskID)
 	return nil
+}
+
+// Helper methods
+
+// getWorkerID returns the worker ID from base scheduler
+func (es *EnhancedSchedulerService) getWorkerID() string {
+	return "enhanced-scheduler-" + fmt.Sprintf("%d", os.Getpid())
+}
+
+// updateNextRunTime calculates and updates next run time for a task
+func (es *EnhancedSchedulerService) updateNextRunTime(task *models.ScheduledTask) {
+	if task.CronExpression != "" {
+		if nextTime, err := es.getNextRunTime(task.CronExpression); err == nil {
+			es.db.Model(&models.ScheduledTask{}).Where("id = ?", task.ID).Update("next_run_at", nextTime)
+		}
+	}
+}
+
+// getNextRunTime calculates next run time from cron expression
+func (es *EnhancedSchedulerService) getNextRunTime(cronExpr string) (time.Time, error) {
+	schedule, err := cron.ParseStandard(cronExpr)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return schedule.Next(time.Now()), nil
+}
+
+// generateExecutionID generates a unique execution ID
+func generateExecutionID() string {
+	return fmt.Sprintf("exec-%d-%d", time.Now().UnixNano(), os.Getpid())
 }

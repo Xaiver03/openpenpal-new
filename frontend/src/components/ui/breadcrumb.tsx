@@ -11,7 +11,7 @@ export interface BreadcrumbItem {
 }
 
 interface BreadcrumbProps {
-  items: BreadcrumbItem[]
+  items: readonly BreadcrumbItem[]
   className?: string
   separator?: React.ReactNode
   showHome?: boolean

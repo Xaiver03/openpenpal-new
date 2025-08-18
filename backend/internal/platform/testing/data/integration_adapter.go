@@ -7,13 +7,14 @@ import (
 	"sync"
 	"time"
 
-	// Import database governance interfaces
-	"github.com/your-org/openpenpal/backend/internal/platform/database"
+	// TODO: Import database governance interfaces when available
+	// "github.com/your-org/openpenpal/backend/internal/platform/database"
 )
 
 // DataGenerationIntegrator integrates smart test data generation with database governance
 type DataGenerationIntegrator struct {
-	dbGovernance      database.GovernanceManager
+	// TODO: Re-enable when database governance package is available
+	// dbGovernance      database.GovernanceManager
 	schemaAnalyzer    *PostgreSQLSchemaAnalyzer
 	dataGenerator     *SyntheticDataGenerator
 	relationshipPreserver *RelationshipPreserver
@@ -54,12 +55,13 @@ type IntegrationConfig struct {
 
 // DatabaseIntegrationConfig configures database integration
 type DatabaseIntegrationConfig struct {
-	ConnectionPool       *database.PoolConfig    `json:"connection_pool"`
+	// TODO: Re-enable when database governance package is available
+	// ConnectionPool       *database.PoolConfig    `json:"connection_pool"`
 	SchemaRefreshInterval time.Duration          `json:"schema_refresh_interval"`
 	QueryTimeoutSeconds  int                    `json:"query_timeout_seconds"`
 	MaxConcurrentQueries int                    `json:"max_concurrent_queries"`
 	EnableTransactions   bool                   `json:"enable_transactions"`
-	IsolationLevel      database.IsolationLevel `json:"isolation_level"`
+	// IsolationLevel      database.IsolationLevel `json:"isolation_level"`
 }
 
 // GenerationIntegrationConfig configures data generation integration
@@ -460,11 +462,13 @@ type ResourceMetrics struct {
 
 // NewDataGenerationIntegrator creates a new integration adapter
 func NewDataGenerationIntegrator(
-	dbGovernance database.GovernanceManager,
+	// TODO: Re-enable when database governance package is available
+	// dbGovernance database.GovernanceManager,
 	config *IntegrationConfig) *DataGenerationIntegrator {
 	
 	return &DataGenerationIntegrator{
-		dbGovernance:      dbGovernance,
+		// TODO: Re-enable when database governance package is available
+		// dbGovernance:      dbGovernance,
 		schemaAnalyzer:    NewPostgreSQLSchemaAnalyzer(&PostgreSQLConfig{}),
 		dataGenerator:     NewSyntheticDataGenerator(&SyntheticConfig{}),
 		relationshipPreserver: NewRelationshipPreserver(&RelationshipConfig{}),
@@ -631,13 +635,20 @@ func (dgi *DataGenerationIntegrator) GenerateIntegratedTestData(ctx context.Cont
 }
 
 // analyzeSchemaWithGovernance analyzes database schema using governance system
+// TODO: Re-enable when database governance package is available
 func (dgi *DataGenerationIntegrator) analyzeSchemaWithGovernance(ctx context.Context, 
-	targetSchema string) (*database.SchemaInfo, error) {
+	targetSchema string) (*SchemaInfo, error) {
 	
-	// Use database governance system to get schema information
-	schemaInfo, err := dgi.dbGovernance.GetSchemaInfo(ctx, targetSchema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get schema info from governance system: %w", err)
+	// TODO: Use database governance system to get schema information
+	// schemaInfo, err := dgi.dbGovernance.GetSchemaInfo(ctx, targetSchema)
+	// if err != nil {
+	//	return nil, fmt.Errorf("failed to get schema info from governance system: %w", err)
+	// }
+	
+	// Placeholder implementation
+	schemaInfo := &SchemaInfo{
+		Name: targetSchema,
+		Tables: make([]TableInfo, 0),
 	}
 	
 	// Enhance schema info with additional analysis
@@ -659,7 +670,7 @@ func (dgi *DataGenerationIntegrator) analyzeSchemaWithGovernance(ctx context.Con
 }
 
 // createSchemaMapping creates mapping between database schema and generation model
-func (dgi *DataGenerationIntegrator) createSchemaMapping(schemaInfo *database.SchemaInfo, 
+func (dgi *DataGenerationIntegrator) createSchemaMapping(schemaInfo *SchemaInfo, 
 	options *GenerationOptions) (*SchemaMapping, error) {
 	
 	dgi.schemaMapper.mutex.Lock()
@@ -751,7 +762,7 @@ func (dgi *DataGenerationIntegrator) applyPrivacyProtection(ctx context.Context,
 
 // preserveDataRelationships preserves data relationships
 func (dgi *DataGenerationIntegrator) preserveDataRelationships(ctx context.Context, 
-	data *SyntheticDataSet, schemaInfo *database.SchemaInfo) (*SyntheticDataSet, error) {
+	data *SyntheticDataSet, schemaInfo *SchemaInfo) (*SyntheticDataSet, error) {
 	
 	// Convert synthetic data to dataset format
 	dataSet := dgi.convertSyntheticToDataSet(data)
@@ -795,7 +806,7 @@ func (dgi *DataGenerationIntegrator) runPerformanceTests(ctx context.Context,
 
 // Helper methods
 
-func (dgi *DataGenerationIntegrator) convertToTables(tables []database.TableInfo) []Table {
+func (dgi *DataGenerationIntegrator) convertToTables(tables []TableInfo) []Table {
 	// Convert database table info to schema analyzer format
 	result := make([]Table, len(tables))
 	for i, table := range tables {
@@ -807,7 +818,7 @@ func (dgi *DataGenerationIntegrator) convertToTables(tables []database.TableInfo
 	return result
 }
 
-func (dgi *DataGenerationIntegrator) convertToColumns(columns []database.ColumnInfo) []Column {
+func (dgi *DataGenerationIntegrator) convertToColumns(columns []ColumnInfo) []Column {
 	// Convert database column info to schema analyzer format
 	result := make([]Column, len(columns))
 	for i, column := range columns {
@@ -820,8 +831,8 @@ func (dgi *DataGenerationIntegrator) convertToColumns(columns []database.ColumnI
 	return result
 }
 
-func (dgi *DataGenerationIntegrator) mergeSchemaInformation(governance *database.SchemaInfo, 
-	enhanced *SchemaProfile) *database.SchemaInfo {
+func (dgi *DataGenerationIntegrator) mergeSchemaInformation(governance *SchemaInfo, 
+	enhanced *SchemaProfile) *SchemaInfo {
 	// Merge governance schema info with enhanced analysis
 	// This is a placeholder implementation
 	return governance
@@ -832,7 +843,7 @@ func (dgi *DataGenerationIntegrator) generateFieldName(columnName string) string
 	return fmt.Sprintf("gen_%s", columnName)
 }
 
-func (dgi *DataGenerationIntegrator) extractConstraints(column database.ColumnInfo) []string {
+func (dgi *DataGenerationIntegrator) extractConstraints(column ColumnInfo) []string {
 	// Extract constraints from database column
 	constraints := make([]string, 0)
 	if !column.IsNullable {
@@ -844,7 +855,7 @@ func (dgi *DataGenerationIntegrator) extractConstraints(column database.ColumnIn
 	return constraints
 }
 
-func (dgi *DataGenerationIntegrator) createValidationRules(column database.ColumnInfo) []FieldValidationRule {
+func (dgi *DataGenerationIntegrator) createValidationRules(column ColumnInfo) []FieldValidationRule {
 	// Create validation rules for field
 	rules := make([]FieldValidationRule, 0)
 	
@@ -916,7 +927,7 @@ func (dgi *DataGenerationIntegrator) convertPrivacyDataToSynthetic(privacy *Priv
 	return privacy.SyntheticData
 }
 
-func (dgi *DataGenerationIntegrator) createEmptyDataSetFromSchema(schemaInfo *database.SchemaInfo) *DataSet {
+func (dgi *DataGenerationIntegrator) createEmptyDataSetFromSchema(schemaInfo *SchemaInfo) *DataSet {
 	// Create empty dataset structure from schema
 	dataSet := &DataSet{
 		Tables:   make(map[string]*TableData),
@@ -1115,6 +1126,35 @@ type GenerationConstraint struct {
 }
 
 // Placeholder implementations for missing types and interfaces
+
+// Placeholder types for database governance (TODO: remove when actual package is available)
+type SchemaInfo struct {
+	Name   string      `json:"name"`
+	Tables []TableInfo `json:"tables"`
+}
+
+type TableInfo struct {
+	Name          string         `json:"name"`
+	Columns       []ColumnInfo   `json:"columns"`
+	Relationships []Relationship `json:"relationships"`
+}
+
+type ColumnInfo struct {
+	Name         string `json:"name"`
+	DataType     string `json:"data_type"`
+	IsNullable   bool   `json:"is_nullable"`
+	IsPrimaryKey bool   `json:"is_primary_key"`
+}
+
+type Relationship struct {
+	Type         string `json:"type"`
+	FromTable    string `json:"from_table"`
+	ToTable      string `json:"to_table"`
+	FromColumn   string `json:"from_column"`
+	ToColumn     string `json:"to_column"`
+	Cardinality  string `json:"cardinality"`
+	IsCascading  bool   `json:"is_cascading"`
+}
 
 type Table struct {
 	Name    string   `json:"name"`

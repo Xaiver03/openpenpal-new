@@ -282,7 +282,7 @@ func (s *MuseumService) LikeMuseumItem(ctx context.Context, itemID, userID strin
 	}
 
 	// 检查是否已经点赞
-	// TODO: 实现点赞记录表来避免重复点赞
+	// Consider implementing MuseumLike model following LetterLike/CommentLike pattern
 
 	// 更新点赞数
 	result := s.db.Model(&models.MuseumItem{}).

@@ -23,6 +23,7 @@ import {
 import { useCreditLeaderboard, useCreditStore } from '@/stores/credit-store'
 import { formatPoints, getCreditLevelName } from '@/lib/api/credit'
 import { CreditLevelBadge } from './credit-level-badge'
+import type { UserCreditLeaderboard } from '@/types/credit'
 
 interface CreditLeaderboardProps {
   limit?: number
@@ -37,19 +38,20 @@ export function CreditLeaderboard({
   showCurrentUser = true,
   className = '' 
 }: CreditLeaderboardProps) {
-  const { leaderboard, currentUserRank, loading, error } = useCreditLeaderboard()
+  const { leaderboard, loading, error } = useCreditLeaderboard()
   const { fetchLeaderboard, clearError } = useCreditStore()
+  const [currentUserRank, setCurrentUserRank] = useState<UserCreditLeaderboard | null>(null)
   
   const [timeRange, setTimeRange] = useState<'all' | 'month' | 'week'>('all')
   const [category, setCategory] = useState<'total' | 'level' | 'tasks'>('total')
 
   useEffect(() => {
-    fetchLeaderboard({ time_range: timeRange, category, limit })
+    fetchLeaderboard(limit)
   }, [timeRange, category, limit, fetchLeaderboard])
 
   const handleRefresh = () => {
     clearError()
-    fetchLeaderboard({ time_range: timeRange, category, limit })
+    fetchLeaderboard(limit)
   }
 
   const getRankIcon = (rank: number) => {
@@ -210,7 +212,7 @@ export function CreditLeaderboard({
               </div>
               <div className="text-right">
                 <div className="font-medium">
-                  {formatPoints(currentUserRank.total_points)}
+                  {formatPoints(currentUserRank.totalPoints)}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {getCreditLevelName(currentUserRank.level)}
@@ -237,16 +239,16 @@ export function CreditLeaderboard({
                   {/* 排名 */}
                   <div className="flex items-center gap-2 w-12">
                     {getRankIcon(user.rank)}
-                    {user.rank_change !== undefined && (
+                    {user.rankChange !== undefined && (
                       <div className="flex items-center">
-                        {getRankChangeIcon(user.rank_change)}
+                        {getRankChangeIcon(user.rankChange)}
                       </div>
                     )}
                   </div>
 
                   {/* 用户头像 */}
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.avatar_url} alt={user.username} />
+                    <AvatarImage src={user.avatarUrl} alt={user.username} />
                     <AvatarFallback>
                       {user.username.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
@@ -260,7 +262,7 @@ export function CreditLeaderboard({
                       </span>
                       <CreditLevelBadge
                         level={user.level}
-                        totalPoints={user.total_points}
+                        totalPoints={user.totalPoints}
                         showTooltip={false}
                         size="sm"
                       />
@@ -268,17 +270,17 @@ export function CreditLeaderboard({
                     
                     <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
                       <span>等级 {user.level}</span>
-                      {user.completed_tasks && (
-                        <span>任务 {user.completed_tasks}</span>
+                      {user.completedTasks && (
+                        <span>任务 {user.completedTasks}</span>
                       )}
-                      {timeRange === 'week' && user.week_points && (
+                      {timeRange === 'week' && user.weekPoints && (
                         <span className="text-green-600">
-                          本周 +{formatPoints(user.week_points)}
+                          本周 +{formatPoints(user.weekPoints)}
                         </span>
                       )}
-                      {timeRange === 'month' && user.month_points && (
+                      {timeRange === 'month' && user.monthPoints && (
                         <span className="text-blue-600">
-                          本月 +{formatPoints(user.month_points)}
+                          本月 +{formatPoints(user.monthPoints)}
                         </span>
                       )}
                     </div>
@@ -288,7 +290,7 @@ export function CreditLeaderboard({
                 {/* 积分显示 */}
                 <div className="text-right">
                   <div className="font-bold text-lg">
-                    {formatPoints(user.total_points)}
+                    {formatPoints(user.totalPoints)}
                   </div>
                   
                   {/* 特殊徽章 */}
@@ -302,7 +304,7 @@ export function CreditLeaderboard({
                       </Badge>
                     )}
                     
-                    {user.is_rising && (
+                    {user.isRising && (
                       <Badge variant="outline" className="text-xs text-green-600">
                         <TrendingUp className="h-3 w-3 mr-1" />
                         上升
@@ -328,21 +330,21 @@ export function CreditLeaderboard({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div className="text-center">
                 <div className="font-medium text-yellow-600">
-                  {formatPoints(leaderboard[0]?.total_points || 0)}
+                  {formatPoints(leaderboard[0]?.totalPoints || 0)}
                 </div>
                 <div className="text-muted-foreground">第一名积分</div>
               </div>
               <div className="text-center">
                 <div className="font-medium text-blue-600">
                   {formatPoints(
-                    Math.round(leaderboard.reduce((sum, user) => sum + user.total_points, 0) / leaderboard.length)
+                    Math.round(leaderboard.reduce((sum, user) => sum + user.totalPoints, 0) / leaderboard.length)
                   )}
                 </div>
                 <div className="text-muted-foreground">平均积分</div>
               </div>
               <div className="text-center">
                 <div className="font-medium text-green-600">
-                  {leaderboard.filter(user => user.is_rising).length}
+                  {leaderboard.filter(user => user.isRising).length}
                 </div>
                 <div className="text-muted-foreground">上升人数</div>
               </div>

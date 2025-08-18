@@ -10,21 +10,37 @@ import (
 	"github.com/google/uuid"
 )
 
-// GenerateLetterCode 生成信件编号
+// GenerateLetterCode 生成信件编号 - 使用PRD规格OPP格式
 func GenerateLetterCode() string {
-	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	const codeLength = 12
-
 	rand.Seed(time.Now().UnixNano())
 
-	code := make([]byte, codeLength)
-	for i := range code {
-		code[i] = charset[rand.Intn(len(charset))]
-	}
+	// 生成2位序列号
+	serial := rand.Intn(100)
+	
+	// 格式化为 OPP-BJFU-5F3D-XX (PRD规格)
+	// 默认使用BJFU（北京某大学）和5F3D（示例区域位置）
+	return fmt.Sprintf("OPP-BJFU-5F3D-%02d", serial)
+}
 
-	// 格式化为 OP + 时间戳 + 随机数
-	timestamp := time.Now().Unix()
-	return fmt.Sprintf("OP%d%s", timestamp%10000, string(code[:8]))
+// GenerateLetterCodeWithLocation 根据OP Code生成条码
+func GenerateLetterCodeWithLocation(opCode string) string {
+	if len(opCode) != 6 {
+		// 如果OP Code格式不正确，使用默认生成
+		return GenerateLetterCode()
+	}
+	
+	rand.Seed(time.Now().UnixNano())
+	
+	// 生成2位序列号
+	serial := rand.Intn(100)
+	
+	// 从OP Code提取学校和位置信息
+	schoolCode := opCode[:2]  // 前2位：学校代码
+	areaCode := opCode[2:4]   // 中2位：区域代码  
+	locCode := opCode[4:6]    // 后2位：位置代码
+	
+	// 格式化为 OPP-XXXX-XXXX-XX
+	return fmt.Sprintf("OPP-%s%s-%s%s-%02d", schoolCode, "FU", areaCode, locCode, serial)
 }
 
 // IsValidSchoolCode 验证学校代码格式

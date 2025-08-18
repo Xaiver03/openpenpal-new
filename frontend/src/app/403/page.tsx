@@ -11,7 +11,7 @@ export default function Forbidden() {
         <h1 className="mt-4 text-3xl font-bold text-gray-900">权限不足</h1>
         <p className="mt-2 text-gray-600">抱歉，您没有权限访问此页面</p>
         <div className="mt-6 flex gap-4 justify-center">
-          <BackButton>返回上页</BackButton>
+          <BackButton label="返回上页" />
           <Link href="/">
             <Button>返回首页</Button>
           </Link>

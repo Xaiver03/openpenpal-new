@@ -7,6 +7,7 @@ import (
 
 	"openpenpal-backend/internal/models"
 	"openpenpal-backend/internal/services"
+	"openpenpal-backend/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -517,4 +518,74 @@ func (h *BarcodeHandler) getScanHistory(barcodeID string) ([]models.ScanEvent, e
 	}
 
 	return events, nil
+}
+
+// VerifyBarcodeAuthenticity 验证条码真实性 - 实现 POST /api/barcodes/verify
+func (h *BarcodeHandler) VerifyBarcodeAuthenticity(c *gin.Context) {
+	var req struct {
+		Code         string `json:"code" binding:"required"`
+		SecurityHash string `json:"security_hash" binding:"required"`
+		SignatureKey string `json:"signature_key" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"code":    4001,
+			"message": "请求参数无效",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// 获取条码记录
+	var letterCode models.LetterCode
+	if err := h.letterService.GetDB().Where("code = ?", req.Code).First(&letterCode).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"code":    4004,
+			"message": "条码不存在",
+		})
+		return
+	}
+
+	// 验证条码完整性
+	err := utils.ValidateBarcodeIntegrity(req.Code, req.SecurityHash, req.SignatureKey, letterCode.CreatedAt)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"code":    200,
+			"message": "验证完成",
+			"data": gin.H{
+				"valid":   false,
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	// 验证数据库中存储的签名是否匹配
+	dbValid := letterCode.SecurityHash == req.SecurityHash && letterCode.SignatureKey == req.SignatureKey
+	if !dbValid {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"code":    200,
+			"message": "验证完成",
+			"data": gin.H{
+				"valid":   false,
+				"message": "条码签名与数据库记录不匹配",
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"code":    200,
+		"message": "验证完成",
+		"data": gin.H{
+			"valid":   true,
+			"message": "条码验证通过，确认为真实有效",
+		},
+	})
 }
