@@ -122,9 +122,9 @@ export const useUserStore = create<UserStoreState>()(
   devtools(
     persist(
       (set, get) => ({
-        // Initial state - try to restore from cookie
-        user: typeof window !== 'undefined' ? TokenManager.getUser() : null,
-        isAuthenticated: typeof window !== 'undefined' ? !!TokenManager.getUser() : false,
+        // Initial state - consistent for server and client to avoid hydration errors
+        user: null,
+        isAuthenticated: false,
         loading: initialLoadingState,
 
         // ================================
@@ -452,7 +452,9 @@ export const useUserStore = create<UserStoreState>()(
         partialize: (state) => ({
           user: state.user,
           isAuthenticated: state.isAuthenticated
-        })
+        }),
+        // Skip hydration to prevent mismatch errors
+        skipHydration: true
       }
     ),
     {
@@ -460,6 +462,33 @@ export const useUserStore = create<UserStoreState>()(
     }
   )
 )
+
+// ================================
+// Client-side Initialization Hook
+// ================================
+
+/**
+ * Hook to initialize user state from persisted storage after hydration
+ * This prevents hydration mismatch by only loading user data on the client side
+ */
+export const useClientUserInitialization = () => {
+  const setUser = useUserStore((state) => state.setUser)
+  const [isInitialized, setIsInitialized] = React.useState(false)
+  
+  React.useEffect(() => {
+    // Only run on client side after hydration
+    if (typeof window !== 'undefined' && !isInitialized) {
+      // Try to restore user from TokenManager
+      const storedUser = TokenManager.getUser()
+      if (storedUser) {
+        setUser(storedUser)
+      }
+      setIsInitialized(true)
+    }
+  }, [isInitialized, setUser])
+  
+  return isInitialized
+}
 
 // ================================
 // Convenience Hooks

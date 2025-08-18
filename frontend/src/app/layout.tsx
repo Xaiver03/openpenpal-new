@@ -11,6 +11,7 @@ import { LazyWrapper } from '@/components/optimization/performance-wrapper'
 // AuthDebugWidget removed - using AuthDebugPanel instead
 import { TokenRefreshProvider } from '@/components/providers/token-refresh-provider'
 import { TokenProvider } from '@/contexts/token-context'
+import { UserInitializer } from '@/components/providers/user-initializer'
 import dynamic from 'next/dynamic'
 
 // Temporarily import directly to fix originalFactory.call error
@@ -84,13 +85,15 @@ export default function RootLayout({
               <TokenProvider>
                 <AuthProvider>
                   <AuthInitializer>
-                    <TokenRefreshProvider>
-                      <WebSocketErrorBoundary fallback={<div className="hidden"></div>}>
-                        <ClientBoundary>
-                          {children}
-                        </ClientBoundary>
-                      </WebSocketErrorBoundary>
-                    </TokenRefreshProvider>
+                    <UserInitializer>
+                      <TokenRefreshProvider>
+                        <WebSocketErrorBoundary fallback={<div className="hidden"></div>}>
+                          <ClientBoundary>
+                            {children}
+                          </ClientBoundary>
+                        </WebSocketErrorBoundary>
+                      </TokenRefreshProvider>
+                    </UserInitializer>
                   </AuthInitializer>
                 </AuthProvider>
               </TokenProvider>

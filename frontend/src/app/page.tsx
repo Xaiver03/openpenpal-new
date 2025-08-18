@@ -8,8 +8,8 @@ import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { LetterService } from '@/lib/services/letter-service'
 import type { Letter } from '@/lib/services/letter-service'
-import { useAuth, usePermissions, useCourier } from '@/stores/user-store'
-import { getCourierLevelManagementPath } from '@/constants/roles'
+import { AuthenticatedSections } from '@/components/home/authenticated-sections'
+import { JoinUsSection } from '@/components/home/join-us-section'
 import { 
   Mail, 
   Send, 
@@ -34,11 +34,6 @@ export default function HomePage() {
   const [currentStory, setCurrentStory] = useState(0)
   const [publicLetters, setPublicLetters] = useState<Letter[]>([])
   const [isLoadingLetters, setIsLoadingLetters] = useState(true)
-  
-  // User state
-  const { isAuthenticated } = useAuth()
-  const { canAccessAdmin } = usePermissions()
-  const { courierInfo, isCourier, levelName } = useCourier()
 
   const features = [
     {
@@ -414,170 +409,11 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* User Dashboard - 用户专属面板 */}
-        {isAuthenticated && (isCourier || canAccessAdmin()) && (
-          <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-50">
-            <div className="container px-4">
-              <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-12">
-                  <h2 className="font-serif text-3xl md:text-4xl font-bold text-blue-900 mb-4">
-                    您的管理中心
-                  </h2>
-                  <p className="text-xl text-blue-700">
-                    快速访问您的专属功能
-                  </p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* 信使管理入口 */}
-                  {isCourier && (
-                    <Card className="border-blue-200 hover:border-blue-400 hover:shadow-xl transition-all duration-300">
-                      <CardHeader className="text-center pb-4">
-                        <div className="mx-auto w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-4">
-                          <Send className="w-8 h-8 text-blue-600" />
-                        </div>
-                        <CardTitle className="font-serif text-xl text-blue-900">信使中心</CardTitle>
-                        <CardDescription className="text-blue-700">
-                          查看任务、管理投递、更新状态
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="text-center">
-                        <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white mb-3">
-                          <Link href="/courier">
-                            进入信使中心
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Link>
-                        </Button>
-                        {courierInfo && (
-                          <div className="text-sm text-blue-600">
-                            当前等级: {levelName || `${courierInfo.level}级信使`}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {/* 各级信使管理入口 */}
-                  {courierInfo && courierInfo.level > 1 && (
-                    <Card className="border-purple-200 hover:border-purple-400 hover:shadow-xl transition-all duration-300">
-                      <CardHeader className="text-center pb-4">
-                        <div className="mx-auto w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-4">
-                          {courierInfo.level === 4 ? (
-                            <Crown className="w-8 h-8 text-purple-600" />
-                          ) : (
-                            <Users className="w-8 h-8 text-purple-600" />
-                          )}
-                        </div>
-                        <CardTitle className="font-serif text-xl text-purple-900">
-                          {levelName?.replace(/（.*?）/, '')}管理
-                        </CardTitle>
-                        <CardDescription className="text-purple-700">
-                          管理下级信使、分配任务、查看数据
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="text-center">
-                        <Button asChild className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-                          <Link href={getCourierLevelManagementPath(courierInfo.level)}>
-                            进入管理面板
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {/* 管理员入口 */}
-                  {canAccessAdmin() && (
-                    <Card className="border-red-200 hover:border-red-400 hover:shadow-xl transition-all duration-300">
-                      <CardHeader className="text-center pb-4">
-                        <div className="mx-auto w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mb-4">
-                          <Shield className="w-8 h-8 text-red-600" />
-                        </div>
-                        <CardTitle className="font-serif text-xl text-red-900">管理控制台</CardTitle>
-                        <CardDescription className="text-red-700">
-                          系统管理、用户管理、数据分析
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="text-center">
-                        <Button asChild className="w-full bg-red-600 hover:bg-red-700 text-white">
-                          <Link href="/admin">
-                            进入控制台
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
+        {/* Authenticated Sections - rendered only after hydration */}
+        <AuthenticatedSections />
 
         {/* Join Us - 加入我们 & 信使入口 */}
-        <section className="py-20 bg-gradient-to-br from-amber-100 to-orange-100">
-          <div className="container px-4">
-            <div className="max-w-4xl mx-auto text-center">
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-amber-900 mb-6">
-                {isAuthenticated && isCourier ? '信使成长之路' : '成为连接世界的信使'}
-              </h2>
-              <p className="text-xl text-amber-700 mb-12 max-w-2xl mx-auto">
-                {isAuthenticated && isCourier 
-                  ? '继续您的信使旅程，帮助更多人传递温暖'
-                  : '加入我们的信使网络，成为传递温暖的使者，在帮助他人的同时收获成长与友谊'
-                }
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-amber-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Star className="w-8 h-8 text-amber-700" />
-                  </div>
-                  <h3 className="font-semibold text-amber-900 mb-2">成长体系</h3>
-                  <p className="text-amber-700 text-sm">从新手信使到资深导师，见证自己的成长</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-orange-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Heart className="w-8 h-8 text-orange-700" />
-                  </div>
-                  <h3 className="font-semibold text-amber-900 mb-2">温暖奖励</h3>
-                  <p className="text-amber-700 text-sm">每一次投递都有意义，收获感谢与友谊</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-yellow-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-8 h-8 text-yellow-700" />
-                  </div>
-                  <h3 className="font-semibold text-amber-900 mb-2">社区归属</h3>
-                  <p className="text-amber-700 text-sm">加入温暖的信使大家庭，结识志同道合的朋友</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {!isAuthenticated || !isCourier ? (
-                  <Button asChild size="lg" className="bg-amber-600 hover:bg-amber-700 text-white font-serif px-8">
-                    <Link href="/courier">
-                      <Send className="mr-2 h-5 w-5" />
-                      申请成为信使
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button asChild size="lg" className="bg-amber-600 hover:bg-amber-700 text-white font-serif px-8">
-                    <Link href="/courier">
-                      <Send className="mr-2 h-5 w-5" />
-                      继续信使之路
-                    </Link>
-                  </Button>
-                )}
-                <Button asChild variant="outline" size="lg" className="border-amber-300 text-amber-700 hover:bg-amber-50 font-serif px-8">
-                  <Link href="/about">
-                    <Globe className="mr-2 h-5 w-5" />
-                    了解合作方式
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
+        <JoinUsSection />
       </main>
 
       <Footer />

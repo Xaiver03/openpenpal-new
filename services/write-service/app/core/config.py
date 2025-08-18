@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     
     class Config:
         env_file = ".env"
+        extra = "allow"  # Allow extra fields from environment variables
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -57,7 +57,6 @@ interface DeliveryPoint {
 }
 
 interface OPCodeSelection {
-  city?: string
   school?: School
   district?: District
   building?: Building
@@ -73,48 +72,77 @@ export default function OPCodePage() {
   
   // 层级选择状态
   const [selection, setSelection] = useState<OPCodeSelection>({})
-  const [searchCity, setSearchCity] = useState('')
-  const [cities, setCities] = useState<string[]>([])
+  const [searchKeyword, setSearchKeyword] = useState('')
   const [schools, setSchools] = useState<School[]>([])
   const [districts, setDistricts] = useState<District[]>([])
   const [buildings, setBuildings] = useState<Building[]>([])
   const [deliveryPoints, setDeliveryPoints] = useState<DeliveryPoint[]>([])
   const [recommendedCodes, setRecommendedCodes] = useState<string[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchTimer, setSearchTimer] = useState<NodeJS.Timeout | null>(null)
 
-  // 加载城市列表
+  // 带防抖的搜索处理
   useEffect(() => {
-    loadCities()
-  }, [])
-
-  const loadCities = async () => {
-    try {
-      const response = await apiClient.get('/api/v1/opcode/cities')
-      if ((response.data as any).success) {
-        setCities((response.data as any).data.cities || ['北京', '上海', '广州', '深圳', '成都', '杭州', '南京', '武汉', '西安', '长沙'])
+    if (searchKeyword.trim().length > 0) {
+      const timer = setTimeout(() => {
+        searchSchoolsByKeyword(searchKeyword)
+      }, 300) // 300ms 防抖延迟
+      setSearchTimer(timer)
+      
+      return () => {
+        clearTimeout(timer)
       }
-    } catch (error) {
-      // 使用默认城市列表
-      setCities(['北京', '上海', '广州', '深圳', '成都', '杭州', '南京', '武汉', '西安', '长沙'])
+    } else {
+      setSchools([])
     }
-  }
+  }, [searchKeyword])
 
-  // 搜索城市学校
-  const searchSchoolsByCity = async (city: string) => {
-    setLoading(true)
+  // 模糊搜索学校
+  const searchSchoolsByKeyword = async (keyword: string) => {
+    if (!keyword || keyword.trim().length === 0) {
+      setSchools([])
+      return
+    }
+    
+    setIsSearching(true)
     try {
-      const response = await apiClient.get(`/api/v1/opcode/search/schools/by-city?city=${encodeURIComponent(city)}`)
-      if ((response.data as any).success) {
-        setSchools((response.data as any).data.schools || [])
-        setSelection({ ...selection, city })
+      // Use fetch directly to avoid any base URL issues
+      const response = await fetch(`/api/schools/fuzzy-search?keyword=${encodeURIComponent(keyword)}`)
+      const data = await response.json()
+      
+      if (data.code === 0) {
+        const schoolData = data.data.schools || []
+        // Transform data to match the expected format
+        const transformedSchools = schoolData.map((school: any) => ({
+          school_code: school.school_code,
+          school_name: school.school_name,
+          city: school.city,
+          province: school.province,
+          full_name: school.full_name || school.school_name
+        }))
+        setSchools(transformedSchools)
+      } else {
+        setSchools([])
+        console.error('Search error:', data)
       }
     } catch (error) {
-      toast({
-        title: '搜索失败',
-        description: '无法获取学校列表',
-        variant: 'destructive'
-      })
+      console.error('School search error:', error)
+      // Try backend API as fallback
+      try {
+        const backendResponse = await apiClient.get(`/api/v1/opcode/schools/search?keyword=${encodeURIComponent(keyword)}`)
+        if ((backendResponse.data as any).success) {
+          setSchools((backendResponse.data as any).data.schools || [])
+        }
+      } catch (backendError) {
+        toast({
+          title: '搜索失败',
+          description: '无法获取学校列表',
+          variant: 'destructive'
+        })
+        setSchools([])
+      }
     } finally {
-      setLoading(false)
+      setIsSearching(false)
     }
   }
 
@@ -267,7 +295,7 @@ export default function OPCodePage() {
             <h1 className="text-3xl font-bold text-amber-900">OP Code 地理编码系统</h1>
           </div>
           <p className="text-amber-700">
-            通过层级选择精准定位投递地址 - 城市 → 学校 → 片区 → 楼栋 → 投递点
+            通过层级选择精准定位投递地址 - 学校 → 片区 → 楼栋 → 投递点
           </p>
         </div>
 
@@ -298,37 +326,30 @@ export default function OPCodePage() {
                 {/* 进度指示器 */}
                 <div className="mb-8">
                   <div className="flex items-center justify-between mb-2">
-                    <div className={`flex items-center gap-2 ${selection.city ? 'text-green-600' : 'text-gray-400'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.city ? 'bg-green-100' : 'bg-gray-100'}`}>
-                        {selection.city ? <CheckCircle className="w-5 h-5" /> : '1'}
-                      </div>
-                      <span className="text-sm font-medium">选择城市</span>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
                     <div className={`flex items-center gap-2 ${selection.school ? 'text-green-600' : 'text-gray-400'}`}>
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.school ? 'bg-green-100' : 'bg-gray-100'}`}>
-                        {selection.school ? <CheckCircle className="w-5 h-5" /> : '2'}
+                        {selection.school ? <CheckCircle className="w-5 h-5" /> : '1'}
                       </div>
                       <span className="text-sm font-medium">选择学校</span>
                     </div>
                     <ArrowRight className="w-4 h-4 text-gray-400" />
                     <div className={`flex items-center gap-2 ${selection.district ? 'text-green-600' : 'text-gray-400'}`}>
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.district ? 'bg-green-100' : 'bg-gray-100'}`}>
-                        {selection.district ? <CheckCircle className="w-5 h-5" /> : '3'}
+                        {selection.district ? <CheckCircle className="w-5 h-5" /> : '2'}
                       </div>
                       <span className="text-sm font-medium">选择片区</span>
                     </div>
                     <ArrowRight className="w-4 h-4 text-gray-400" />
                     <div className={`flex items-center gap-2 ${selection.building ? 'text-green-600' : 'text-gray-400'}`}>
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.building ? 'bg-green-100' : 'bg-gray-100'}`}>
-                        {selection.building ? <CheckCircle className="w-5 h-5" /> : '4'}
+                        {selection.building ? <CheckCircle className="w-5 h-5" /> : '3'}
                       </div>
                       <span className="text-sm font-medium">选择楼栋</span>
                     </div>
                     <ArrowRight className="w-4 h-4 text-gray-400" />
                     <div className={`flex items-center gap-2 ${selection.deliveryPoint ? 'text-green-600' : 'text-gray-400'}`}>
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${selection.deliveryPoint ? 'bg-green-100' : 'bg-gray-100'}`}>
-                        {selection.deliveryPoint ? <CheckCircle className="w-5 h-5" /> : '5'}
+                        {selection.deliveryPoint ? <CheckCircle className="w-5 h-5" /> : '4'}
                       </div>
                       <span className="text-sm font-medium">选择投递点</span>
                     </div>
@@ -348,48 +369,43 @@ export default function OPCodePage() {
                   </Alert>
                 )}
 
-                {/* 步骤1：选择城市 */}
+                {/* 步骤1：搜索学校 */}
                 <div className="space-y-6">
                   <div>
-                    <Label className="text-base font-semibold mb-3 block">步骤1：选择城市</Label>
-                    <div className="flex gap-2 mb-4">
+                    <Label className="text-base font-semibold mb-3 block">步骤1：搜索学校</Label>
+                    <div className="relative">
                       <Input
-                        placeholder="输入城市名称搜索..."
-                        value={searchCity}
-                        onChange={(e) => setSearchCity(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && searchCity) {
-                            searchSchoolsByCity(searchCity)
-                          }
-                        }}
+                        placeholder="输入关键词搜索学校（如：长沙、北京、复旦等）"
+                        value={searchKeyword}
+                        onChange={(e) => setSearchKeyword(e.target.value)}
+                        className="pr-10"
                       />
-                      <Button 
-                        onClick={() => searchCity && searchSchoolsByCity(searchCity)}
-                        disabled={loading || !searchCity}
-                      >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                      </Button>
+                      {isSearching && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                        </div>
+                      )}
+                      {!isSearching && searchKeyword && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Search className="w-4 h-4 text-gray-400" />
+                        </div>
+                      )}
                     </div>
-                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                      {cities.map((city) => (
-                        <Button
-                          key={city}
-                          variant={selection.city === city ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => searchSchoolsByCity(city)}
-                          disabled={loading}
-                        >
-                          {city}
-                        </Button>
-                      ))}
-                    </div>
+                    {searchKeyword && schools.length === 0 && !isSearching && (
+                      <Alert className="bg-amber-50 border-amber-200">
+                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                        <AlertDescription className="text-amber-800">
+                          没有找到相关学校，请尝试其他关键词
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
 
-                  {/* 步骤2：选择学校 */}
+                  {/* 学校列表 */}
                   {schools.length > 0 && (
                     <div>
                       <Label className="text-base font-semibold mb-3 block">
-                        步骤2：选择学校（确定前2位编码）
+                        选择学校（确定前2位编码）
                       </Label>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
                         {schools.map((school) => (
@@ -422,11 +438,11 @@ export default function OPCodePage() {
                     </div>
                   )}
 
-                  {/* 步骤3：选择片区 */}
+                  {/* 步骤2：选择片区 */}
                   {districts.length > 0 && selection.school && (
                     <div>
                       <Label className="text-base font-semibold mb-3 block">
-                        步骤3：选择片区（确定第3位编码）
+                        步骤2：选择片区（确定第3位编码）
                       </Label>
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                         {districts.map((district) => (
@@ -451,11 +467,11 @@ export default function OPCodePage() {
                     </div>
                   )}
 
-                  {/* 步骤4：选择楼栋 */}
+                  {/* 步骤3：选择楼栋 */}
                   {buildings.length > 0 && selection.district && (
                     <div>
                       <Label className="text-base font-semibold mb-3 block">
-                        步骤4：选择楼栋（确定第4位编码）
+                        步骤3：选择楼栋（确定第4位编码）
                       </Label>
                       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                         {buildings.map((building) => (
@@ -481,11 +497,11 @@ export default function OPCodePage() {
                     </div>
                   )}
 
-                  {/* 步骤5：选择投递点 */}
+                  {/* 步骤4：选择投递点 */}
                   {deliveryPoints.length > 0 && selection.building && (
                     <div>
                       <Label className="text-base font-semibold mb-3 block">
-                        步骤5：选择投递点（确定第5-6位编码）
+                        步骤4：选择投递点（确定第5-6位编码）
                       </Label>
                       
                       {/* 推荐的可用编码 */}
