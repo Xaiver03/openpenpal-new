@@ -297,6 +297,60 @@ func (s *OPCodeService) CheckPermission(userID string, targetOPCode string) (boo
 	return true, nil
 }
 
+// GetAllApplications 获取所有OP Code申请
+func (s *OPCodeService) GetAllApplications() ([]*models.OPCodeApplication, error) {
+	var applications []*models.OPCodeApplication
+	err := s.db.Order("created_at DESC").Find(&applications).Error
+	return applications, err
+}
+
+// GetApplicationByID 根据ID获取申请
+func (s *OPCodeService) GetApplicationByID(id string) (*models.OPCodeApplication, error) {
+	var application models.OPCodeApplication
+	err := s.db.First(&application, "id = ?", id).Error
+	return &application, err
+}
+
+// RejectApplication 拒绝申请
+func (s *OPCodeService) RejectApplication(applicationID string, reviewerID string, reason string) error {
+	now := time.Now()
+	return s.db.Model(&models.OPCodeApplication{}).
+		Where("id = ?", applicationID).
+		Updates(map[string]interface{}{
+			"status":      models.OPCodeStatusRejected,
+			"reviewer_id": reviewerID,
+			"reviewed_at": now,
+			"updated_at":  now,
+		}).Error
+}
+
+// CreateOPCode 创建OP Code
+func (s *OPCodeService) CreateOPCode(opCode *models.SignalCode) error {
+	opCode.Code = strings.ToUpper(opCode.Code)
+	opCode.SchoolCode = opCode.Code[:2]
+	opCode.AreaCode = opCode.Code[2:4]
+	opCode.PointCode = opCode.Code[4:6]
+	opCode.CreatedAt = time.Now()
+	opCode.UpdatedAt = time.Now()
+	return s.db.Create(opCode).Error
+}
+
+// UpdateOPCode 更新OP Code
+func (s *OPCodeService) UpdateOPCode(code string, updates map[string]interface{}) error {
+	updates["updated_at"] = time.Now()
+	return s.db.Model(&models.SignalCode{}).
+		Where("code = ?", strings.ToUpper(code)).
+		Updates(updates).Error
+}
+
+// DeleteOPCode 删除OP Code
+func (s *OPCodeService) DeleteOPCode(code string) error {
+	// 软删除，设置为不活跃
+	return s.db.Model(&models.SignalCode{}).
+		Where("code = ?", strings.ToUpper(code)).
+		Update("is_active", false).Error
+}
+
 func (s *OPCodeService) MigrateZoneToOPCode(zone string) (string, error) {
 	// 这是一个示例映射函数，实际项目需要根据具体的Zone格式设计映射规则
 	// 例如: "BJDX-A-101" -> "BD1A01"
@@ -611,4 +665,50 @@ func (s *OPCodeService) SearchSchoolsAdvanced(req *models.AdvancedSchoolSearchRe
 // generateID 生成UUID（简化版）
 func generateID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
+}
+
+// GetPendingApplications 获取待审核的申请列表
+func (s *OPCodeService) GetPendingApplications() ([]*models.OPCodeApplication, error) {
+	var applications []*models.OPCodeApplication
+	err := s.db.Where("status = ?", models.OPCodeStatusPending).
+		Order("created_at DESC").
+		Find(&applications).Error
+	return applications, err
+}
+
+// GetOPCodesByPrefix 根据前缀获取OP Code列表
+func (s *OPCodeService) GetOPCodesByPrefix(prefix string) ([]models.SignalCode, error) {
+	var codes []models.SignalCode
+	query := s.db.Where("code LIKE ?", prefix+"%")
+	
+	if err := query.Find(&codes).Error; err != nil {
+		return nil, err
+	}
+	
+	return codes, nil
+}
+
+// GetOPCodeByID 根据ID获取OP Code
+func (s *OPCodeService) GetOPCodeByID(id string) (*models.SignalCode, error) {
+	var code models.SignalCode
+	err := s.db.First(&code, "id = ?", id).Error
+	return &code, err
+}
+
+// UpdateOPCode 更新OP Code（接受SignalCode对象）
+func (s *OPCodeService) UpdateOPCode(opCode *models.SignalCode) error {
+	opCode.UpdatedAt = time.Now()
+	return s.db.Save(opCode).Error
+}
+
+// DeleteOPCode 删除OP Code（根据ID）
+func (s *OPCodeService) DeleteOPCode(id string) error {
+	// 软删除，设置为不活跃
+	return s.db.Model(&models.SignalCode{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"status":     "inactive",
+			"is_active":  false,
+			"updated_at": time.Now(),
+		}).Error
 }

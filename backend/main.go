@@ -208,6 +208,7 @@ func main() {
 	storageHandler := handlers.NewStorageHandler(storageService)
 	moderationHandler := handlers.NewModerationHandler(moderationService)
 	opcodeHandler := handlers.NewOPCodeHandler(opcodeService, courierService)
+	courierOPCodeHandler := handlers.NewCourierOPCodeHandler(opcodeService, courierService)      // 信使OP Code管理处理器
 	barcodeHandler := handlers.NewBarcodeHandler(letterService, opcodeService, scanEventService) // PRD条码系统处理器
 	scanEventHandler := handlers.NewScanEventHandler(scanEventService)                           // 扫描事件处理器
 	batchHandler := handlers.NewBatchHandler(letterService, courierService, opcodeService)       // 批量管理处理器
@@ -578,6 +579,17 @@ func main() {
 				// 四级信使管理 (城市)
 				management.GET("/level-4/stats", courierHandler.GetFourthLevelStats)
 				management.GET("/level-4/couriers", courierHandler.GetFourthLevelCouriers)
+			}
+			
+			// OP Code 管理API (信使专用)
+			opcodeManage := courier.Group("/opcode")
+			{
+				opcodeManage.GET("/applications", courierOPCodeHandler.GetApplications)                      // 获取申请列表
+				opcodeManage.POST("/applications/:application_id/review", courierOPCodeHandler.ReviewApplication) // 审核申请
+				opcodeManage.POST("/create", courierOPCodeHandler.CreateOPCode)                             // 创建OP Code
+				opcodeManage.GET("/managed", courierOPCodeHandler.GetManagedOPCodes)                        // 获取管理的OP Code列表
+				opcodeManage.PUT("/:id", courierOPCodeHandler.UpdateOPCode)                                // 更新OP Code
+				opcodeManage.DELETE("/:id", courierOPCodeHandler.DeleteOPCode)                             // 删除OP Code
 			}
 		}
 
