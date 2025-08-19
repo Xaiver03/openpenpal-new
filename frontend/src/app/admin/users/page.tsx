@@ -112,6 +112,7 @@ export default function UsersManagePage() {
   const [showUserDetail, setShowUserDetail] = useState(false)
   const [showBanDialog, setShowBanDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showAddDialog, setShowAddDialog] = useState(false)
   const [editFormData, setEditFormData] = useState<{
     nickname: string
     email: string
@@ -124,6 +125,22 @@ export default function UsersManagePage() {
     role: '',
     school_code: '',
     is_active: true
+  })
+  
+  const [newUserFormData, setNewUserFormData] = useState<{
+    username: string
+    nickname: string
+    email: string
+    password: string
+    role: UserRole | ''
+    school_code: string
+  }>({
+    username: '',
+    nickname: '',
+    email: '',
+    password: '',
+    role: 'user' as UserRole,
+    school_code: 'BJDX01'
   })
   
   // 批量选择状态
@@ -450,7 +467,7 @@ export default function UsersManagePage() {
             管理平台用户信息、权限和状态
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setShowAddDialog(true)}>
           <UserPlus className="w-4 h-4 mr-2" />
           添加用户
         </Button>
@@ -1020,6 +1037,111 @@ export default function UsersManagePage() {
               </Button>
               <Button onClick={handleSaveEdit}>
                 保存修改
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </ComponentErrorBoundary>
+
+      {/* 添加用户对话框 */}
+      <ComponentErrorBoundary>
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>添加新用户</DialogTitle>
+              <DialogDescription>
+                创建一个新的平台用户账户
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-username">用户名</Label>
+                <Input
+                  id="new-username"
+                  value={newUserFormData.username}
+                  onChange={(e) => setNewUserFormData({ ...newUserFormData, username: e.target.value })}
+                  placeholder="请输入用户名"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-nickname">昵称</Label>
+                <Input
+                  id="new-nickname"
+                  value={newUserFormData.nickname}
+                  onChange={(e) => setNewUserFormData({ ...newUserFormData, nickname: e.target.value })}
+                  placeholder="请输入昵称"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-email">邮箱</Label>
+                <Input
+                  id="new-email"
+                  type="email"
+                  value={newUserFormData.email}
+                  onChange={(e) => setNewUserFormData({ ...newUserFormData, email: e.target.value })}
+                  placeholder="请输入邮箱"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-password">密码</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newUserFormData.password}
+                  onChange={(e) => setNewUserFormData({ ...newUserFormData, password: e.target.value })}
+                  placeholder="请输入密码"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-role">角色</Label>
+                <Select 
+                  value={newUserFormData.role} 
+                  onValueChange={(value) => setNewUserFormData({ ...newUserFormData, role: value as UserRole | '' })}
+                >
+                  <SelectTrigger id="new-role">
+                    <SelectValue placeholder="选择角色" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-school">学校</Label>
+                <Select 
+                  value={newUserFormData.school_code} 
+                  onValueChange={(value) => setNewUserFormData({ ...newUserFormData, school_code: value })}
+                >
+                  <SelectTrigger id="new-school">
+                    <SelectValue placeholder="选择学校" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BJDX01">北京大学</SelectItem>
+                    <SelectItem value="QHDX01">清华大学</SelectItem>
+                    <SelectItem value="FDDX01">复旦大学</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                取消
+              </Button>
+              <Button onClick={() => {
+                // TODO: 实现添加用户功能
+                console.log('Adding user:', newUserFormData)
+                setShowAddDialog(false)
+              }}>
+                创建用户
               </Button>
             </DialogFooter>
           </DialogContent>

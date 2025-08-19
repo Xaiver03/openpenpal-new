@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -40,45 +40,49 @@ export default function AdminCreditsPage() {
   const [adjustAmount, setAdjustAmount] = useState('')
   const [adjustReason, setAdjustReason] = useState('')
   
-  // 模拟数据
-  const creditSummary = {
-    totalPoints: 458923,
-    activeUsers: 1234,
-    todayEarned: 12450,
-    pendingTasks: 45,
-    weekGrowth: 15.2,
-    monthGrowth: 28.5
-  }
+  // 状态数据
+  const [creditSummary, setCreditSummary] = useState({
+    totalPoints: 0,
+    activeUsers: 0,
+    todayEarned: 0,
+    pendingTasks: 0,
+    weekGrowth: 0,
+    monthGrowth: 0
+  })
 
-  const creditRules = [
-    { id: 1, action: '成功写信并绑定条码', points: 10, enabled: true },
-    { id: 2, action: '被回信', points: 5, enabled: true },
-    { id: 3, action: '公开信被点赞', points: 1, enabled: true },
-    { id: 4, action: '使用AI笔友并留下评价', points: 3, enabled: true },
-    { id: 5, action: '信使首次送达', points: 20, enabled: true },
-    { id: 6, action: '博物馆展品被点赞', points: 2, enabled: true }
-  ]
+  const [creditRules, setCreditRules] = useState<Array<{
+    id: number
+    action: string
+    points: number
+    enabled: boolean
+  }>>([])
 
-  const recentAdjustments = [
-    {
-      id: 1,
-      user: 'user123',
-      amount: 100,
-      type: 'add',
-      reason: '活动奖励',
-      operator: 'admin',
-      time: '2024-01-21 10:30'
-    },
-    {
-      id: 2,
-      user: 'user456',
-      amount: -50,
-      type: 'deduct',
-      reason: '违规扣除',
-      operator: 'admin',
-      time: '2024-01-21 09:15'
+  const [recentAdjustments, setRecentAdjustments] = useState<Array<{
+    id: number
+    user: string
+    amount: number
+    type: string
+    reason: string
+    operator: string
+    time: string
+  }>>([])
+
+  // 加载数据
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // TODO: 调用真实API获取数据
+        // const response = await apiClient.get('/admin/credits/summary')
+        // setCreditSummary(response.data)
+        
+        // 暂时保持空数据
+      } catch (error) {
+        console.error('Failed to load credit data:', error)
+      }
     }
-  ]
+    
+    loadData()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">

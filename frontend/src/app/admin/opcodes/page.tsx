@@ -186,62 +186,17 @@ export default function OPCodeManagementPage() {
     } catch (error) {
       console.error('Failed to load OP Code data:', error)
       
-      // 设置模拟数据用于展示
-      setApplications([
-        {
-          id: '1',
-          user_id: 'user1',
-          user_name: '张三',
-          school_code: 'PK',
-          school_name: '北京大学',
-          requested_op_code: 'PK5F01',
-          op_code_type: 'dormitory',
-          location_description: '5号楼101室',
-          status: 'pending',
-          applied_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          user_id: 'user2',
-          user_name: '李四',
-          school_code: 'CS',
-          school_name: '中南大学',
-          requested_op_code: 'CS01A2',
-          op_code_type: 'shop',
-          location_description: '东区商店2号',
-          status: 'approved',
-          applied_at: new Date(Date.now() - 86400000).toISOString(),
-          reviewed_at: new Date().toISOString()
-        }
-      ])
-      
+      // 设置空数据而不是mock数据
+      setApplications([])
       setStats({
-        total_codes: 1247,
-        active_codes: 1134,
-        pending_applications: 23,
-        schools_count: 12,
-        usage_by_type: { dormitory: 856, shop: 156, box: 98, club: 24 },
-        usage_by_school: { 'PK': 345, 'QH': 298, 'CS': 189 }
+        total_codes: 0,
+        active_codes: 0,
+        pending_applications: 0,
+        schools_count: 0,
+        usage_by_type: {},
+        usage_by_school: {}
       })
-
-      setAllocations([
-        {
-          school_code: 'PK',
-          school_name: '北京大学',
-          prefix: 'PK**',
-          allocated_count: 1000,
-          used_count: 345,
-          usage_rate: 34.5
-        },
-        {
-          school_code: 'CS',
-          school_name: '中南大学',
-          prefix: 'CS**',
-          allocated_count: 500,
-          used_count: 189,
-          usage_rate: 37.8
-        }
-      ])
+      setAllocations([])
     } finally {
       setLoading(false)
     }

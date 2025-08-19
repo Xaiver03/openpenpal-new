@@ -136,11 +136,11 @@ export default function EnhancedAdminDashboard() {
       console.error('Failed to load dashboard stats:', err)
       setError(err instanceof Error ? err.message : '加载数据失败')
       
-      // 如果API调用失败，使用模拟数据作为后备
+      // 设置空数据而不是mock数据
       setStats({
-        users: { total: 1234, active: 890, new_today: 12 },
-        letters: { total: 5678, sent_today: 89, in_transit: 234 },
-        couriers: { total: 156, active: 120, performance: { success_rate: 94.5 } }
+        users: { total: 0, active: 0, new_today: 0 },
+        letters: { total: 0, sent_today: 0, in_transit: 0 },
+        couriers: { total: 0, active: 0, performance: { success_rate: 0 } }
       })
     } finally {
       setLoading(false)

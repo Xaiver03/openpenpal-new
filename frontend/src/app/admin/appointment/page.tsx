@@ -151,50 +151,8 @@ export default function AppointmentPage() {
         
       } catch (error) {
         console.error('Failed to load appointment data:', error)
-        // 使用模拟数据作为后备
-        const mockUsers: User[] = [
-        {
-          id: 'u001',
-          username: '活跃学生A',
-          email: 'student.a@example.com',
-          currentRole: 'user',
-          schoolCode: 'PKU001',
-          schoolName: '北京大学',
-          join_date: '2024-01-15',
-          last_active: '2024-01-21T11:30:00Z',
-          letters_sent: 25,
-          letters_received: 18
-        },
-        {
-          id: 'u002',
-          username: '优秀信使B',
-          email: 'courier.b@example.com',
-          currentRole: 'courier',
-          schoolCode: 'PKU001',
-          schoolName: '北京大学',
-          join_date: '2024-01-10',
-          last_active: '2024-01-21T10:45:00Z',
-          letters_sent: 45,
-          letters_received: 32,
-          courier_tasks: 89,
-          average_rating: 4.8
-        },
-        {
-          id: 'u003',
-          username: '资深信使C',
-          email: 'senior.c@example.com',
-          currentRole: 'courier',
-          schoolCode: 'PKU001',
-          schoolName: '北京大学',
-          join_date: '2024-01-05',
-          last_active: '2024-01-21T09:20:00Z',
-          letters_sent: 67,
-          letters_received: 54,
-          courier_tasks: 156,
-          average_rating: 4.9
-        }
-        ]
-        setUsers(mockUsers)
+        // 设置空数据而不是mock数据
+        setUsers([])
         setAppointmentRecords([])
       }
     }

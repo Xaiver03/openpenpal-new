@@ -167,85 +167,10 @@ export default function ModerationPage() {
     } catch (error) {
       console.error('Failed to load moderation data:', error)
       
-      // 如果API调用失败，使用模拟数据作为后备
-      const mockQueue: ModerationRecord[] = [
-        {
-          id: '1',
-          content_type: 'letter',
-          content_id: 'letter_001',
-          userId: 'user_001',
-          content: '这是一封需要审核的信件内容，可能包含一些敏感信息...',
-          status: 'pending',
-          level: 'medium',
-          score: 0.6,
-          reasons: ['包含敏感词: 测试', '内容长度异常'],
-          categories: ['spam', 'inappropriate'],
-          created_at: '2024-01-21T10:30:00Z'
-        },
-        {
-          id: '2',
-          content_type: 'letter',
-          content_id: 'letter_002',
-          userId: 'user_002',
-          content: '另一封待审核的信件内容...',
-          status: 'review',
-          level: 'high',
-          score: 0.8,
-          reasons: ['触发规则: 违规关键词检测'],
-          categories: ['inappropriate'],
-          created_at: '2024-01-21T09:15:00Z'
-        }
-      ]
-
-      const mockWords: SensitiveWord[] = [
-        {
-          id: '1',
-          word: '测试敏感词',
-          category: '不当内容',
-          level: 'medium',
-          is_active: true,
-          created_at: '2024-01-20T14:20:00Z'
-        },
-        {
-          id: '2',
-          word: '违规词汇',
-          category: '违法违规',
-          level: 'high',
-          is_active: true,
-          created_at: '2024-01-19T16:45:00Z'
-        }
-      ]
-
-      const mockRules: ModerationRule[] = [
-        {
-          id: '1',
-          name: '违规关键词检测',
-          description: '检测信件中的违规关键词',
-          content_type: 'letter',
-          rule_type: 'keyword',
-          pattern: '违规|非法|不当',
-          action: 'review',
-          priority: 80,
-          is_active: true,
-          created_at: '2024-01-18T10:00:00Z'
-        },
-        {
-          id: '2',
-          name: '内容长度检查',
-          description: '检查信件内容长度是否合理',
-          content_type: 'letter',
-          rule_type: 'length',
-          pattern: '5000',
-          action: 'flag',
-          priority: 50,
-          is_active: true,
-          created_at: '2024-01-17T15:30:00Z'
-        }
-      ]
-
-      setQueue(mockQueue)
-      setSensitiveWords(mockWords)
-      setRules(mockRules)
+      // 设置空数据而不是mock数据
+      setQueue([])
+      setSensitiveWords([])
+      setRules([])
     } finally {
       setLoading(false)
     }
