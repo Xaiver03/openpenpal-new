@@ -45,6 +45,11 @@ func SafeAutoMigrate(db *gorm.DB, models ...interface{}) error {
 				} else {
 					// 表不存在，创建它
 					if err := migrator.CreateTable(model); err != nil {
+						// 如果错误是表已存在，忽略它
+						if strings.Contains(err.Error(), "already exists") {
+							log.Printf("User table already exists, skipping creation")
+							continue
+						}
 						return fmt.Errorf("failed to create User table: %w", err)
 					}
 				}
@@ -53,8 +58,8 @@ func SafeAutoMigrate(db *gorm.DB, models ...interface{}) error {
 				if !migrator.HasTable(model) {
 					log.Printf("Creating table: %s", tableName)
 					if err := migrator.CreateTable(model); err != nil {
-						// CommentReport表特殊处理
-						if strings.Contains(err.Error(), "comment_reports") && strings.Contains(err.Error(), "already exists") {
+						// 表已存在错误
+						if strings.Contains(err.Error(), "already exists") {
 							log.Printf("Table %s already exists, skipping creation", tableName)
 							continue
 						}

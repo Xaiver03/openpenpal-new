@@ -280,7 +280,7 @@ openpenpal/
 ### 快速测试账号
 | 用户名 | 密码 | 角色 | 权限 | 访问入口 |
 |--------|------|------|------|----------|
-| admin | admin123 | 超级管理员 | 全部权限 | [管理控制台](/admin) |
+| admin | Admin123! | 超级管理员 | 全部权限 | [管理控制台](/admin) |
 | courier_building | courier123 | 信使 | 信件配送、扫码、查看任务 | [信使中心](/courier) |
 | senior_courier | senior123 | 高级信使 | 信使权限 + 查看报告 | [信使中心](/courier) |
 | coordinator | coord123 | 信使协调员 | 信使权限 + 管理信使、分配任务 | [信使中心](/courier) |

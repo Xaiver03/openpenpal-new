@@ -7,33 +7,33 @@
 ## 📋 测试账号列表
 
 ### 🔑 默认密码说明
-根据当前数据库状态，测试账号密码为：
-- **管理员账号 (admin)**: `admin123`
-- **其他所有测试账号**: `secret`
+所有测试账号密码已标准化，符合安全要求（8位以上，包含大小写字母、数字、符号中至少两种）：
+- **管理员账号 (admin)**: `Admin123!`
+- **其他所有测试账号**: `Secret123!`
 
 ### 👤 用户账号
 
 | 用户名 | 密码 | 邮箱 | 角色 | 昵称 | 学校代码 | 状态 |
 |--------|------|------|------|------|----------|------|
-| alice | secret | alice@example.com | user | Alice | BJDX01 | ✅ 已验证 |
-| bob | secret | bob@example.com | user | Bob | BJDX01 | ✅ 已验证 |
-| api_test_user_fixed | secret | apitestfixed@example.com | user | API测试用户修复版 | TEST01 | ✅ 可用 |
-| test_db_connection | secret | test@example.com | user | 数据库测试用户 | - | ✅ 可用 |
+| alice | Secret123! | alice@example.com | user | Alice | BJDX01 | ✅ 已验证 |
+| bob | Secret123! | bob@example.com | user | Bob | BJDX01 | ✅ 已验证 |
+| api_test_user_fixed | Secret123! | apitestfixed@example.com | user | API测试用户修复版 | TEST01 | ✅ 可用 |
+| test_db_connection | Secret123! | test@example.com | user | 数据库测试用户 | - | ✅ 可用 |
 
 ### 🚴 信使账号（四级体系）
 
 | 用户名 | 密码 | 邮箱 | 角色 | 昵称 | 学校代码 | 权限说明 | 状态 |
 |--------|------|------|------|------|----------|----------|------|
-| courier_level1 | secret | courier1@openpenpal.com | courier_level1 | Level 1 Courier | BJDX01 | L1楼栋信使 - 基础配送权限 | ✅ 已验证 |
-| courier_level2 | secret | courier2@openpenpal.com | courier_level2 | Level 2 Courier | BJDX01 | L2片区信使 - 可管理L1信使 | ✅ 已验证 |
-| courier_level3 | secret | courier3@openpenpal.com | courier_level3 | Level 3 Courier | BJDX01 | L3校级信使 - **批量生成条码权限** | ✅ 已验证 |
-| courier_level4 | secret | courier4@openpenpal.com | courier_level4 | Level 4 Courier | SYSTEM | L4城市总代 - **全局批量生成权限** | ✅ 已验证 |
+| courier_level1 | Secret123! | courier1@openpenpal.com | courier_level1 | Level 1 Courier | BJDX01 | L1楼栋信使 - 基础配送权限 | ✅ 已验证 |
+| courier_level2 | Secret123! | courier2@openpenpal.com | courier_level2 | Level 2 Courier | BJDX01 | L2片区信使 - 可管理L1信使 | ✅ 已验证 |
+| courier_level3 | Secret123! | courier3@openpenpal.com | courier_level3 | Level 3 Courier | BJDX01 | L3校级信使 - **批量生成条码权限** | ✅ 已验证 |
+| courier_level4 | Secret123! | courier4@openpenpal.com | courier_level4 | Level 4 Courier | SYSTEM | L4城市总代 - **全局批量生成权限** | ✅ 已验证 |
 
 ### 👨‍💼 管理员账号
 
 | 用户名 | 密码 | 邮箱 | 角色 | 昵称 | 学校代码 | 权限说明 | 状态 |
 |--------|------|------|------|------|----------|----------|------|
-| admin | admin123 | admin@openpenpal.com | super_admin | 系统管理员 | SYSTEM | 超级管理员 - 系统所有权限 | ✅ 已验证 |
+| admin | Admin123! | admin@openpenpal.com | super_admin | 系统管理员 | SYSTEM | 超级管理员 - 系统所有权限 | ✅ 已验证 |
 
 ## 🧪 测试场景指南
 
@@ -44,7 +44,7 @@
 # 登录alice账号进行写信测试
 curl -X POST "http://localhost:8080/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","password":"secret"}'
+  -d '{"username":"alice","password":"Secret123!"}'
 ```
 
 1. 使用 `alice` 账号登录 ✅ 验证可用
@@ -61,7 +61,7 @@ curl -X POST "http://localhost:8080/api/v1/auth/login" \
 # 登录bob账号进行收信测试
 curl -X POST "http://localhost:8080/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"bob","password":"secret"}'
+  -d '{"username":"bob","password":"Secret123!"}'
 ```
 
 1. 使用 `bob` 账号登录 ✅ 验证可用
@@ -75,7 +75,7 @@ curl -X POST "http://localhost:8080/api/v1/auth/login" \
 # 登录L1信使账号
 curl -X POST "http://localhost:8080/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"courier_level1","password":"secret"}'
+  -d '{"username":"courier_level1","password":"Secret123!"}'
 ```
 
 1. 使用 `courier_level1` 登录 ✅ 验证可用
@@ -88,7 +88,7 @@ curl -X POST "http://localhost:8080/api/v1/auth/login" \
 # 登录L3校级信使（具有批量权限）
 curl -X POST "http://localhost:8080/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"courier_level3","password":"secret"}'
+  -d '{"username":"courier_level3","password":"Secret123!"}'
 ```
 
 1. 使用 `courier_level3` 登录 ✅ 验证可用
@@ -101,7 +101,7 @@ curl -X POST "http://localhost:8080/api/v1/auth/login" \
 # 登录L4城市总代（最高权限）
 curl -X POST "http://localhost:8080/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"courier_level4","password":"secret"}'
+  -d '{"username":"courier_level4","password":"Secret123!"}'
 ```
 
 1. 使用 `courier_level4` 登录 ✅ 验证可用
@@ -116,7 +116,7 @@ curl -X POST "http://localhost:8080/api/v1/auth/login" \
 # 登录超级管理员
 curl -X POST "http://localhost:8080/api/v1/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"username":"admin","password":"Admin123!"}'
 ```
 
 1. 使用 `admin` 账号登录 ✅ 验证可用
@@ -172,7 +172,7 @@ curl -X GET "http://localhost:8080/api/v1/admin/sensitive-words" \
 
 ### 登录失败
 - ✅ **已修复**: 所有账号密码已同步为标准格式
-- 确认密码正确：admin用`admin123`，其他用`secret`
+- 确认密码正确：admin用`Admin123!`，其他用`Secret123!`
 - 检查数据库连接是否正常
 - 查看后端日志：`tail -f logs/go-backend.log`
 
@@ -197,7 +197,11 @@ VALUES ('test-user-alice', 'PK5F3D', '测试信件', '这是一封测试信件�
 
 ### 重置密码（如需要）
 ```bash
-cd backend && go run cmd/admin/reset_passwords.go -user=alice -password=newpassword
+# 使用新的标准化密码更新脚本（推荐）
+./scripts/update-test-passwords.sh
+
+# 或者手动重置单个用户密码
+cd backend && go run cmd/admin/reset_passwords.go -user=alice -password=Secret123!
 ```
 
 ### 快速验证所有账号
@@ -209,8 +213,8 @@ cd backend/scripts && ./verify_test_accounts.sh
 ## 📊 数据库实际状态
 
 **当前数据库用户总数**: 9个  
-**验证状态**: 所有核心账号密码已修复并验证  
-**最后验证时间**: 2025-08-15 14:50
+**验证状态**: 所有核心账号密码已标准化并符合安全要求  
+**最后验证时间**: 2025-08-19 10:30
 
 ## 🔗 相关文档
 
@@ -222,7 +226,9 @@ cd backend/scripts && ./verify_test_accounts.sh
 ---
 
 **⚠️ 重要提示**: 
-- ✅ 测试环境所有账号密码已验证可用
+- ✅ 测试环境所有账号密码已标准化并符合安全要求（8位以上，包含大小写字母、数字、符号）
 - 🔒 生产环境请使用不同的账号和密码
 - 📝 如需添加新测试账号，请联系系统管理员
 - 🛡️ 安全功能测试已包含XSS防护和敏感词管理验证
+- 🔑 密码标准：最少8位，必须包含大写字母、小写字母、数字、符号中至少两种
+- 🔄 数据库更新：运行 `./scripts/update-test-passwords.sh` 以更新数据库中的实际密码哈希

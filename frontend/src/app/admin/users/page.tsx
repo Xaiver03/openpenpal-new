@@ -79,6 +79,7 @@ interface AdminUser extends BaseUser {
   role: UserRole
   school_code: string
   school_name: string
+  op_code?: string // OP Code地址
   is_verified: boolean
   stats: {
     letters_sent: number
@@ -163,6 +164,8 @@ export default function UsersManagePage() {
         sort_order: 'desc'
       })
       
+      console.log('Admin users response:', response)
+      
       if (response.success && response.data?.users) {
         // Map API response to local AdminUser type
         const mappedUsers: AdminUser[] = response.data.users.map((user: any) => ({
@@ -179,7 +182,7 @@ export default function UsersManagePage() {
       } else {
         // Fallback to empty array if API fails
         setUsers([])
-        console.error('Failed to load users: Invalid response format')
+        console.error('Failed to load users: Invalid response format', response)
       }
     } catch (error) {
       console.error('Failed to load users', error)
@@ -194,19 +197,29 @@ export default function UsersManagePage() {
     try {
       const response = await AdminService.getDashboardStats()
       
+      console.log('Dashboard stats response:', response)
+      
       if (response.success && response.data) {
         const systemStats = response.data
         // Map SystemStats to UserStats format
         const userStats: UserStats = {
-          total_users: systemStats.users.total,
-          active_users: systemStats.users.active,
-          new_users_this_month: systemStats.users.new_this_week * 4, // 估算月度新增
-          by_role: systemStats.users.by_role || {},
-          by_school: systemStats.users.by_school || {}
+          total_users: systemStats.users?.total || 0,
+          active_users: systemStats.users?.active || 0,
+          new_users_this_month: (systemStats.users?.new_this_week || 0) * 4, // 估算月度新增
+          by_role: systemStats.users?.by_role || {},
+          by_school: systemStats.users?.by_school || {}
         }
         setStats(userStats)
       } else {
-        console.error('Failed to load stats: Invalid response format')
+        console.error('Failed to load stats: Invalid response format', response)
+        // 设置默认值以避免UI错误
+        setStats({
+          total_users: 0,
+          active_users: 0,
+          new_users_this_month: 0,
+          by_role: {},
+          by_school: {}
+        })
       }
     } catch (error) {
       console.error('Failed to load stats', error)
@@ -651,7 +664,7 @@ export default function UsersManagePage() {
                   </TableHead>
                   <TableHead>用户</TableHead>
                   <TableHead>角色</TableHead>
-                  <TableHead>学校</TableHead>
+                  <TableHead>学校/OP Code</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead>统计</TableHead>
                   <TableHead>最后登录</TableHead>
@@ -685,9 +698,18 @@ export default function UsersManagePage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span className="text-sm">{user.school_name}</span>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          <span className="text-sm">{user.school_name}</span>
+                        </div>
+                        {user.op_code ? (
+                          <div className="font-mono bg-gray-100 px-2 py-1 rounded text-xs text-gray-700">
+                            {user.op_code}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-400">未设置OP Code</div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

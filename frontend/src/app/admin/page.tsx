@@ -2,7 +2,7 @@
 
 import { usePermission } from '@/hooks/use-permission'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Mail, BarChart, Settings, Shield, Brain, Truck, Award } from 'lucide-react'
+import { Users, Mail, BarChart, Settings, Shield, Brain, Truck, Award, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { WelcomeBanner } from '@/components/ui/welcome-banner'
 import { useEffect, useState } from 'react'
@@ -76,6 +76,13 @@ export default function AdminDashboard() {
       icon: Truck,
       href: '/admin/couriers',
       color: 'bg-emerald-600'
+    },
+    {
+      title: 'OP Code管理',
+      description: '校园地址编码系统管理',
+      icon: MapPin,
+      href: '/admin/opcodes',
+      color: 'bg-teal-600'
     },
     {
       title: '内容审核',

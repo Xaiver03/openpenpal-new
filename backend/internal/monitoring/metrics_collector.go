@@ -9,6 +9,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+var (
+	once               sync.Once
+	metricsCollectorInstance *MetricsCollector
+)
+
 // MetricsCollector manages all Prometheus metrics for the OpenPenPal platform
 type MetricsCollector struct {
 	// HTTP Request metrics
@@ -47,10 +52,13 @@ type MetricsCollector struct {
 }
 
 // NewMetricsCollector creates a new metrics collector with all required metrics
+// Uses singleton pattern to prevent duplicate registration
 func NewMetricsCollector() *MetricsCollector {
-	mc := &MetricsCollector{}
-	mc.initializeMetrics()
-	return mc
+	once.Do(func() {
+		metricsCollectorInstance = &MetricsCollector{}
+		metricsCollectorInstance.initializeMetrics()
+	})
+	return metricsCollectorInstance
 }
 
 // initializeMetrics sets up all Prometheus metrics

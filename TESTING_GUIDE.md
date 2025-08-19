@@ -31,7 +31,7 @@ cd frontend && npm run dev    # 前端 (3000)
 
 | 用户名 | 密码 | 角色 | 邮箱 | 权限范围 |
 |--------|------|------|------|----------|
-| `admin` | `admin123` | super_admin | admin@openpenpal.com | 系统全部权限 |
+| `admin` | `Admin123!` | super_admin | admin@openpenpal.com | 系统全部权限 |
 
 **测试功能:**
 - ✅ 用户管理、角色权限管理
@@ -47,7 +47,7 @@ cd frontend && npm run dev    # 前端 (3000)
 #### **L4 - 城市总代 (最高级别)**
 | 用户名 | 密码 | 角色 | 真实姓名 | 管理区域 | OP Code前缀 |
 |--------|------|------|----------|----------|-------------|
-| `courier_level4` | `secret123` | courier_level4 | 张明 | BEIJING (全市) | `PK` |
+| `courier_level4` | `Secret123!` | courier_level4 | 张明 | BEIJING (全市) | `PK` |
 
 **测试权限:**
 - ✅ 创建和管理 L3 校级信使
@@ -59,7 +59,7 @@ cd frontend && npm run dev    # 前端 (3000)
 #### **L3 - 校级信使**
 | 用户名 | 密码 | 角色 | 真实姓名 | 管理区域 | OP Code前缀 |
 |--------|------|------|----------|----------|-------------|
-| `courier_level3` | `secret123` | courier_level3 | 李华 | BJDX (北大校内) | `PK5F` |
+| `courier_level3` | `Secret123!` | courier_level3 | 李华 | BJDX (北大校内) | `PK5F` |
 
 **测试权限:**
 - ✅ 创建和管理 L2 区域信使
@@ -70,7 +70,7 @@ cd frontend && npm run dev    # 前端 (3000)
 #### **L2 - 区域信使**
 | 用户名 | 密码 | 角色 | 真实姓名 | 管理区域 | OP Code前缀 |
 |--------|------|------|----------|----------|-------------|
-| `courier_level2` | `secret123` | courier_level2 | 王芳 | BJDX-5F (5号楼区域) | `PK5F` |
+| `courier_level2` | `Secret123!` | courier_level2 | 王芳 | BJDX-5F (5号楼区域) | `PK5F` |
 
 **测试权限:**
 - ✅ 创建和管理 L1 楼栋信使
@@ -81,7 +81,7 @@ cd frontend && npm run dev    # 前端 (3000)
 #### **L1 - 楼栋信使**
 | 用户名 | 密码 | 角色 | 真实姓名 | 管理区域 | OP Code前缀 |
 |--------|------|------|----------|----------|-------------|
-| `courier_level1` | `secret123` | courier_level1 | 赵强 | BJDX-5F-3D (宿舍楼) | `PK5F3D` |
+| `courier_level1` | `Secret123!` | courier_level1 | 赵强 | BJDX-5F-3D (宿舍楼) | `PK5F3D` |
 
 **测试权限:**
 - ✅ 直接投递任务执行
@@ -95,8 +95,8 @@ cd frontend && npm run dev    # 前端 (3000)
 
 | 用户名 | 密码 | 角色 | 邮箱 | 真实姓名 | 个人简介 |
 |--------|------|------|------|----------|----------|
-| `alice` | `secret123` | user | alice@openpenpal.com | 爱丽丝 | 文学摄影爱好者，大二学生 |
-| `bob` | `secret123` | user | bob@openpenpal.com | 小明 | 计算机系学生，热爱传统文化 |
+| `alice` | `Secret123!` | user | alice@openpenpal.com | 爱丽丝 | 文学摄影爱好者，大二学生 |
+| `bob` | `Secret123!` | user | bob@openpenpal.com | 小明 | 计算机系学生，热爱传统文化 |
 
 **测试功能:**
 - ✅ 写信、收信、回信
@@ -143,7 +143,7 @@ cd frontend && npm run dev    # 前端 (3000)
 
 1. **用户写信 (alice):**
    ```
-   登录: alice / secret123
+   登录: alice / Secret123!
    -> 写信页面
    -> 收件人OP: PK5F3D (bob的地址)
    -> 内容: 测试信件内容
@@ -152,7 +152,7 @@ cd frontend && npm run dev    # 前端 (3000)
 
 2. **信使投递 (courier_level1):**
    ```
-   登录: courier_level1 / secret123  
+   登录: courier_level1 / Secret123!  
    -> 扫描信件条码
    -> 更新状态: collected → in_transit → delivered
    -> 获得积分奖励 (25分)
@@ -160,7 +160,7 @@ cd frontend && npm run dev    # 前端 (3000)
 
 3. **收件人确认 (bob):**
    ```
-   登录: bob / secret123
+   登录: bob / Secret123!
    -> 我的信件 → 收到新信
    -> 阅读信件 (获得12积分)
    -> 可选择回信
@@ -170,7 +170,7 @@ cd frontend && npm run dev    # 前端 (3000)
 
 1. **L4权限测试 (courier_level4):**
    ```
-   登录: courier_level4 / secret123
+   登录: courier_level4 / Secret123!
    -> 信使管理 → 查看全市信使
    -> 批量OP Code生成 (PK前缀)
    -> 跨学校任务分配
@@ -178,7 +178,7 @@ cd frontend && npm run dev    # 前端 (3000)
 
 2. **L3权限测试 (courier_level3):**
    ```
-   登录: courier_level3 / secret123  
+   登录: courier_level3 / Secret123!  
    -> 校园管理 → 北大区域任务
    -> L2信使创建与管理
    -> 校园级别数据报告
@@ -188,7 +188,7 @@ cd frontend && npm run dev    # 前端 (3000)
 
 1. **内容提交 (alice):**
    ```
-   登录: alice / secret123
+   登录: alice / Secret123!
    -> 博物馆 → 投稿作品
    -> 上传"春日校园随想"类型内容
    -> 获得30积分奖励
@@ -196,7 +196,7 @@ cd frontend && npm run dev    # 前端 (3000)
 
 2. **内容审核 (admin):**
    ```
-   登录: admin / admin123
+   登录: admin / Admin123!
    -> 管理后台 → 博物馆审核
    -> 审核alice的投稿
    -> 批准发布(alice获得100积分)
@@ -314,7 +314,7 @@ tail -f /usr/local/var/log/postgresql@14.log
 ### **常见问题解决**
 
 1. **无法登录**
-   - 检查密码是否正确 (secret123/admin123)
+   - 检查密码是否正确 (Secret123!/Admin123!)
    - 确认用户状态: `is_active = true`
 
 2. **积分不增加**

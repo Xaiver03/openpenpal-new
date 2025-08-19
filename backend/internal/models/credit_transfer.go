@@ -34,8 +34,8 @@ type CreditTransfer struct {
 	FromUserID       string               `json:"from_user_id" gorm:"type:varchar(36);not null;index"`              // 转出用户ID
 	ToUserID         string               `json:"to_user_id" gorm:"type:varchar(36);not null;index"`                // 转入用户ID
 	Amount           int                  `json:"amount" gorm:"not null"`                                            // 转赠积分数量
-	TransferType     CreditTransferType   `json:"transfer_type" gorm:"type:enum('direct','gift','reward');not null"` // 转赠类型
-	Status           CreditTransferStatus `json:"status" gorm:"type:enum('pending','processed','canceled','expired','rejected');default:'pending';index"` // 转赠状态
+	TransferType     CreditTransferType   `json:"transfer_type" gorm:"type:varchar(20);not null"` // 转赠类型
+	Status           CreditTransferStatus `json:"status" gorm:"type:varchar(20);default:'pending';index"` // 转赠状态
 	Message          string               `json:"message" gorm:"type:text"`                                          // 转赠留言
 	ProcessedAt      *time.Time           `json:"processed_at" gorm:"index"`                                         // 处理时间
 	ExpiresAt        time.Time            `json:"expires_at" gorm:"not null;index"`                                  // 过期时间
@@ -139,7 +139,7 @@ type CreditTransferNotification struct {
 	ID           string                     `json:"id" gorm:"primaryKey;type:varchar(36)"`
 	TransferID   string                     `json:"transfer_id" gorm:"type:varchar(36);not null;index"`                                                      // 转赠ID
 	UserID       string                     `json:"user_id" gorm:"type:varchar(36);not null;index"`                                                          // 接收用户ID
-	NotificationType string                 `json:"notification_type" gorm:"type:enum('transfer_sent','transfer_received','transfer_expired','transfer_canceled');not null"` // 通知类型
+	NotificationType string                 `json:"notification_type" gorm:"type:varchar(50);not null"` // 通知类型
 	Title        string                     `json:"title" gorm:"type:varchar(200);not null"`                                                                 // 通知标题
 	Content      string                     `json:"content" gorm:"type:text;not null"`                                                                       // 通知内容
 	IsRead       bool                       `json:"is_read" gorm:"default:false"`                                                                            // 是否已读

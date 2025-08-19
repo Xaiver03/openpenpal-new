@@ -141,9 +141,9 @@ cd backend && go run main.go migrate
 **Note**: macOS uses system username (`whoami`), Linux may need 'postgres'
 
 ### Test Accounts
-- admin/admin123 (super_admin)
-- alice/secret123 (student) - Updated password meets 8-character requirement
-- courier_level[1-4]/secret123 (L1-L4 courier) - Updated passwords
+- admin/Admin123! (super_admin)
+- alice/Secret123! (student) - Updated password meets security requirements
+- courier_level[1-4]/Secret123! (L1-L4 courier) - Updated passwords meet security requirements
 
 ### Common Issue Troubleshooting
 - Port conflicts: `./startup/force-cleanup.sh`

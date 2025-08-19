@@ -81,6 +81,7 @@ export interface User {
   avatar: string;
   role: UserRole;
   school_code: string;
+  op_code: string; // OP Code地址
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;

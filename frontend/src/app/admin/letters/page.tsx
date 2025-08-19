@@ -90,6 +90,9 @@ interface Letter {
   tracking_code?: string
   delivery_address?: string
   flags: string[]
+  // OP Code字段
+  sender_op_code?: string
+  recipient_op_code?: string
 }
 
 interface LetterStats {
@@ -496,7 +499,7 @@ export default function LettersManagePage() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="搜索信件标题、发送者或追踪码..."
+                    placeholder="搜索信件标题、发送者、追踪码或OP Code..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -529,13 +532,14 @@ export default function LettersManagePage() {
 
                 <Select value={schoolFilter} onValueChange={setSchoolFilter}>
                   <SelectTrigger className="w-full sm:w-40">
-                    <SelectValue placeholder="学校筛选" />
+                    <SelectValue placeholder="OP Code筛选" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全部学校</SelectItem>
-                    <SelectItem value="北京大学">北京大学</SelectItem>
-                    <SelectItem value="清华大学">清华大学</SelectItem>
-                    <SelectItem value="复旦大学">复旦大学</SelectItem>
+                    <SelectItem value="all">全部区域</SelectItem>
+                    <SelectItem value="PK">PK** - 北京大学</SelectItem>
+                    <SelectItem value="QH">QH** - 清华大学</SelectItem>
+                    <SelectItem value="FD">FD** - 复旦大学</SelectItem>
+                    <SelectItem value="CS">CS** - 中南大学</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -547,6 +551,7 @@ export default function LettersManagePage() {
                     <TableRow>
                       <TableHead>信件信息</TableHead>
                       <TableHead>发送者</TableHead>
+                      <TableHead>OP Code路由</TableHead>
                       <TableHead>状态</TableHead>
                       <TableHead>优先级</TableHead>
                       <TableHead>创建时间</TableHead>
@@ -584,6 +589,22 @@ export default function LettersManagePage() {
                               <div className="text-xs text-muted-foreground">
                                 {letter.sender.school_name}
                               </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">发件:</span>
+                              <span className="font-mono bg-blue-50 px-2 py-1 rounded text-xs text-blue-700">
+                                {letter.sender_op_code || '未知'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">收件:</span>
+                              <span className="font-mono bg-green-50 px-2 py-1 rounded text-xs text-green-700">
+                                {letter.recipient_op_code || '未知'}
+                              </span>
                             </div>
                           </div>
                         </TableCell>

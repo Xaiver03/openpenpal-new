@@ -117,7 +117,9 @@ export default function CouriersPage() {
     email: '',
     nickname: '',
     level: 1,
-    zone: '',
+    zone: '', // 兼容旧版
+    managed_op_code_prefix: '', // OP Code前缀
+    school_code: '', // 学校代码
     description: ''
   })
 
@@ -234,6 +236,8 @@ export default function CouriersPage() {
         nickname: '',
         level: 1,
         zone: '',
+        managed_op_code_prefix: '',
+        school_code: '',
         description: ''
       })
     } catch (error) {
@@ -246,7 +250,9 @@ export default function CouriersPage() {
   const filteredCouriers = couriers.filter(courier => {
     const matchesSearch = courier.nickname.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          courier.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         courier.zone_name?.toLowerCase().includes(searchTerm.toLowerCase())
+                         courier.zone_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         courier.managed_op_code_prefix?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         courier.op_code_range_name?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesLevel = levelFilter === 'all' || courier.level.toString() === levelFilter
     const matchesStatus = statusFilter === 'all' || courier.status === statusFilter
     return matchesSearch && matchesLevel && matchesStatus
@@ -372,7 +378,7 @@ export default function CouriersPage() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="搜索信使姓名、用户名或区域..."
+                    placeholder="搜索信使姓名、用户名、区域或OP Code前缀..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -451,8 +457,23 @@ export default function CouriersPage() {
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div>{courier.zone_name}</div>
-                              <div className="text-muted-foreground">{courier.zone}</div>
+                              <div className="font-medium">
+                                {courier.managed_op_code_prefix ? (
+                                  <span className="font-mono bg-blue-50 px-2 py-1 rounded text-blue-700">
+                                    {courier.managed_op_code_prefix}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">未设置OP Code</span>
+                                )}
+                              </div>
+                              <div className="text-muted-foreground mt-1">
+                                {courier.op_code_range_name || courier.zone_name || '未命名区域'}
+                              </div>
+                              {courier.zone && (
+                                <div className="text-xs text-muted-foreground">
+                                  旧版: {courier.zone}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>

@@ -69,6 +69,7 @@ export function Breadcrumb({
 
 // 预定义的面包屑配置，方便复用
 export const ADMIN_BREADCRUMBS = {
+  root: [{ label: '管理控制台', href: '/admin' }],
   dashboard: [{ label: '管理控制台', href: '/admin' }],
   users: [
     { label: '管理控制台', href: '/admin' },
