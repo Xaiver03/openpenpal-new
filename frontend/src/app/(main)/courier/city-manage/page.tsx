@@ -6,7 +6,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCityStats, getCityCouriers, getCourierCandidates } from '@/lib/api/index'
+import { CourierService } from '@/lib/api/courier-service'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -42,6 +42,7 @@ import {
   COURIER_PERMISSION_CONFIGS 
 } from '@/components/courier/CourierPermissionGuard'
 import { FeatureErrorBoundary } from '@/components/error-boundary'
+import { CourierCenterNavigation } from '@/components/courier/CourierCenterNavigation'
 import { log } from '@/utils/logger'
 
 interface CityLevelCourier {
@@ -109,129 +110,69 @@ export default function CityManagePage() {
   const loadData = async () => {
     setLoading(true)
     try {
-        const [statsResponse, couriersResponse] = await Promise.all([
-          getCityStats().catch(() => null),
-          getCityCouriers().catch(() => [])
-        ])
+      // 使用真实的API获取数据
+      const courierStats = await CourierService.getCourierStats()
+      
+      // 映射API数据到页面所需格式
+      setStats({
+        totalSchools: courierStats.teamStats?.totalMembers || 0,
+        activeCouriers: courierStats.teamStats?.activeMembers || 0,  
+        totalDeliveries: courierStats.teamStats?.totalDeliveries || 0,
+        pendingTasks: courierStats.dailyStats?.pendingTasks || 0,
+        averageRating: courierStats.courierInfo?.avgRating || 0,
+        successRate: courierStats.courierInfo?.successRate || 0
+      })
 
-        if (statsResponse?.success) {
-          setStats(statsResponse.data as any)
-        } else {
-          setStats({
-            totalSchools: 25,
-            activeCouriers: 38,
-            totalDeliveries: 12678,
-            pendingTasks: 45,
-            averageRating: 4.9,
-            successRate: 97.2
-          })
-        }
-
-        if (couriersResponse && 'success' in couriersResponse && couriersResponse.success) {
-          setCouriers((couriersResponse as any).data || [])
-        } else {
-          const mockCouriers: CityLevelCourier[] = [
-            {
-              id: '1',
-              username: 'university_peking_manager',
-              schoolName: '北京大学',
-              schoolCode: 'PKU_MAIN',
-              zoneCount: 8,
-              coverage: '燕园校区全区',
-              level: 3,
-              status: 'active',
-              points: 1250,
-              taskCount: 456,
-              completedTasks: 445,
-              subordinateCount: 8,
-              averageRating: 4.95,
-              joinDate: '2023-09-01',
-              lastActive: '2024-01-24T07:45:00Z',
-              contactInfo: {
-                phone: '138****0001',
-                wechat: 'pku_courier_head'
-              },
-              workingHours: {
-                start: '06:00',
-                end: '22:00',
-                weekdays: [1, 2, 3, 4, 5, 6, 7]
-              }
-            },
-            {
-              id: '2',
-              username: 'university_tsinghua_manager',
-              schoolName: '清华大学',
-              schoolCode: 'THU_MAIN',
-              zoneCount: 6,
-              coverage: '紫荆校区全区',
-              level: 3,
-              status: 'active',
-              points: 1180,
-              taskCount: 398,
-              completedTasks: 390,
-              subordinateCount: 6,
-              averageRating: 4.88,
-              joinDate: '2023-09-05',
-              lastActive: '2024-01-24T08:20:00Z',
-              contactInfo: {
-                phone: '138****0002',
-                wechat: 'thu_courier_head'
-              },
-              workingHours: {
-                start: '06:30',
-                end: '21:30',
-                weekdays: [1, 2, 3, 4, 5, 6, 7]
-              }
-            },
-            {
-              id: '3',
-              username: 'university_renda_manager',
-              schoolName: '中国人民大学',
-              schoolCode: 'RUC_MAIN',
-              zoneCount: 4,
-              coverage: '明德楼区域',
-              level: 3,
-              status: 'pending',
-              points: 680,
-              taskCount: 234,
-              completedTasks: 225,
-              subordinateCount: 4,
-              averageRating: 4.72,
-              joinDate: '2024-01-10',
-              lastActive: '2024-01-23T19:30:00Z',
-              contactInfo: {
-                phone: '138****0003',
-                wechat: 'ruc_courier_head'
-              }
-            },
-            {
-              id: '4',
-              username: 'university_beishi_manager',
-              schoolName: '北京师范大学',
-              schoolCode: 'BNU_MAIN',
-              zoneCount: 5,
-              coverage: '北师大校区',
-              level: 3,
-              status: 'frozen',
-              points: 420,
-              taskCount: 189,
-              completedTasks: 165,
-              subordinateCount: 3,
-              averageRating: 4.35,
-              joinDate: '2023-11-15',
-              lastActive: '2024-01-15T16:20:00Z',
-              contactInfo: {
-                phone: '138****0004'
-              }
-            }
-          ]
-          setCouriers(mockCouriers)
+      // 获取下级信使列表
+      try {
+        const hierarchyInfo = await CourierService.getHierarchyInfo()
+        console.log('获取层级信息成功:', hierarchyInfo)
+        
+        // 使用CourierService获取下级信使列表
+        const subordinatesResponse = await fetch('/api/v1/courier/subordinates', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+        
+        if (subordinatesResponse.ok) {
+          const subordinatesData = await subordinatesResponse.json()
+          const apiCouriers = subordinatesData.data?.couriers || subordinatesData.couriers || []
+          
+          if (apiCouriers.length > 0) {
+            // 转换API数据为UI格式
+            const uiCouriers: CityLevelCourier[] = apiCouriers.map((courier: any) => ({
+              id: courier.id || `courier-${Date.now()}`,
+              username: courier.username || '未知用户',
+              schoolName: courier.school || '未分配学校',
+              schoolCode: courier.zone || 'UNASSIGNED',
+              zoneCount: courier.zones?.length || 1,
+              coverage: courier.region || '未分配区域',
+              level: courier.level || 3,
+              status: courier.status === 'active' ? 'active' : 'pending',
+              points: courier.points || 0,
+              taskCount: (courier.completedTasks || 0) + (courier.currentTasks || 0),
+              completedTasks: courier.completedTasks || 0,
+              subordinateCount: courier.subordinateCount || 0,
+              averageRating: courier.rating || 4.5,
+              joinDate: courier.createdAt || undefined,
+              lastActive: courier.lastActive || undefined,
+              contactInfo: courier.profile?.phone ? { phone: courier.profile.phone } : {}
+            }))
+            setCouriers(uiCouriers)
+            console.log('✅ 使用真实API数据:', uiCouriers)
+            return // 成功使用真实数据，直接返回
+          }
         }
       } catch (error) {
-        log.error('Failed to load city level management data', error, 'CityManagePage')
-      } finally {
-        setLoading(false)
+        console.log('⚠️ API调用异常:', error)
       }
+      
+      // 如果API无数据或失败，设置空数组显示"暂无数据"状态
+      setCouriers([])
+    } catch (error) {
+      log.error('Failed to load city level management data', error, 'CityManagePage')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -509,7 +450,10 @@ export default function CityManagePage() {
         errorTitle="城市管理权限不足"
         errorDescription="只有四级信使（城市总代）才能管理城市级信使"
       >
-      <ManagementPageLayout
+        {/* 信使中心导航 */}
+        <CourierCenterNavigation currentPage="city" className="mb-6" />
+
+        <ManagementPageLayout
         config={MANAGEMENT_CONFIGS.FOURTH_LEVEL}
         stats={statCards}
         searchPlaceholder="搜索信使用户名、学校名称或编号..."

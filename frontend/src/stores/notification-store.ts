@@ -21,72 +21,7 @@ interface NotificationStoreState extends NotificationState, NotificationActions 
   _pollInterval: NodeJS.Timeout | null
 }
 
-// Mock data generator for development
-const generateMockNotifications = (): Notification[] => {
-  const types: NotificationType[] = ['follow', 'comment', 'like', 'letter_received', 'achievement']
-  const now = Date.now()
-  
-  return Array.from({ length: 5 }, (_, i) => ({
-    id: `notif-${i + 1}`,
-    user_id: 'current-user',
-    type: types[i % types.length],
-    status: i < 2 ? 'unread' : 'read',
-    title: getNotificationTitle(types[i % types.length]),
-    content: getNotificationContent(types[i % types.length]),
-    metadata: {
-      actor_user: {
-        id: `user-${i + 10}`,
-        username: `user${i + 10}`,
-        nickname: `User ${i + 10}`
-      },
-      url: getNotificationUrl(types[i % types.length])
-    },
-    created_at: new Date(now - i * 60 * 60 * 1000).toISOString(),
-    read_at: i >= 2 ? new Date(now - (i - 1) * 60 * 60 * 1000).toISOString() : undefined
-  }))
-}
-
-function getNotificationTitle(type: NotificationType): string {
-  switch (type) {
-    case 'follow': return '新的关注者'
-    case 'comment': return '收到新评论'
-    case 'comment_reply': return '评论被回复'
-    case 'like': return '收到点赞'
-    case 'letter_received': return '收到新信件'
-    case 'achievement': return '获得新成就'
-    case 'courier_task': return '信使任务更新'
-    case 'system': return '系统通知'
-    default: return '新通知'
-  }
-}
-
-function getNotificationContent(type: NotificationType): string {
-  switch (type) {
-    case 'follow': return '@alice 关注了你'
-    case 'comment': return '@bob 在你的信件下发表了评论'
-    case 'comment_reply': return '@charlie 回复了你的评论'
-    case 'like': return '@david 赞了你的信件'
-    case 'letter_received': return '你收到了一封来自远方的信'
-    case 'achievement': return '恭喜！你获得了"笔友达人"成就'
-    case 'courier_task': return '你有新的信使任务待处理'
-    case 'system': return '系统维护将于今晚10点开始'
-    default: return '点击查看详情'
-  }
-}
-
-function getNotificationUrl(type: NotificationType): string {
-  switch (type) {
-    case 'follow': return '/followers'
-    case 'comment':
-    case 'comment_reply':
-    case 'like': return '/letters'
-    case 'letter_received': return '/inbox'
-    case 'achievement': return '/profile#achievements'
-    case 'courier_task': return '/courier'
-    case 'system': return '/announcements'
-    default: return '/'
-  }
-}
+// 已移除所有 mock 数据生成器，现在完全使用真实 API
 
 const DEFAULT_PREFERENCES: NotificationPreferences = {
   email_enabled: true,
@@ -122,16 +57,11 @@ export const useNotificationStore = create<NotificationStoreState>()(
           set({ loading: true, error: null })
           
           try {
-            // TODO: Replace with real API call
-            // const response = await fetch(`/api/notifications?${new URLSearchParams(query)}`)
-            // const data = await response.json()
-            
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 500))
-            const mockNotifications = generateMockNotifications()
+            const { getNotifications } = await import('@/lib/api/notification')
+            const response = await getNotifications(query)
             
             set({
-              notifications: mockNotifications,
+              notifications: response.notifications,
               loading: false,
               last_fetched: Date.now()
             })
@@ -139,7 +69,9 @@ export const useNotificationStore = create<NotificationStoreState>()(
             // Update stats
             get().refreshStats()
           } catch (error) {
+            console.error('Failed to load notifications from API:', error)
             set({
+              notifications: [], // 不使用 mock 数据，显示空列表
               loading: false,
               error: error instanceof Error ? error.message : 'Failed to load notifications'
             })
@@ -158,12 +90,8 @@ export const useNotificationStore = create<NotificationStoreState>()(
           }))
           
           try {
-            // TODO: Replace with real API call
-            // await fetch('/api/notifications/mark-read', {
-            //   method: 'POST',
-            //   headers: { 'Content-Type': 'application/json' },
-            //   body: JSON.stringify({ notification_ids: ids, status: 'read' })
-            // })
+            const { markAsRead } = await import('@/lib/api/notification')
+            await Promise.all(ids.map(id => markAsRead(id)))
             
             // Update stats after marking as read
             get().refreshStats()
@@ -193,8 +121,8 @@ export const useNotificationStore = create<NotificationStoreState>()(
           }))
           
           try {
-            // TODO: Replace with real API call
-            // await fetch(`/api/notifications/${id}`, { method: 'DELETE' })
+            const { deleteNotification } = await import('@/lib/api/notification')
+            await deleteNotification(id)
             
             get().refreshStats()
           } catch (error) {
@@ -213,12 +141,8 @@ export const useNotificationStore = create<NotificationStoreState>()(
           set({ preferences: newPrefs })
           
           try {
-            // TODO: Replace with real API call
-            // await fetch('/api/notifications/preferences', {
-            //   method: 'PUT',
-            //   headers: { 'Content-Type': 'application/json' },
-            //   body: JSON.stringify(newPrefs)
-            // })
+            const { updatePreferences } = await import('@/lib/api/notification')
+            await updatePreferences(newPrefs)
             
             toast.success('通知设置已更新')
           } catch (error) {

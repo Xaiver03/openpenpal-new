@@ -18,7 +18,9 @@ import {
   Crown,
   Brain,
   MapPin,
-  ChevronDown
+  ChevronDown,
+  Waves,
+  Calendar
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -63,7 +65,7 @@ export function Header({ className }: HeaderProps) {
   const user = { username, nickname, avatar }
 
   const navItems = [
-    { href: '/write', label: '写信去', icon: Mail },
+    { href: '/letters/write', label: '写信去', icon: Mail },
     { href: '/ai', label: '云锦传驿', icon: Brain },
     { href: '/plaza', label: '写作广场', icon: Send },
     { href: '/museum', label: '信件博物馆', icon: Inbox },
@@ -71,7 +73,6 @@ export function Header({ className }: HeaderProps) {
   ]
 
   const userMenuItems = [
-    { href: '/profile', label: '个人档案', icon: User },
     { href: username ? `/u/${username}` : '/profile', label: '我的主页', icon: User },
     { href: '/opcode', label: 'OPCode', icon: MapPin },
     { href: '/settings', label: '设置', icon: Settings },
@@ -153,13 +154,14 @@ export function Header({ className }: HeaderProps) {
                 <DropdownMenuContent align="end" className="w-56">
                   {userMenuItems.map((item, index) => {
                     const Icon = item.icon
-                    const showDivider = index === 0 || 
-                      (index > 0 && userMenuItems[index - 1].href.includes('courier') !== item.href.includes('courier')) ||
-                      (index > 0 && userMenuItems[index - 1].href.includes('admin') !== item.href.includes('admin'))
+                    // 在信使中心和管理控制台前添加分隔线
+                    const showDivider = 
+                      (item.href === '/courier' && index > 0) ||
+                      (item.href.includes('/admin') && index > 0)
                     
                     return (
-                      <div key={item.href}>
-                        {showDivider && index > 0 && (
+                      <div key={`${item.href}-${index}`}>
+                        {showDivider && (
                           <div className="my-1 h-px bg-border" />
                         )}
                         <DropdownMenuItem asChild>
@@ -238,11 +240,11 @@ export function Header({ className }: HeaderProps) {
               <div className="border-t pt-2 mt-2">
                 {isAuthenticated ? (
                   <>
-                    {userMenuItems.map((item) => {
+                    {userMenuItems.map((item, index) => {
                       const Icon = item.icon
                       return (
                         <Link
-                          key={item.href}
+                          key={`${item.href}-${index}`}
                           href={item.href}
                           className="flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                           onClick={() => setIsMobileMenuOpen(false)}

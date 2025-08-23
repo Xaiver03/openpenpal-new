@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -157,7 +157,7 @@ func (s *DelayQueueService) scheduleTask(task *DelayQueueTask) error {
 	score := float64(task.DelayedUntil.Unix())
 
 	// 添加到Redis有序集合
-	err = s.redis.ZAdd(ctx, "delay_queue_fixed", &redis.Z{
+	err = s.redis.ZAdd(ctx, "delay_queue_fixed", redis.Z{
 		Score:  score,
 		Member: taskData,
 	}).Err()

@@ -32,7 +32,7 @@ import {
 
 import { privacyApi } from '../../lib/api/privacy'
 import type { PrivacyCheckResult } from '../../types/privacy'
-import { useAuth } from '../../contexts/auth-context'
+import { useAuth } from '@/contexts/auth-context-new'
 import { toast } from 'sonner'
 
 interface ProfilePrivacyIntegrationProps {

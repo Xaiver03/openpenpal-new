@@ -386,7 +386,7 @@ export default function MySubmissionsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/write?edit=${submission.letter_id}`)}
+                        onClick={() => router.push(`/letters/write?edit=${submission.letter_id}`)}
                       >
                         <Edit className="w-4 h-4 mr-2" />
                         修改后重新提交

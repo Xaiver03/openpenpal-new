@@ -1,0 +1,223 @@
+# OpenPenPal AlertManager 配置
+# 告警路由和通知配置
+
+global:
+  # SMTP 配置
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@openpenpal.com'
+  smtp_auth_username: 'alerts@openpenpal.com'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+  # Slack 配置
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+# 模板配置
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# 路由配置
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default'
+  routes:
+    # 严重告警立即通知
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # 数据库相关告警
+    - match_re:
+        alertname: PostgreSQL.*|Redis.*
+      receiver: 'database-team'
+
+    # 应用程序告警
+    - match_re:
+        job: frontend|backend|.*-service
+      receiver: 'dev-team'
+
+    # 系统资源告警
+    - match_re:
+        alertname: High.*Usage|.*SpaceLow
+      receiver: 'ops-team'
+
+    # 业务指标告警
+    - match_re:
+        alertname: Abnormal.*|High.*FailureRate
+      receiver: 'business-team'
+
+# 接收器配置
+receivers:
+  # 默认接收器
+  - name: 'default'
+    email_configs:
+      - to: 'devops@openpenpal.com'
+        subject: '[OpenPenPal] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          告警: {{ .Annotations.summary }}
+          描述: {{ .Annotations.description }}
+          时间: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          实例: {{ .Labels.instance }}
+          服务: {{ .Labels.job }}
+          {{ end }}
+
+  # 严重告警接收器
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'critical@openpenpal.com,cto@openpenpal.com'
+        subject: '[CRITICAL] OpenPenPal 严重告警'
+        body: |
+          🚨 严重告警 🚨
+          
+          {{ range .Alerts }}
+          告警: {{ .Annotations.summary }}
+          描述: {{ .Annotations.description }}
+          时间: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          实例: {{ .Labels.instance }}
+          服务: {{ .Labels.job }}
+          严重级别: {{ .Labels.severity }}
+          {{ end }}
+          
+          请立即处理!
+    slack_configs:
+      - channel: '#critical-alerts'
+        title: '🚨 OpenPenPal 严重告警'
+        text: |
+          {{ range .Alerts }}
+          *告警*: {{ .Annotations.summary }}
+          *描述*: {{ .Annotations.description }}
+          *时间*: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          *实例*: {{ .Labels.instance }}
+          *服务*: {{ .Labels.job }}
+          {{ end }}
+        send_resolved: true
+
+  # 数据库团队
+  - name: 'database-team'
+    email_configs:
+      - to: 'dba@openpenpal.com,backend@openpenpal.com'
+        subject: '[DB] OpenPenPal 数据库告警'
+        body: |
+          数据库告警通知
+          
+          {{ range .Alerts }}
+          告警: {{ .Annotations.summary }}
+          描述: {{ .Annotations.description }}
+          时间: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          数据库: {{ .Labels.instance }}
+          {{ end }}
+    slack_configs:
+      - channel: '#database-alerts'
+        title: '📊 数据库告警'
+        text: |
+          {{ range .Alerts }}
+          *告警*: {{ .Annotations.summary }}
+          *描述*: {{ .Annotations.description }}
+          *时间*: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+
+  # 开发团队
+  - name: 'dev-team'
+    email_configs:
+      - to: 'dev@openpenpal.com'
+        subject: '[DEV] OpenPenPal 应用告警'
+        body: |
+          应用服务告警
+          
+          {{ range .Alerts }}
+          告警: {{ .Annotations.summary }}
+          描述: {{ .Annotations.description }}
+          时间: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          服务: {{ .Labels.job }}
+          实例: {{ .Labels.instance }}
+          {{ end }}
+    slack_configs:
+      - channel: '#dev-alerts'
+        title: '💻 应用服务告警'
+        text: |
+          {{ range .Alerts }}
+          *服务*: {{ .Labels.job }}
+          *告警*: {{ .Annotations.summary }}
+          *描述*: {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+  # 运维团队
+  - name: 'ops-team'
+    email_configs:
+      - to: 'ops@openpenpal.com'
+        subject: '[OPS] OpenPenPal 系统资源告警'
+        body: |
+          系统资源告警
+          
+          {{ range .Alerts }}
+          告警: {{ .Annotations.summary }}
+          描述: {{ .Annotations.description }}
+          时间: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          主机: {{ .Labels.instance }}
+          {{ end }}
+    slack_configs:
+      - channel: '#ops-alerts'
+        title: '🖥️ 系统资源告警'
+        text: |
+          {{ range .Alerts }}
+          *主机*: {{ .Labels.instance }}
+          *告警*: {{ .Annotations.summary }}
+          *当前值*: {{ .Annotations.description }}
+          {{ end }}
+
+  # 业务团队
+  - name: 'business-team'
+    email_configs:
+      - to: 'business@openpenpal.com,product@openpenpal.com'
+        subject: '[BUSINESS] OpenPenPal 业务指标告警'
+        body: |
+          业务指标异常告警
+          
+          {{ range .Alerts }}
+          告警: {{ .Annotations.summary }}
+          描述: {{ .Annotations.description }}
+          时间: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+          
+          请检查业务数据和用户行为！
+    slack_configs:
+      - channel: '#business-alerts'
+        title: '📈 业务指标告警'
+        text: |
+          {{ range .Alerts }}
+          *指标*: {{ .Annotations.summary }}
+          *描述*: {{ .Annotations.description }}
+          *时间*: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+        send_resolved: true
+
+# 抑制规则 - 避免重复告警
+inhibit_rules:
+  # 如果服务宕机，抑制该服务的其他告警
+  - source_match:
+      alertname: ServiceDown
+    target_match_re:
+      alertname: High.*|.*Slow.*
+    equal: ['instance']
+
+  # 如果有严重内存告警，抑制CPU告警
+  - source_match:
+      alertname: HighMemoryUsage
+      severity: critical
+    target_match:
+      alertname: HighCPUUsage
+    equal: ['instance']
+
+  # 如果有数据库连接问题，抑制应用错误告警
+  - source_match_re:
+      alertname: PostgreSQL.*|Redis.*
+    target_match:
+      alertname: HighHTTPErrorRate
+    equal: ['job']

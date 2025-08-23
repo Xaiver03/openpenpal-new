@@ -11,10 +11,10 @@ export function Footer({ className }: FooterProps) {
 
   const footerLinks = {
     product: [
-      { label: '写信', href: '/write' },
-      { label: '投递', href: '/deliver' },
-      { label: '信箱', href: '/mailbox' },
-      { label: '信使', href: '/courier/scan' },
+      { label: '写信', href: '/letters/write' },
+      { label: '投递', href: '/letters/send' },
+      { label: '信件', href: '/letters' },
+      { label: '信使', href: '/courier/dashboard' },
     ],
     support: [
       { label: '帮助中心', href: '/help' },

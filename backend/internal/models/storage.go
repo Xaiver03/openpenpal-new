@@ -21,14 +21,16 @@ const (
 type FileCategory string
 
 const (
-	FileCategoryImage      FileCategory = "image"      // 图片文件
-	FileCategoryDocument   FileCategory = "document"   // 文档文件
-	FileCategoryQRCode     FileCategory = "qrcode"     // 二维码
-	FileCategoryAvatar     FileCategory = "avatar"     // 头像
-	FileCategoryEnvelope   FileCategory = "envelope"   // 信封图片
-	FileCategoryAttachment FileCategory = "attachment" // 附件
-	FileCategoryThumbnail  FileCategory = "thumbnail"  // 缩略图
-	FileCategoryBackup     FileCategory = "backup"     // 备份文件
+	FileCategoryImage            FileCategory = "image"            // 图片文件
+	FileCategoryDocument         FileCategory = "document"         // 文档文件
+	FileCategoryQRCode           FileCategory = "qrcode"           // 二维码
+	FileCategoryAvatar           FileCategory = "avatar"           // 头像
+	FileCategoryEnvelope         FileCategory = "envelope"         // 信封图片
+	FileCategoryAttachment       FileCategory = "attachment"       // 附件
+	FileCategoryThumbnail        FileCategory = "thumbnail"        // 缩略图
+	FileCategoryBackup           FileCategory = "backup"           // 备份文件
+	FileCategoryMuseum           FileCategory = "museum"           // 博物馆图片
+	FileCategoryHandwrittenLetter FileCategory = "handwritten_letter" // 手写信件图片
 )
 
 // FileStatus 文件状态

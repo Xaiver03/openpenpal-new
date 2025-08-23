@@ -685,9 +685,12 @@ export default function BindBarcodePage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="5">5分钟 - 快速匹配</SelectItem>
-                            <SelectItem value="30">30分钟 - 享受期待</SelectItem>
-                            <SelectItem value="60">1小时 - 慢慢漂流</SelectItem>
+                            <SelectItem value="5">5分钟 - 快速漂流</SelectItem>
+                            <SelectItem value="30">30分钟 - 标准漂流</SelectItem>
+                            <SelectItem value="60">1小时 - 慢速漂流</SelectItem>
+                            <SelectItem value="180">3小时 - 深度漂流</SelectItem>
+                            <SelectItem value="1440">1天 - 长途漂流</SelectItem>
+                            <SelectItem value="10080">1周 - 远航漂流</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

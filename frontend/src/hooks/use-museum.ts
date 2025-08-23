@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { museumService, MuseumEntry, MuseumExhibition, GetMuseumEntriesParams } from '@/lib/services/museum-service'
+import { normalizeResponse } from '@/lib/api/response'
 import { toast } from '@/components/ui/use-toast'
 
 // Query Keys
@@ -26,7 +27,8 @@ export function useMuseumEntries(params?: GetMuseumEntriesParams) {
   return useQuery({
     queryKey: MUSEUM_QUERY_KEYS.entries(params),
     queryFn: async () => {
-      const response = await museumService.getEntries(params)
+      const rawResponse = await museumService.getEntries(params)
+      const response = normalizeResponse(rawResponse)
       if (response.code !== 0) {
         throw new Error(response.message)
       }
@@ -52,7 +54,8 @@ export function useMuseumEntry(id: string) {
   return useQuery({
     queryKey: MUSEUM_QUERY_KEYS.entry(id),
     queryFn: async () => {
-      const response = await museumService.getEntry(id)
+      const rawResponse = await museumService.getEntry(id)
+      const response = normalizeResponse(rawResponse)
       if (response.code !== 0) {
         throw new Error(response.message)
       }
@@ -69,7 +72,8 @@ export function useMuseumExhibitions(isActive?: boolean) {
   return useQuery({
     queryKey: MUSEUM_QUERY_KEYS.exhibitions(isActive),
     queryFn: async () => {
-      const response = await museumService.getExhibitions(isActive)
+      const rawResponse = await museumService.getExhibitions(isActive)
+      const response = normalizeResponse(rawResponse)
       if (response.code !== 0) {
         throw new Error(response.message)
       }
@@ -86,7 +90,8 @@ export function useFeaturedEntries(limit: number = 6) {
   return useQuery({
     queryKey: MUSEUM_QUERY_KEYS.featured(limit),
     queryFn: async () => {
-      const response = await museumService.getFeaturedEntries(limit)
+      const rawResponse = await museumService.getFeaturedEntries(limit)
+      const response = normalizeResponse(rawResponse)
       if (response.code !== 0) {
         throw new Error(response.message)
       }
@@ -104,7 +109,8 @@ export function useSubmitToMuseum() {
 
   return useMutation({
     mutationFn: museumService.submitToMuseum,
-    onSuccess: (response) => {
+    onSuccess: (rawResponse) => {
+      const response = normalizeResponse(rawResponse)
       if (response.code === 0) {
         toast({
           title: "提交成功",
@@ -201,7 +207,8 @@ export function useMuseumStats() {
   return useQuery({
     queryKey: MUSEUM_QUERY_KEYS.stats,
     queryFn: async () => {
-      const response = await museumService.getStats()
+      const rawResponse = await museumService.getStats()
+      const response = normalizeResponse(rawResponse)
       if (response.code !== 0) {
         throw new Error(response.message)
       }
@@ -227,7 +234,8 @@ export function useMuseumSearch() {
     queryKey: ['museum', 'search', query, filters],
     queryFn: async () => {
       if (!query.trim()) return []
-      const response = await museumService.searchEntries(query, filters)
+      const rawResponse = await museumService.searchEntries(query, filters)
+      const response = normalizeResponse(rawResponse)
       if (response.code !== 0) {
         throw new Error(response.message)
       }

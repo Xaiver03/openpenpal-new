@@ -34,7 +34,11 @@ class RBACService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.cache = CacheManager()
-        self.cache_expire = 3600  # 缓存1小时
+        # 安全的缓存过期时间配置
+        self.user_permission_expire = 300   # 用户权限缓存5分钟
+        self.role_permission_expire = 600   # 角色权限缓存10分钟
+        self.menu_cache_expire = 1800       # 菜单缓存30分钟
+        self.cache_expire = self.user_permission_expire  # 向后兼容
     
     # ==================== 菜单管理 ====================
     
@@ -151,8 +155,8 @@ class RBACService:
         # 构建树结构
         menu_tree = self._build_menu_tree(menus)
         
-        # 缓存结果
-        await self.cache.set(cache_key, json.dumps(menu_tree, default=str), expire=self.cache_expire)
+        # 缓存结果 - 使用菜单专用过期时间
+        await self.cache.set(cache_key, json.dumps(menu_tree, default=str), expire=self.menu_cache_expire)
         
         return menu_tree
     
@@ -205,8 +209,8 @@ class RBACService:
         
         menu_tree = self._build_menu_tree(menus)
         
-        # 缓存结果
-        await self.cache.set(cache_key, json.dumps(menu_tree, default=str), expire=self.cache_expire)
+        # 缓存结果 - 使用菜单专用过期时间
+        await self.cache.set(cache_key, json.dumps(menu_tree, default=str), expire=self.menu_cache_expire)
         
         return menu_tree
     
@@ -354,7 +358,7 @@ class RBACService:
             permissions = json.loads(cached)
         else:
             permissions = await self._load_user_permissions(user_id)
-            await self.cache.set(cache_key, json.dumps(permissions), expire=self.cache_expire)
+            await self.cache.set(cache_key, json.dumps(permissions), expire=self.user_permission_expire)
         
         # 检查权限
         for perm in permissions:

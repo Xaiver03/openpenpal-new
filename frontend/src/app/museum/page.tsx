@@ -10,8 +10,7 @@ import { EnvelopeAnimation } from '@/components/ui/envelope-animation'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useMuseumEntries, useMuseumExhibitions, useMuseumStats } from '@/hooks/use-museum'
-import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+import { SafeTimestamp } from '@/components/ui/safe-timestamp'
 import { 
   Archive,
   Heart, 
@@ -125,7 +124,7 @@ export default function MuseumPage() {
               preview: "Demo content",
               author: "Demo Author",
               type: "letter",
-              date: new Date().toISOString(),
+              date: "2024-01-01T00:00:00Z", // Use fixed date to avoid hydration mismatch
               location: "Demo Location",
               likes: 0,
               views: 0,
@@ -162,7 +161,7 @@ export default function MuseumPage() {
                 className="flex transition-transform duration-500"
                 style={{ transform: `translateX(-${currentSlide * 100}%)` }}
               >
-                {exhibitions.map((exhibition, index) => (
+                {exhibitions.map((exhibition: any, index: number) => (
                   <div key={exhibition.id} className="w-full flex-shrink-0">
                     <Card className="border-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
                       <CardContent className="p-8">
@@ -175,22 +174,24 @@ export default function MuseumPage() {
                             />
                           )}
                           <div className="flex-1">
-                            <h3 className="mb-4 text-3xl font-bold">{exhibition.title}</h3>
-                            <p className="mb-4 text-lg opacity-90">{exhibition.description}</p>
-                            <div className="mb-6 flex flex-wrap gap-2">
-                              {exhibition.theme_keywords.map((keyword, i) => (
-                                <span
-                                  key={i}
-                                  className="rounded-full bg-white/20 px-3 py-1 text-sm"
-                                >
-                                  {keyword}
-                                </span>
-                              ))}
-                            </div>
+                            <h3 className="mb-4 text-3xl font-bold">{exhibition.title || '未命名展览'}</h3>
+                            <p className="mb-4 text-lg opacity-90">{exhibition.description || '暂无描述'}</p>
+                            {exhibition.theme_keywords && exhibition.theme_keywords.length > 0 && (
+                              <div className="mb-6 flex flex-wrap gap-2">
+                                {exhibition.theme_keywords.map((keyword: string, i: number) => (
+                                  <span
+                                    key={i}
+                                    className="rounded-full bg-white/20 px-3 py-1 text-sm"
+                                  >
+                                    {keyword}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             <div className="flex items-center justify-between">
                               <div className="text-sm opacity-75">
                                 <p>策展人：{exhibition.curator_name || '博物馆团队'}</p>
-                                <p>展品数量：{exhibition.entry_count} 件</p>
+                                <p>展品数量：{exhibition.entry_count || 0} 件</p>
                               </div>
                               <Link href={`/museum/exhibition/${exhibition.id}`}>
                                 <Button variant="secondary">
@@ -209,7 +210,7 @@ export default function MuseumPage() {
 
             {/* Carousel Indicators */}
             <div className="mt-4 flex justify-center gap-2">
-              {exhibitions.map((_, index) => (
+              {exhibitions.map((_: any, index: number) => (
                 <button
                   key={index}
                   className={`h-2 w-2 rounded-full transition-all ${
@@ -348,7 +349,7 @@ export default function MuseumPage() {
           ) : entriesData?.entries && entriesData.entries.length > 0 ? (
             <>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {entriesData.entries.map(entry => (
+                {entriesData.entries.map((entry: any) => (
                   <Link key={entry.id} href={`/museum/letter/${entry.id}`}>
                     <Card className="h-full transition-all hover:shadow-lg hover:-translate-y-1">
                       {entry.is_featured && (
@@ -363,10 +364,12 @@ export default function MuseumPage() {
                         <CardDescription className="flex items-center gap-4 text-sm">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {formatDistanceToNow(new Date(entry.createdAt), {
-                              addSuffix: true,
-                              locale: zhCN
-                            })}
+                            <SafeTimestamp 
+                              date={entry.createdAt} 
+                              format="relative" 
+                              fallback="刚刚"
+                              className="text-gray-600"
+                            />
                           </span>
                           {entry.theme && (
                             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
@@ -375,6 +378,18 @@ export default function MuseumPage() {
                           )}
                         </CardDescription>
                       </CardHeader>
+                      {entry.imageUrl && (
+                        <div className="px-6">
+                          <img 
+                            src={entry.imageUrl} 
+                            alt={entry.title}
+                            className="w-full h-48 object-cover rounded-lg mb-4"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        </div>
+                      )}
                       <CardContent>
                         <p className="mb-4 line-clamp-3 text-gray-600">
                           {entry.content}

@@ -110,8 +110,8 @@ export class ErrorBoundary extends Component<Props, State> {
           message: error.message,
           stack: error.stack,
           componentStack: errorInfo.componentStack,
-          url: window.location.href,
-          userAgent: navigator.userAgent,
+          url: typeof window !== 'undefined' ? window.location.href : '',
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
           timestamp: new Date().toISOString(),
           errorId: this.state.errorId
         }
@@ -222,7 +222,11 @@ Time: ${new Date().toISOString()}
             </Button>
             
             <Button 
-              onClick={() => window.location.href = '/'}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/'
+                }
+              }}
               variant="outline"
               className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
             >

@@ -130,6 +130,11 @@ export default function OPCodeManagementPage() {
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve')
   const [reviewReason, setReviewReason] = useState('')
 
+  // 加载数据
+  useEffect(() => {
+    loadData()
+  }, [])
+
   // 权限检查
   if (!user || !hasPermission(PERMISSIONS.SYSTEM_CONFIG)) {
     return (
@@ -149,11 +154,6 @@ export default function OPCodeManagementPage() {
       </div>
     )
   }
-
-  // 加载数据
-  useEffect(() => {
-    loadData()
-  }, [])
 
   const loadData = async () => {
     setLoading(true)

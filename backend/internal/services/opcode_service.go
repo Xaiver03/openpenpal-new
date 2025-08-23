@@ -688,6 +688,15 @@ func (s *OPCodeService) GetOPCodesByPrefix(prefix string) ([]models.SignalCode, 
 	return codes, nil
 }
 
+// GetAllOPCodes 获取所有OP Code列表
+func (s *OPCodeService) GetAllOPCodes() ([]*models.SignalCode, error) {
+	var codes []*models.SignalCode
+	if err := s.db.Order("code").Find(&codes).Error; err != nil {
+		return nil, err
+	}
+	return codes, nil
+}
+
 // GetOPCodeByID 根据ID获取OP Code
 func (s *OPCodeService) GetOPCodeByID(id string) (*models.SignalCode, error) {
 	var code models.SignalCode
@@ -695,14 +704,14 @@ func (s *OPCodeService) GetOPCodeByID(id string) (*models.SignalCode, error) {
 	return &code, err
 }
 
-// UpdateOPCode 更新OP Code（接受SignalCode对象）
-func (s *OPCodeService) UpdateOPCode(opCode *models.SignalCode) error {
+// UpdateOPCodeByModel 更新OP Code（接受SignalCode对象）
+func (s *OPCodeService) UpdateOPCodeByModel(opCode *models.SignalCode) error {
 	opCode.UpdatedAt = time.Now()
 	return s.db.Save(opCode).Error
 }
 
-// DeleteOPCode 删除OP Code（根据ID）
-func (s *OPCodeService) DeleteOPCode(id string) error {
+// DeleteOPCodeByID 删除OP Code（根据ID）
+func (s *OPCodeService) DeleteOPCodeByID(id string) error {
 	// 软删除，设置为不活跃
 	return s.db.Model(&models.SignalCode{}).
 		Where("id = ?", id).

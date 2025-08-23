@@ -197,6 +197,16 @@ func (r *GinResponse) Unauthorized(c *gin.Context, message string) {
 	Unauthorized(c, message)
 }
 
+// Forbidden 403错误方法
+func (r *GinResponse) Forbidden(c *gin.Context, message string) {
+	c.JSON(http.StatusForbidden, StandardResponse{
+		Success:   false,
+		Message:   message,
+		Code:      http.StatusForbidden,
+		Timestamp: time.Now().Unix(),
+	})
+}
+
 // NotFound 404错误方法
 func (r *GinResponse) NotFound(c *gin.Context, message string) {
 	NotFound(c, message)

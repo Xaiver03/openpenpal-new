@@ -1,0 +1,414 @@
+version: '3.8'
+
+# OpenPenPal 微服务治理堆栈
+# 包含 Consul + Kong + Vault + Circuit Breaker
+
+networks:
+  governance:
+    driver: bridge
+  openpenpal:
+    external: true
+
+volumes:
+  consul_data:
+  vault_data:
+  kong_data:
+
+services:
+  # Consul - 服务发现和配置管理
+  consul:
+    image: consul:1.15.3
+    container_name: openpenpal-consul
+    restart: unless-stopped
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+      - CONSUL_CLIENT_INTERFACE=eth0
+    command: >
+      consul agent 
+      -server 
+      -bootstrap-expect=1 
+      -ui 
+      -bind=0.0.0.0 
+      -client=0.0.0.0 
+      -retry-join="consul" 
+      -datacenter=openpenpal-dc1
+    volumes:
+      - consul_data:/consul/data
+      - ./governance/consul:/consul/config:ro
+    networks:
+      - governance
+      - openpenpal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/v1/status/leader"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Vault - 秘钥管理
+  vault:
+    image: vault:1.13.3
+    container_name: openpenpal-vault
+    restart: unless-stopped
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=openpenpal-root-token
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+      - VAULT_ADDR=http://0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault_data:/vault/data
+      - ./governance/vault:/vault/config:ro
+    networks:
+      - governance
+      - openpenpal
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Kong Gateway - API 网关和负载均衡
+  kong-database:
+    image: postgres:13-alpine
+    container_name: openpenpal-kong-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_DB: kong
+      POSTGRES_PASSWORD: kong_password
+    volumes:
+      - kong_data:/var/lib/postgresql/data
+    networks:
+      - governance
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  kong-migration:
+    image: kong:3.3-alpine
+    container_name: openpenpal-kong-migration
+    command: kong migrations bootstrap
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong_password
+      KONG_PG_DATABASE: kong
+    networks:
+      - governance
+    depends_on:
+      - kong-database
+    restart: "no"
+
+  kong:
+    image: kong:3.3-alpine
+    container_name: openpenpal-kong
+    restart: unless-stopped
+    ports:
+      - "8000:8000"  # HTTP proxy port
+      - "8443:8443"  # HTTPS proxy port
+      - "8001:8001"  # Admin API
+      - "8444:8444"  # Admin API HTTPS
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong_password
+      KONG_PG_DATABASE: kong
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001, 0.0.0.0:8444 ssl
+      KONG_PLUGINS: bundled,prometheus,rate-limiting,cors,jwt,oauth2,acl,bot-detection,correlation-id,request-id,response-transformer,request-transformer
+    networks:
+      - governance
+      - openpenpal
+    depends_on:
+      - kong-migration
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Konga - Kong 管理界面
+  konga:
+    image: pantsel/konga:0.14.9
+    container_name: openpenpal-konga
+    restart: unless-stopped
+    ports:
+      - "1337:1337"
+    environment:
+      TOKEN_SECRET: openpenpal-konga-secret
+      NODE_ENV: production
+    networks:
+      - governance
+    depends_on:
+      - kong
+
+  # Registrator - 自动服务注册
+  registrator:
+    image: gliderlabs/registrator:latest
+    container_name: openpenpal-registrator
+    restart: unless-stopped
+    command: -internal consul://consul:8500
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock
+    networks:
+      - governance
+    depends_on:
+      - consul
+
+  # Consul Template - 动态配置生成
+  consul-template:
+    image: hashicorp/consul-template:0.31.0-alpine
+    container_name: openpenpal-consul-template
+    restart: unless-stopped
+    command: >
+      consul-template 
+      -consul-addr=consul:8500 
+      -template="/templates/nginx.conf.tpl:/etc/nginx/nginx.conf:service nginx reload"
+      -log-level=info
+    volumes:
+      - ./governance/consul-template:/templates:ro
+      - ./governance/nginx:/etc/nginx:rw
+    networks:
+      - governance
+    depends_on:
+      - consul
+
+  # Nginx - 负载均衡器 (由 Consul Template 动态配置)
+  nginx-lb:
+    image: nginx:1.24-alpine
+    container_name: openpenpal-nginx-lb
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./governance/nginx:/etc/nginx:ro
+      - ./governance/ssl:/etc/ssl:ro
+    networks:
+      - governance
+      - openpenpal
+    depends_on:
+      - consul-template
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Hystrix Dashboard - 熔断器监控
+  hystrix-dashboard:
+    image: mlabouardy/hystrix-dashboard:latest
+    container_name: openpenpal-hystrix
+    restart: unless-stopped
+    ports:
+      - "9002:9002"
+    networks:
+      - governance
+      - openpenpal
+
+  # Zipkin - 分布式追踪 (补充 Jaeger)
+  zipkin:
+    image: openzipkin/zipkin:2.24
+    container_name: openpenpal-zipkin
+    restart: unless-stopped
+    ports:
+      - "9411:9411"
+    environment:
+      - STORAGE_TYPE=mem
+    networks:
+      - governance
+      - openpenpal
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9411/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Config Server - 集中配置管理
+  config-server:
+    image: springcloudconfig/configserver:3.1.3
+    container_name: openpenpal-config-server
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=git
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_URI=https://github.com/openpenpal/config-repo
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_CLONE_ON_START=true
+      - SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL=main
+    networks:
+      - governance
+      - openpenpal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Eureka Server - 服务注册中心 (可选，作为 Consul 的备选)
+  eureka:
+    image: springcloud/eureka:latest
+    container_name: openpenpal-eureka
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+      - EUREKA_SERVER_ENABLE_SELF_PRESERVATION=false
+    networks:
+      - governance
+      - openpenpal
+    profiles:
+      - eureka
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis - 分布式缓存和会话管理
+  redis-cluster-1:
+    image: redis:7-alpine
+    container_name: openpenpal-redis-1
+    restart: unless-stopped
+    ports:
+      - "7001:7001"
+      - "17001:17001"
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./governance/redis/redis-1.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - governance
+      - openpenpal
+
+  redis-cluster-2:
+    image: redis:7-alpine
+    container_name: openpenpal-redis-2
+    restart: unless-stopped
+    ports:
+      - "7002:7002"
+      - "17002:17002"
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./governance/redis/redis-2.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - governance
+      - openpenpal
+
+  redis-cluster-3:
+    image: redis:7-alpine
+    container_name: openpenpal-redis-3
+    restart: unless-stopped
+    ports:
+      - "7003:7003"
+      - "17003:17003"
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./governance/redis/redis-3.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - governance
+      - openpenpal
+
+  # Etcd - 分布式键值存储 (可选)
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: openpenpal-etcd
+    restart: unless-stopped
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    environment:
+      - ETCD_NAME=openpenpal-etcd
+      - ETCD_DATA_DIR=/etcd-data
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://localhost:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://localhost:2380
+      - ETCD_INITIAL_CLUSTER=openpenpal-etcd=http://localhost:2380
+      - ETCD_INITIAL_CLUSTER_TOKEN=openpenpal-etcd-cluster
+      - ETCD_INITIAL_CLUSTER_STATE=new
+    volumes:
+      - ./governance/etcd:/etcd-data
+    networks:
+      - governance
+    profiles:
+      - etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Apache SkyWalking - APM 和分布式追踪
+  skywalking-oap:
+    image: apache/skywalking-oap-server:9.5.0
+    container_name: openpenpal-skywalking-oap
+    restart: unless-stopped
+    ports:
+      - "11800:11800"
+      - "12800:12800"
+    environment:
+      - SW_STORAGE=elasticsearch
+      - SW_STORAGE_ES_CLUSTER_NODES=elasticsearch:9200
+    networks:
+      - governance
+      - openpenpal
+    profiles:
+      - skywalking
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12800/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  skywalking-ui:
+    image: apache/skywalking-ui:9.5.0
+    container_name: openpenpal-skywalking-ui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SW_OAP_ADDRESS=http://skywalking-oap:12800
+    networks:
+      - governance
+    depends_on:
+      - skywalking-oap
+    profiles:
+      - skywalking
+
+  # ElasticSearch - 用于 SkyWalking 存储
+  elasticsearch:
+    image: elasticsearch:7.17.10
+    container_name: openpenpal-elasticsearch
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - ./governance/elasticsearch:/usr/share/elasticsearch/data
+    networks:
+      - governance
+    profiles:
+      - skywalking
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

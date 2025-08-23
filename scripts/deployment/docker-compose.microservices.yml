@@ -1,0 +1,370 @@
+version: '3.8'
+
+services:
+  # ============ 基础设施服务 ============
+  
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: openpenpal-postgres
+    environment:
+      POSTGRES_DB: openpenpal
+      POSTGRES_USER: openpenpal
+      POSTGRES_PASSWORD: openpenpal_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openpenpal -d openpenpal"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis 缓存和队列
+  redis:
+    image: redis:7-alpine
+    container_name: openpenpal-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - openpenpal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============ 核心微服务 ============
+  
+  # API Gateway - 统一入口网关
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: openpenpal-gateway
+    environment:
+      - PORT=8000
+      - LOG_LEVEL=info
+      - ENVIRONMENT=production
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      # 后端服务地址
+      - MAIN_SERVICE_URL=http://main-backend:8080
+      - WRITE_SERVICE_URL=http://write-service:8001
+      - COURIER_SERVICE_URL=http://courier-service:8002
+      - ADMIN_SERVICE_URL=http://admin-service:8003
+      - OCR_SERVICE_URL=http://ocr-service:8004
+    ports:
+      - "8000:8000"
+    networks:
+      - openpenpal-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 主后端服务 (用户认证、基础功能)
+  main-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: openpenpal-main-backend
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - ENVIRONMENT=production
+      - DATABASE_TYPE=postgres
+      - DATABASE_URL=postgres://openpenpal:openpenpal_password@postgres:5432/openpenpal?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - FRONTEND_URL=http://frontend:3000
+      - BASE_URL=http://gateway:8000
+    volumes:
+      - backend_uploads:/app/uploads
+    networks:
+      - openpenpal-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 信件写作服务
+  write-service:
+    build:
+      context: ./services/write-service
+      dockerfile: Dockerfile
+    container_name: openpenpal-write-service
+    environment:
+      - PORT=8001
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgres://openpenpal:openpenpal_password@postgres:5432/openpenpal?sslmode=disable
+      - REDIS_URL=redis://redis:6379/1
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - OCR_SERVICE_URL=http://ocr-service:8004
+      - COURIER_SERVICE_URL=http://courier-service:8002
+    volumes:
+      - write_service_uploads:/app/uploads
+    networks:
+      - openpenpal-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 信使服务
+  courier-service:
+    build:
+      context: ./services/courier-service
+      dockerfile: Dockerfile
+    container_name: openpenpal-courier-service
+    environment:
+      - PORT=8002
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgres://openpenpal:openpenpal_password@postgres:5432/openpenpal?sslmode=disable
+      - REDIS_URL=redis://redis:6379/2
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - WEBSOCKET_URL=ws://gateway:8000/ws
+      - WRITE_SERVICE_URL=http://write-service:8001
+    networks:
+      - openpenpal-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 管理后台服务
+  admin-service:
+    build:
+      context: ./services/admin-service/backend
+      dockerfile: Dockerfile
+    container_name: openpenpal-admin-service
+    environment:
+      - SERVER_PORT=8003
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=openpenpal
+      - DB_USERNAME=openpenpal
+      - DB_PASSWORD=openpenpal_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - WRITE_SERVICE_URL=http://write-service:8001
+      - COURIER_SERVICE_URL=http://courier-service:8002
+    networks:
+      - openpenpal-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8003/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # OCR识别服务
+  ocr-service:
+    build:
+      context: ./services/ocr-service
+      dockerfile: Dockerfile
+    container_name: openpenpal-ocr-service
+    environment:
+      - FLASK_ENV=production
+      - PORT=8004
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - DEFAULT_OCR_ENGINE=paddle
+      - ENABLE_GPU=false
+      - MAX_WORKERS=4
+    volumes:
+      - ocr_uploads:/app/uploads
+      - ocr_models:/app/models
+    networks:
+      - openpenpal-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8004/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============ 前端服务 ============
+  
+  # 主前端应用
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: openpenpal-frontend
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+      - NEXT_PUBLIC_APP_NAME=OpenPenPal
+    ports:
+      - "3000:3000"
+    networks:
+      - openpenpal-network
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 管理后台前端
+  admin-frontend:
+    build:
+      context: ./services/admin-service/frontend
+      dockerfile: Dockerfile
+    container_name: openpenpal-admin-frontend
+    environment:
+      - NODE_ENV=production
+      - VITE_API_BASE_URL=http://localhost:8000/api/admin
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./services/admin-service/frontend/dist:/usr/share/nginx/html
+    networks:
+      - openpenpal-network
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============ 反向代理和静态文件服务 ============
+  
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: openpenpal-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - backend_uploads:/var/www/uploads:ro
+      - write_service_uploads:/var/www/letters:ro
+      - ocr_uploads:/var/www/ocr:ro
+      - ssl_certificates:/etc/nginx/ssl:ro
+    networks:
+      - openpenpal-network
+    depends_on:
+      - frontend
+      - admin-frontend
+      - gateway
+    restart: unless-stopped
+
+  # ============ 监控和日志服务 ============
+  
+  # Prometheus 监控
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: openpenpal-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - openpenpal-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Grafana 可视化
+  grafana:
+    image: grafana/grafana:latest
+    container_name: openpenpal-grafana
+    ports:
+      - "3002:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - openpenpal-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  write_service_uploads:
+    driver: local
+  ocr_uploads:
+    driver: local
+  ocr_models:
+    driver: local
+  ssl_certificates:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  openpenpal-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

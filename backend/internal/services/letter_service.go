@@ -493,7 +493,8 @@ func (s *LetterService) GetUserStats(userID string) (*models.LetterStats, error)
 // GetPublicLetters 获取广场公开信件
 func (s *LetterService) GetPublicLetters(params *models.LetterListParams) ([]models.Letter, int64, error) {
 	query := s.db.Model(&models.Letter{}).
-		Where("status IN ?", []models.LetterStatus{models.StatusGenerated, models.StatusDelivered, models.StatusRead}).
+		Where("visibility = ?", models.VisibilityPublic).
+		Where("status IN ?", []models.LetterStatus{models.StatusApproved, models.StatusGenerated, models.StatusDelivered, models.StatusRead}).
 		Where("title IS NOT NULL AND title != ''")
 
 	// 添加分类过滤

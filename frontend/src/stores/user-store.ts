@@ -40,6 +40,8 @@ export interface User {
   is_active?: boolean
   permissions: Permission[]
   courierInfo?: CourierInfo
+  managed_op_code_prefix?: string // For courier OP code management
+  zone_code?: string // For backward compatibility
   token?: string // Temporary bridge for legacy code - use TokenManager.get() instead
 }
 
@@ -56,6 +58,7 @@ export interface CourierInfo {
   school_code: string
   username: string
   school_name: string
+  managed_op_code_prefix?: string
 }
 
 export interface LoadingState {

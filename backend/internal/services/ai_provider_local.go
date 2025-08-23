@@ -324,12 +324,6 @@ func (p *LocalProvider) calculateTokens(messages []ChatMessage) int {
 
 // Additional providers can be added here...
 
-// NewSiliconFlowProvider 创建SiliconFlow提供商实例
-func NewSiliconFlowProvider(config *models.AIConfig) *LocalProvider {
-	// SiliconFlow可以使用类似OpenAI的实现，这里简化为本地提供商
-	return NewLocalProvider(config)
-}
-
 // NewGeminiProvider 创建Gemini提供商实例  
 func NewGeminiProvider(config *models.AIConfig) *LocalProvider {
 	// Gemini可以实现Google API，这里简化为本地提供商

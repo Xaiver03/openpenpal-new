@@ -290,6 +290,32 @@ func (h *FollowHandler) RefreshSuggestions(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Success", response)
 }
 
+// GetUserStats 获取用户统计信息
+// @Summary 获取用户统计信息
+// @Description 获取指定用户的关注和粉丝统计
+// @Tags Follow
+// @Accept json
+// @Produce json
+// @Param user_id path string true "用户ID"
+// @Success 200 {object} utils.Response{data=object}
+// @Router /api/v1/follow/users/{user_id}/stats [get]
+func (h *FollowHandler) GetUserStats(c *gin.Context) {
+	targetUserID := c.Param("user_id")
+	if targetUserID == "" {
+		utils.ErrorResponse(c, http.StatusBadRequest, "User ID is required", nil)
+		return
+	}
+
+	// 获取用户统计信息
+	stats, err := h.followService.GetUserStats(targetUserID)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get user stats", err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "Success", stats)
+}
+
 // Helper functions for parsing request parameters
 
 func (h *FollowHandler) parseFollowListRequest(c *gin.Context) *models.FollowListRequest {
@@ -411,8 +437,17 @@ func (h *FollowHandler) FollowMultipleUsers(c *gin.Context) {
 // @Produce json
 // @Param user_id path string true "用户ID"
 // @Success 200 {object} utils.Response{data=models.UserStats}
+// GetUserStatsV2 获取用户关注统计（带参数版本）
+// @Summary 获取用户关注统计（带参数版本）
+// @Description 获取指定用户的关注者和粉丝数量统计
+// @Tags Follow
+// @Security BearerAuth
+// @Param user_id path string true "用户ID"
+// @Success 200 {object} models.APIResponse{data=map[string]interface{}}
+// @Failure 400 {object} models.APIResponse
+// @Failure 500 {object} models.APIResponse
 // @Router /api/v1/follow/users/{user_id}/stats [get]
-func (h *FollowHandler) GetUserStats(c *gin.Context) {
+func (h *FollowHandler) GetUserStatsV2(c *gin.Context) {
 	targetUserID := c.Param("user_id")
 	if targetUserID == "" {
 		utils.ErrorResponse(c, http.StatusBadRequest, "User ID is required", nil)

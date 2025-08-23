@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>404 Error Test</title>
+</head>
+<body>
+    <h1>Testing 404 Errors</h1>
+    <script>
+        // 测试1：检查是否有任何全局变量或配置导致问题
+        console.log('Testing relative paths...');
+        
+        // 这将导致404错误 - 相对路径
+        // fetch('public').catch(e => console.error('Expected error for relative path "public":', e));
+        // fetch('popular').catch(e => console.error('Expected error for relative path "popular":', e));
+        
+        // 检查window对象
+        console.log('Checking window for "public" and "popular" properties:', {
+            hasPublic: 'public' in window,
+            hasPopular: 'popular' in window
+        });
+        
+        // 检查是否有任何脚本动态创建这些请求
+        const observer = new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+                if (entry.name.includes('public') || entry.name.includes('popular')) {
+                    console.log('Found resource request:', entry.name, entry);
+                }
+            }
+        });
+        observer.observe({ entryTypes: ['resource'] });
+    </script>
+</body>
+</html>

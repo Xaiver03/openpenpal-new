@@ -5,9 +5,9 @@ import { Home, ArrowLeft, Mail, Search } from 'lucide-react'
 
 export default function NotFound() {
   const quickLinks = [
-    { href: '/write', label: '写信', icon: Mail },
-    { href: '/mailbox', label: '我的信箱', icon: Mail },
-    { href: '/deliver', label: '投递信件', icon: Mail },
+    { href: '/letters/write', label: '写信', icon: Mail },
+    { href: '/letters', label: '我的信件', icon: Mail },
+    { href: '/letters/send', label: '投递信件', icon: Mail },
     { href: '/about', label: '关于我们', icon: Search },
   ]
 
@@ -65,7 +65,7 @@ export default function NotFound() {
                 </Link>
               </Button>
               <Button asChild variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50">
-                <Link href="/write">
+                <Link href="/letters/write">
                   <Mail className="mr-2 h-4 w-4" />
                   开始写信
                 </Link>

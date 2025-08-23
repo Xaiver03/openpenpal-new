@@ -21,6 +21,7 @@ func SetupDatabaseDirect(config *Config) (*gorm.DB, error) {
 	// 设置GORM配置，优化日志输出
 	gormConfig := &gorm.Config{
 		Logger: logger.NewCustomGormLogger(),
+		NamingStrategy: CustomNamingStrategy{},
 	}
 
 	var db *gorm.DB
@@ -95,6 +96,79 @@ func SetupDatabaseDirect(config *Config) (*gorm.DB, error) {
 	return db, nil
 }
 
+// SetupDatabaseWithoutMigration 初始化数据库连接但跳过迁移
+func SetupDatabaseWithoutMigration(config *Config) (*gorm.DB, error) {
+	// 设置GORM配置，优化日志输出
+	gormConfig := &gorm.Config{
+		Logger: logger.NewCustomGormLogger(),
+		NamingStrategy: CustomNamingStrategy{},
+	}
+
+	var db *gorm.DB
+	var err error
+
+	// 只支持PostgreSQL数据库连接
+	if config.DatabaseType == "postgres" || config.DatabaseType == "postgresql" {
+		// 构建基础DSN
+		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Shanghai",
+			config.DBHost, config.DBUser, config.DBPassword, config.DatabaseName, config.DBPort, config.DBSSLMode)
+		
+		// 添加SSL证书参数
+		if config.DBSSLMode != "disable" && config.DBSSLMode != "allow" {
+			if config.DBSSLRootCert != "" {
+				dsn += fmt.Sprintf(" sslrootcert=%s", config.DBSSLRootCert)
+			}
+			if config.DBSSLCert != "" {
+				dsn += fmt.Sprintf(" sslcert=%s", config.DBSSLCert)
+			}
+			if config.DBSSLKey != "" {
+				dsn += fmt.Sprintf(" sslkey=%s", config.DBSSLKey)
+			}
+		}
+		db, err = gorm.Open(postgres.Open(dsn), gormConfig)
+	} else {
+		return nil, fmt.Errorf("only PostgreSQL is supported, got: %s", config.DatabaseType)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	// 配置连接池
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database instance: %w", err)
+	}
+
+	// 根据环境获取优化的连接池配置
+	var poolConfig *PoolConfig
+	switch config.Environment {
+	case "production":
+		poolConfig = GetPoolPreset(PoolPresetProduction)
+	case "staging":
+		poolConfig = GetPoolPreset(PoolPresetStaging)
+	case "test":
+		poolConfig = GetPoolPreset(PoolPresetTesting)
+	default:
+		poolConfig = GetPoolPreset(PoolPresetDevelopment)
+	}
+	
+	// 应用连接池配置
+	sqlDB.SetMaxOpenConns(poolConfig.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(poolConfig.MaxIdleConns)
+	sqlDB.SetConnMaxLifetime(poolConfig.ConnMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(poolConfig.ConnMaxIdleTime)
+	
+	log.Printf("Database connection pool configured: MaxOpen=%d, MaxIdle=%d, MaxLifetime=%s",
+		poolConfig.MaxOpenConns, poolConfig.MaxIdleConns, poolConfig.ConnMaxLifetime)
+
+	// 跳过数据库迁移
+	log.Println("⚠️  SKIP_DB_MIGRATION is set - skipping all database migrations")
+	log.Println("✅ Database connected successfully (without migration)")
+
+	return db, nil
+}
+
 // performSafeMigration 执行安全迁移，处理约束冲突
 func performSafeMigration(db *gorm.DB) error {
 	log.Println("Starting safe migration strategy...")
@@ -122,6 +196,7 @@ func getAllModels() []interface{} {
 		// User表由SafeAutoMigrate特殊处理
 		&models.User{},
 		&models.UserProfile{},
+		&models.PrivacySettings{},
 		&models.Letter{},
 		&models.LetterCode{},
 		&models.StatusLog{},
@@ -158,9 +233,15 @@ func getAllModels() []interface{} {
 		&models.MuseumExhibitionEntry{},
 		&models.MuseumEntry{},
 		&models.MuseumExhibition{},
+		&models.MuseumTag{},
+		&models.MuseumInteraction{},
+		&models.MuseumReaction{},
+		&models.MuseumSubmission{},
 		&models.EnvelopeDesign{},
 		&models.Envelope{},
 		&models.EnvelopeVote{},
+		&models.DriftBottle{},
+		&models.FutureLetter{},
 		&models.EnvelopeOrder{},
 		&models.Product{},
 		&models.Cart{},
@@ -238,6 +319,7 @@ func intelligentMigrate(db *gorm.DB) error {
 	allModels := []interface{}{
 		// &models.User{}, // 跳过User表，避免约束冲突
 		&models.UserProfile{},
+		&models.PrivacySettings{},
 		&models.Letter{},
 		&models.LetterCode{},
 		&models.StatusLog{},
@@ -372,17 +454,38 @@ func getPoolConfigForEnv(env string) *PoolConfig {
 	}
 }
 
+
 // autoMigrate 自动迁移数据库表结构
 func autoMigrate(db *gorm.DB) error {
 	log.Println("Starting main auto migration...")
 	
-	// 使用SafeAutoMigrate处理所有模型迁移
-	allModels := getAllModels()
-	if err := SafeAutoMigrate(db, allModels...); err != nil {
-		return fmt.Errorf("safe auto migrate failed: %w", err)
+	// 先修复约束冲突
+	if err := FixConstraintConflicts(db); err != nil {
+		log.Printf("Warning: Failed to fix constraint conflicts: %v", err)
+		// 继续执行，不阻塞
 	}
 	
-	log.Println("Main auto migration completed successfully using SafeAutoMigrate")
+	// 创建缺失的索引
+	if err := CreateMissingIndexes(db); err != nil {
+		log.Printf("Warning: Failed to create missing indexes: %v", err)
+		// 继续执行，不阻塞
+	}
+	
+	// 修复迁移类型不匹配问题
+	if err := FixMigrationIssues(db); err != nil {
+		log.Printf("Warning: Migration fix completed with some issues: %v", err)
+		// 继续执行，不阻塞
+	}
+	
+	// 获取需要迁移的模型（排除会导致类型冲突的模型）
+	modelsToMigrate := GetModelsForMigration()
+	
+	// 使用带约束修复的安全迁移
+	if err := SafeMigrateWithConstraintFix(db, modelsToMigrate...); err != nil {
+		return fmt.Errorf("safe migration with constraint fix failed: %w", err)
+	}
+	
+	log.Println("Main auto migration completed successfully")
 	return nil
 }
 

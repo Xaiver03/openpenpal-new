@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Heart,
   Eye,
@@ -17,15 +15,15 @@ import {
   Calendar,
   User,
   Clock,
-  ThumbsUp,
   Flag,
-  ArrowLeft,
-  Send
+  ArrowLeft
 } from 'lucide-react'
 import { museumService, type MuseumEntry } from '@/lib/services/museum-service'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
 import { useAuth } from '@/contexts/auth-context-new'
 import { toast } from '@/components/ui/use-toast'
+import { SafeTimestamp } from '@/components/ui/safe-timestamp'
+import { CommentSystemSOTA } from '@/components/comments/comment-system-sota'
 
 interface ExtendedMuseumEntry extends MuseumEntry {
   views: number
@@ -41,29 +39,16 @@ interface ExtendedMuseumEntry extends MuseumEntry {
   }
 }
 
-interface Comment {
-  id: string
-  user_id: string
-  user_name: string
-  user_avatar?: string
-  content: string
-  created_at: string
-  likes: number
-  is_liked: boolean
-}
 
 export default function MuseumEntryDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
   const [entry, setEntry] = useState<ExtendedMuseumEntry | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [liked, setLiked] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
-  const [commentText, setCommentText] = useState('')
-  const [submittingComment, setSubmittingComment] = useState(false)
 
   useEffect(() => {
     if (params?.id) {
@@ -90,7 +75,7 @@ export default function MuseumEntryDetailPage() {
         views: response.data.viewCount || Math.floor(Math.random() * 5000) + 1000,
         likes: response.data.likeCount || Math.floor(Math.random() * 500) + 100,
         shares: Math.floor(Math.random() * 200) + 50,
-        comments: Math.floor(Math.random() * 100) + 20,
+        comments: 0, // Will be updated by CommentStats component
         theme: response.data.theme || '青春回忆',
         tags: response.data.tags || ['感动', '青春', '回忆'],
         user_reactions: {
@@ -104,8 +89,6 @@ export default function MuseumEntryDetailPage() {
       setLiked(enhancedEntry.user_reactions?.liked || false)
       setBookmarked(enhancedEntry.user_reactions?.bookmarked || false)
 
-      // 模拟评论数据
-      generateMockComments()
     } catch (err) {
       console.error('获取条目失败:', err)
       setError('获取信件详情失败，请稍后重试')
@@ -114,29 +97,6 @@ export default function MuseumEntryDetailPage() {
     }
   }
 
-  const generateMockComments = () => {
-    const mockComments: Comment[] = [
-      {
-        id: '1',
-        user_id: 'user1',
-        user_name: '温暖的陌生人',
-        content: '这封信真的触动了我的心，谢谢分享这么美好的文字。',
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        likes: 23,
-        is_liked: false
-      },
-      {
-        id: '2',
-        user_id: 'user2',
-        user_name: '文字爱好者',
-        content: '写得真好！每一个字都充满了真诚和温度。',
-        created_at: new Date(Date.now() - 172800000).toISOString(),
-        likes: 15,
-        is_liked: true
-      }
-    ]
-    setComments(mockComments)
-  }
 
   const recordInteraction = async (type: 'view' | 'like' | 'share' | 'bookmark') => {
     if (!params?.id || !user) return
@@ -217,56 +177,6 @@ export default function MuseumEntryDetailPage() {
     }
   }
 
-  const handleSubmitComment = async () => {
-    if (!user) {
-      toast({
-        title: '请先登录',
-        description: '登录后才能评论',
-        variant: 'destructive'
-      })
-      return
-    }
-
-    if (!commentText.trim()) {
-      toast({
-        title: '请输入评论内容',
-        variant: 'destructive'
-      })
-      return
-    }
-
-    setSubmittingComment(true)
-    
-    try {
-      // 模拟添加评论
-      const newComment: Comment = {
-        id: Date.now().toString(),
-        user_id: user.id,
-        user_name: user.nickname || user.username,
-        content: commentText,
-        created_at: new Date().toISOString(),
-        likes: 0,
-        is_liked: false
-      }
-      
-      setComments([newComment, ...comments])
-      setCommentText('')
-      setEntry(prev => prev ? { ...prev, comments: prev.comments + 1 } : prev)
-      
-      toast({
-        title: '评论成功',
-        description: '您的评论已发布'
-      })
-    } catch (err) {
-      toast({
-        title: '评论失败',
-        description: '请稍后重试',
-        variant: 'destructive'
-      })
-    } finally {
-      setSubmittingComment(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -369,10 +279,7 @@ export default function MuseumEntryDetailPage() {
                 <Heart className="w-4 h-4" />
                 {entry.likes.toLocaleString()} 喜欢
               </span>
-              <span className="flex items-center gap-1">
-                <MessageSquare className="w-4 h-4" />
-                {entry.comments} 评论
-              </span>
+              {/* Comment count will be displayed by CommentStats component */}
               <span className="flex items-center gap-1">
                 <Share2 className="w-4 h-4" />
                 {entry.shares} 分享
@@ -419,78 +326,19 @@ export default function MuseumEntryDetailPage() {
       </Card>
 
       {/* Comments Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>评论 ({entry.comments})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Comment Input */}
-          {user ? (
-            <div className="mb-6">
-              <Textarea
-                placeholder="写下您的感想..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                className="mb-2"
-                rows={3}
-              />
-              <Button
-                onClick={handleSubmitComment}
-                disabled={submittingComment || !commentText.trim()}
-                size="sm"
-              >
-                <Send className="w-4 h-4 mr-2" />
-                发表评论
-              </Button>
-            </div>
-          ) : (
-            <Alert className="mb-6">
-              <AlertDescription>
-                <Button variant="link" className="p-0" onClick={() => router.push('/auth/login')}>
-                  登录
-                </Button>
-                后即可发表评论
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Comments List */}
-          <div className="space-y-4">
-            {comments.map(comment => (
-              <div key={comment.id} className="flex gap-3">
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={comment.user_avatar} />
-                  <AvatarFallback>{comment.user_name[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm">{comment.user_name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatRelativeTime(comment.created_at)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700 mb-2">{comment.content}</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                  >
-                    <ThumbsUp className={`w-3 h-3 mr-1 ${comment.is_liked ? 'fill-current' : ''}`} />
-                    {comment.likes > 0 && comment.likes}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {comments.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-20" />
-              <p>还没有评论，来做第一个评论的人吧！</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <CommentSystemSOTA
+        targetId={entry.id}
+        targetType="museum"
+        title="评论"
+        placeholder="写下您的感想..."
+        enableReplies={true}
+        maxDepth={3}
+        showStats={true}
+        onCommentCreated={() => {
+          // Optionally refresh entry stats
+          setEntry(prev => prev ? { ...prev, comments: prev.comments + 1 } : prev)
+        }}
+      />
     </div>
   )
 }

@@ -10,6 +10,7 @@ import { LetterService } from '@/lib/services/letter-service'
 import type { Letter } from '@/lib/services/letter-service'
 import { AuthenticatedSections } from '@/components/home/authenticated-sections'
 import { JoinUsSection } from '@/components/home/join-us-section'
+import { MobileQuickActions } from '@/components/mobile/mobile-quick-actions'
 import { 
   Mail, 
   Send, 
@@ -40,7 +41,7 @@ export default function HomePage() {
       icon: PenTool,
       title: '写一封信给过去或未来',
       description: '用墨水记录此刻的心情，寄给未来的自己或陌生的朋友',
-      href: '/write',
+      href: '/letters/write',
       buttonText: '立即写信',
       color: 'amber'
     },
@@ -48,7 +49,7 @@ export default function HomePage() {
       icon: Mail,
       title: '打开别人的来信',
       description: '每一封信都是一个故事，每一个故事都值得被倾听',
-      href: '/mailbox',
+      href: '/letters',
       buttonText: '去查收',
       color: 'orange'
     },
@@ -177,7 +178,7 @@ export default function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button asChild size="lg" className="bg-amber-600 hover:bg-amber-700 text-white font-serif text-lg px-8 py-6">
-                  <Link href="/write">
+                  <Link href="/letters/write">
                     <PenTool className="mr-2 h-6 w-6" />
                     写信去
                   </Link>
@@ -216,6 +217,13 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Mobile Quick Actions - Only visible on mobile */}
+        <section className="py-8 bg-white md:hidden">
+          <div className="container px-4">
+            <MobileQuickActions variant="compact" />
           </div>
         </section>
 

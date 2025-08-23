@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { usePermission } from '@/hooks/use-permission'
+import { CourierService, type CourierTask, type TaskQuery } from '@/lib/api/courier-service'
 import { 
   Package, 
   Truck, 
@@ -25,34 +27,68 @@ import {
   Route
 } from 'lucide-react'
 
-interface CourierTask {
-  id: string
-  letterCode: string
-  title: string
-  senderName: string
-  senderPhone?: string
-  recipientHint: string
-  targetLocation: string
-  currentLocation?: string
-  priority: 'normal' | 'urgent'
-  status: 'pending' | 'collected' | 'in_transit' | 'delivered' | 'failed'
-  estimatedTime: number // 预计投递时间（分钟）
-  distance: number // 距离（公里）
-  createdAt: string
-  deadline?: string
-  instructions?: string
-  reward: number // 积分奖励
-}
-
 export default function CourierTasksPage() {
   const { user, isCourier } = usePermission()
   const [tasks, setTasks] = useState<CourierTask[]>([])
   const [filteredTasks, setFilteredTasks] = useState<CourierTask[]>([])
+  const [total, setTotal] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | CourierTask['status']>('all')
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'normal' | 'urgent'>('all')
   const [sortBy, setSortBy] = useState<'deadline' | 'distance' | 'reward' | 'created'>('deadline')
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // 获取任务数据
+  const fetchTasks = useCallback(async (query: TaskQuery = {}) => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const taskQuery: TaskQuery = {
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        priority: priorityFilter === 'all' ? undefined : priorityFilter,
+        sortBy,
+        search: searchTerm || undefined,
+        limit: 50, // 获取更多数据用于本地筛选
+        ...query
+      }
+      
+      const response = await CourierService.getTasks(taskQuery)
+      setTasks(response.tasks)
+      setTotal(response.total)
+    } catch (err) {
+      console.error('Failed to fetch tasks:', err)
+      setError(err instanceof Error ? err.message : '加载任务失败')
+      setTasks([])
+      setTotal(0)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [statusFilter, priorityFilter, sortBy, searchTerm])
+
+  // 初始加载 - must be before conditional returns
+  useEffect(() => {
+    if (isCourier()) {
+      fetchTasks()
+    }
+  }, [isCourier, fetchTasks])
+
+  // 筛选参数变化时重新获取数据 - must be before conditional returns
+  useEffect(() => {
+    if (isCourier()) {
+      const timeoutId = setTimeout(() => {
+        fetchTasks()
+      }, 500) // 防抖
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [isCourier, fetchTasks])
+
+  // 本地过滤 - must be before conditional returns
+  useEffect(() => {
+    setFilteredTasks(tasks)
+  }, [tasks])
 
   // 权限检查
   if (!isCourier()) {
@@ -74,125 +110,6 @@ export default function CourierTasksPage() {
     )
   }
 
-  // 模拟获取任务数据
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setIsLoading(true)
-      
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const mockTasks: CourierTask[] = [
-        {
-          id: '1',
-          letterCode: 'OP1K2L3M4N5O',
-          title: '给朋友的问候信',
-          senderName: '小明',
-          senderPhone: '138****5678',
-          recipientHint: '北大宿舍楼，李同学',
-          targetLocation: '北京大学宿舍楼32栋',
-          priority: 'normal',
-          status: 'pending',
-          estimatedTime: 25,
-          distance: 1.2,
-          createdAt: '2024-01-20T09:00:00Z',
-          deadline: '2024-01-21T18:00:00Z',
-          instructions: '请投递到宿舍管理员处',
-          reward: 10
-        },
-        {
-          id: '2',
-          letterCode: 'OP2K3L4M5N6P',
-          title: '紧急通知信件',
-          senderName: '王老师',
-          senderPhone: '139****1234',
-          recipientHint: '计算机学院，张教授',
-          targetLocation: '计算机学院办公楼203室',
-          currentLocation: '计算机学院大门',
-          priority: 'urgent',
-          status: 'in_transit',
-          estimatedTime: 15,
-          distance: 0.8,
-          createdAt: '2024-01-20T11:30:00Z',
-          deadline: '2024-01-20T17:00:00Z',
-          instructions: '请直接交给本人，如不在请联系',
-          reward: 20
-        },
-        {
-          id: '3',
-          letterCode: 'OP3K4L5M6N7P',
-          title: '生日祝福卡片',
-          senderName: '小红',
-          recipientHint: '图书馆，管理员阿姨',
-          targetLocation: '图书馆服务台',
-          priority: 'normal',
-          status: 'collected',
-          estimatedTime: 20,
-          distance: 0.5,
-          createdAt: '2024-01-19T16:00:00Z',
-          deadline: '2024-01-22T12:00:00Z',
-          instructions: '工作时间投递',
-          reward: 8
-        },
-        {
-          id: '4',
-          letterCode: 'OP4K5L6M7N8P',
-          title: '感谢信',
-          senderName: '小华',
-          recipientHint: '食堂，李师傅',
-          targetLocation: '第一食堂二层',
-          priority: 'normal',
-          status: 'delivered',
-          estimatedTime: 10,
-          distance: 0.3,
-          createdAt: '2024-01-19T14:00:00Z',
-          deadline: '2024-01-21T20:00:00Z',
-          instructions: '饭点时间投递',
-          reward: 6
-        }
-      ]
-      
-      setTasks(mockTasks)
-      setIsLoading(false)
-    }
-
-    fetchTasks()
-  }, [])
-
-  // 过滤和排序任务
-  useEffect(() => {
-    let filtered = tasks.filter(task => {
-      const matchesSearch = task.letterCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           task.senderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           task.recipientHint.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchesStatus = statusFilter === 'all' || task.status === statusFilter
-      const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter
-      
-      return matchesSearch && matchesStatus && matchesPriority
-    })
-
-    // 排序
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'deadline':
-          if (!a.deadline) return 1
-          if (!b.deadline) return -1
-          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
-        case 'distance':
-          return a.distance - b.distance
-        case 'reward':
-          return b.reward - a.reward
-        case 'created':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        default:
-          return 0
-      }
-    })
-
-    setFilteredTasks(filtered)
-  }, [tasks, searchTerm, statusFilter, priorityFilter, sortBy])
 
   const getStatusInfo = (status: CourierTask['status']) => {
     switch (status) {
@@ -245,10 +162,16 @@ export default function CourierTasksPage() {
   }
 
   const handleAcceptTask = async (taskId: string) => {
-    // 模拟接受任务
-    setTasks(prev => prev.map(task => 
-      task.id === taskId ? { ...task, status: 'collected' as const } : task
-    ))
+    try {
+      setError(null)
+      await CourierService.acceptTask(taskId)
+      
+      // 重新获取任务列表
+      await fetchTasks()
+    } catch (err) {
+      console.error('Failed to accept task:', err)
+      setError(err instanceof Error ? err.message : '接受任务失败')
+    }
   }
 
   const taskStats = {
@@ -270,6 +193,20 @@ export default function CourierTasksPage() {
           管理您的投递任务，获得积分奖励。欢迎您，{user?.nickname}！
         </p>
       </div>
+
+      {/* 错误提示 */}
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            {error}
+            <Button variant="outline" size="sm" onClick={() => fetchTasks()} className="ml-4">
+              <RefreshCw className="h-3 w-3 mr-1" />
+              重试
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* 统计卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
@@ -388,7 +325,7 @@ export default function CourierTasksPage() {
             const StatusIcon = statusInfo.icon
             
             return (
-              <Card key={task.id} className="border-amber-200 hover:border-amber-400 transition-colors">
+              <Card key={task.taskId} className="border-amber-200 hover:border-amber-400 transition-colors">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-4">
@@ -397,7 +334,7 @@ export default function CourierTasksPage() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-amber-900">{task.title}</h3>
+                          <h3 className="font-semibold text-amber-900">{task.letterTitle}</h3>
                           <Badge className={priorityInfo.color}>
                             {priorityInfo.label}
                           </Badge>
@@ -434,7 +371,7 @@ export default function CourierTasksPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="flex items-center gap-2 text-sm text-amber-700">
                       <MapPin className="h-4 w-4" />
-                      <span>{task.targetLocation}</span>
+                      <span>{task.deliveryLocation}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-amber-700">
                       <Route className="h-4 w-4" />
@@ -469,7 +406,7 @@ export default function CourierTasksPage() {
                     <div className="flex gap-2">
                       {task.status === 'pending' && (
                         <Button
-                          onClick={() => handleAcceptTask(task.id)}
+                          onClick={() => handleAcceptTask(task.taskId)}
                           size="sm"
                           className="bg-amber-600 hover:bg-amber-700 text-white"
                         >

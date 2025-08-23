@@ -182,7 +182,7 @@ export default function GuidePage() {
 
           <div className="text-center">
             <Button asChild size="lg" className="bg-amber-600 hover:bg-amber-700 text-white">
-              <Link href="/write">
+              <Link href="/letters/write">
                 开始写信
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>

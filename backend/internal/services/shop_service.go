@@ -138,7 +138,7 @@ func (s *ShopService) GetOrCreateCart(userID string) (*models.Cart, error) {
 }
 
 // AddToCart 添加商品到购物车
-func (s *ShopService) AddToCart(userID string, productID uuid.UUID, quantity int) (*models.CartItem, error) {
+func (s *ShopService) AddToCart(userID string, productID uuid.UUID, quantity int) (*models.ShopCartItem, error) {
 	// 获取商品信息
 	product, err := s.GetProductByID(productID)
 	if err != nil {
@@ -157,12 +157,12 @@ func (s *ShopService) AddToCart(userID string, productID uuid.UUID, quantity int
 	}
 
 	// 检查商品是否已在购物车中
-	var cartItem models.CartItem
+	var cartItem models.ShopCartItem
 	err = s.db.Where("cart_id = ? AND product_id = ?", cart.ID, productID).First(&cartItem).Error
 
 	if err == gorm.ErrRecordNotFound {
 		// 创建新的购物车项目
-		cartItem = models.CartItem{
+		cartItem = models.ShopCartItem{
 			CartID:    cart.ID,
 			ProductID: productID,
 			Quantity:  quantity,
@@ -194,7 +194,7 @@ func (s *ShopService) AddToCart(userID string, productID uuid.UUID, quantity int
 
 // UpdateCartItem 更新购物车项目
 func (s *ShopService) UpdateCartItem(userID string, itemID uuid.UUID, quantity int) error {
-	var cartItem models.CartItem
+	var cartItem models.ShopCartItem
 	err := s.db.Joins("JOIN carts ON carts.id = cart_items.cart_id").
 		Where("cart_items.id = ? AND carts.user_id = ?", itemID, userID).
 		First(&cartItem).Error
@@ -229,7 +229,7 @@ func (s *ShopService) UpdateCartItem(userID string, itemID uuid.UUID, quantity i
 
 // RemoveFromCart 从购物车移除商品
 func (s *ShopService) RemoveFromCart(userID string, itemID uuid.UUID) error {
-	var cartItem models.CartItem
+	var cartItem models.ShopCartItem
 	err := s.db.Joins("JOIN carts ON carts.id = cart_items.cart_id").
 		Where("cart_items.id = ? AND carts.user_id = ?", itemID, userID).
 		First(&cartItem).Error
@@ -258,7 +258,7 @@ func (s *ShopService) ClearCart(userID string) error {
 	}
 
 	// 删除所有购物车项目
-	if err := s.db.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{}).Error; err != nil {
+	if err := s.db.Where("cart_id = ?", cart.ID).Delete(&models.ShopCartItem{}).Error; err != nil {
 		return err
 	}
 
@@ -279,7 +279,7 @@ func (s *ShopService) UpdateCartTotals(cartID uuid.UUID) error {
 	var totalItems int
 	var totalAmount float64
 
-	rows, err := s.db.Model(&models.CartItem{}).
+	rows, err := s.db.Model(&models.ShopCartItem{}).
 		Where("cart_id = ?", cartID).
 		Select("SUM(quantity) as total_items, SUM(subtotal) as total_amount").
 		Rows()
@@ -404,7 +404,7 @@ func (s *ShopService) CreateOrder(userID string, orderData map[string]interface{
 	}
 
 	// 清空购物车
-	if err := tx.Where("cart_id = ?", cart.ID).Delete(&models.CartItem{}).Error; err != nil {
+	if err := tx.Where("cart_id = ?", cart.ID).Delete(&models.ShopCartItem{}).Error; err != nil {
 		tx.Rollback()
 		return nil, err
 	}

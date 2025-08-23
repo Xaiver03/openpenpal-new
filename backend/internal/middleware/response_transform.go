@@ -27,7 +27,16 @@ func ResponseTransformMiddleware() gin.HandlerFunc {
 			// Parse the response
 			var data interface{}
 			if err := json.Unmarshal(w.body.Bytes(), &data); err == nil {
-				// Transform to camelCase
+				// Check if this response needs transformation
+				// Skip transformation for paths that might have pointer field issues
+				path := c.Request.URL.Path
+				if shouldSkipTransformation(path) {
+					// Write original response without transformation
+					w.ResponseWriter.Write(w.body.Bytes())
+					return
+				}
+
+				// Transform to camelCase only for safe paths
 				transformed := transformToCamelCase(data)
 
 				// Write transformed response
@@ -41,6 +50,24 @@ func ResponseTransformMiddleware() gin.HandlerFunc {
 		// Write original response if not JSON or transformation failed
 		w.ResponseWriter.Write(w.body.Bytes())
 	}
+}
+
+// shouldSkipTransformation determines if a path should skip the transformation
+// to avoid pointer field issues
+func shouldSkipTransformation(path string) bool {
+	// Skip transformation for museum APIs that have pointer fields
+	skipPaths := []string{
+		"/api/v1/museum/entries",
+		"/api/v1/museum/entries/",
+	}
+	
+	for _, skipPath := range skipPaths {
+		if strings.HasPrefix(path, skipPath) {
+			return true
+		}
+	}
+	
+	return false
 }
 
 type responseWriter struct {

@@ -235,7 +235,7 @@ export function DelayTimePicker({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {presetOptions.map((option) => {
               const IconComponent = option.icon
               const isSelected = value?.type === 'preset' && value.presetOption === option.id
@@ -244,7 +244,7 @@ export function DelayTimePicker({
                 <Button
                   key={option.id}
                   variant={isSelected ? "default" : "outline"}
-                  className={`h-auto p-4 transition-all duration-200 ${
+                  className={`h-auto p-3 transition-all duration-200 w-full ${
                     isSelected 
                       ? 'shadow-md ring-2 ring-blue-200' 
                       : `${option.color} ${option.hover}`
@@ -256,11 +256,11 @@ export function DelayTimePicker({
                   }}
                   disabled={isSubmitting}
                 >
-                  <div className="flex flex-col items-center gap-2 text-center">
+                  <div className="flex flex-col items-center gap-2 text-center w-full">
                     <IconComponent className={`h-5 w-5 ${isSubmitting ? 'animate-pulse' : ''}`} />
-                    <div>
+                    <div className="w-full">
                       <div className="font-medium">{option.label}</div>
-                      <div className="text-xs opacity-75 leading-tight max-w-32">
+                      <div className="text-xs opacity-75 leading-tight mt-1">
                         {option.description}
                       </div>
                     </div>
@@ -272,17 +272,19 @@ export function DelayTimePicker({
         </CardContent>
       </Card>
 
-      {/* 高级选项 */}
+      {/* 自定义时间选项 */}
       <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
         <CollapsibleTrigger asChild>
           <Button 
-            variant="ghost" 
-            className="w-full transition-all duration-200 hover:bg-gray-50 hover:shadow-sm"
+            variant="outline" 
+            className="w-full transition-all duration-200 hover:bg-blue-50 hover:shadow-sm border-blue-200 text-blue-700"
           >
             <Plus className={`h-4 w-4 mr-2 transition-transform duration-200 ${
               isAdvancedOpen ? 'rotate-45' : ''
             }`} />
-            {isAdvancedOpen ? '收起高级设置' : '更多时间选项'}
+            <span className="font-medium">
+              {isAdvancedOpen ? '收起自定义时间' : '🎯 自定义送达时间'}
+            </span>
           </Button>
         </CollapsibleTrigger>
         
@@ -523,7 +525,7 @@ export function DelayTimePicker({
             </div>
             
             <div className="mt-3 p-2 bg-white/60 rounded-lg border border-blue-100">
-              <p className="text-sm text-blue-700 leading-relaxed">
+              <p className="text-sm text-blue-700 leading-relaxed break-words">
                 {value?.userDescription || '你的信将在选定的时间准时送达，请耐心等待这份美好的邂逅 ✨'}
               </p>
             </div>

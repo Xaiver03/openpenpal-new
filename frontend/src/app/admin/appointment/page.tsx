@@ -79,27 +79,7 @@ export default function AppointmentPage() {
     reason: ''
   })
 
-  // 权限检查 - 只有管理员以上才能访问任命功能
-  if (!user || !hasRole('school_admin')) {
-    return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Crown className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-amber-900 mb-2">访问权限不足</h2>
-            <p className="text-amber-700 mb-4">
-              只有管理员以上角色才能访问任命系统
-            </p>
-            <Button asChild variant="outline" className="border-amber-300 text-amber-700">
-              <a href="/profile">返回个人中心</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // 从API获取数据
+  // 从API获取数据 - must be before conditional return
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -159,6 +139,26 @@ export default function AppointmentPage() {
 
     fetchData()
   }, [user])
+
+  // 权限检查 - 只有管理员以上才能访问任命功能
+  if (!user || !hasRole('school_admin')) {
+    return (
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Crown className="w-12 h-12 text-amber-600 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-amber-900 mb-2">访问权限不足</h2>
+            <p className="text-amber-700 mb-4">
+              只有管理员以上角色才能访问任命系统
+            </p>
+            <Button asChild variant="outline" className="border-amber-300 text-amber-700">
+              <a href="/settings">返回设置中心</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   const filteredUsers = users.filter(u => {
     const matchesSearch = u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||

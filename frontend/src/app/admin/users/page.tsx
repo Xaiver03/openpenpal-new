@@ -147,25 +147,7 @@ export default function UsersManagePage() {
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
   const [showBulkActions, setShowBulkActions] = useState(false)
 
-  if (!user || !hasPermission(PERMISSIONS.MANAGE_USERS)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">访问权限不足</h2>
-            <p className="text-gray-600 mb-4">
-              您没有访问用户管理功能的权限
-            </p>
-            <Button asChild variant="outline">
-              <a href="/admin">返回管理控制台</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
+  // All React Hooks must be before conditional returns
   useEffect(() => {
     loadUsers()
     loadStats()
@@ -373,6 +355,25 @@ export default function UsersManagePage() {
       alert(error instanceof Error ? error.message : '更新用户信息失败')
     }
   }, [selectedUser, editFormData])
+
+  if (!user || !hasPermission(PERMISSIONS.MANAGE_USERS)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">访问权限不足</h2>
+            <p className="text-gray-600 mb-4">
+              您没有访问用户管理功能的权限
+            </p>
+            <Button asChild variant="outline">
+              <a href="/admin">返回管理控制台</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   // 批量选择功能
   const toggleUserSelection = (userId: string) => {

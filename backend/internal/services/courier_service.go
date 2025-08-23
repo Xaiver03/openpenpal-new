@@ -214,6 +214,140 @@ func (s *CourierService) GetCourierStats() (map[string]interface{}, error) {
 	}, nil
 }
 
+// GetCourierInfoByUser 获取用户的信使详细信息（包含统计数据）
+func (s *CourierService) GetCourierInfoByUser(user *models.User) (map[string]interface{}, error) {
+	// 获取信使信息
+	var courier models.Courier
+	err := s.db.Where("user_id = ? AND (status = ? OR status = ?)", user.ID, "active", "approved").First(&courier).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("用户不是信使或未审核通过")
+		}
+		return nil, fmt.Errorf("获取信使信息失败: %v", err)
+	}
+
+	// 获取信使级别
+	level := s.getUserLevel(user.Role)
+
+	// 计算managedOPCodePrefix
+	managedOPCodePrefix := courier.ManagedOPCodePrefix
+	if managedOPCodePrefix == "" {
+		// 对于L4信使，显示"全部"
+		if level == 4 {
+			managedOPCodePrefix = "全部区域"
+		} else {
+			managedOPCodePrefix = courier.Zone
+		}
+	}
+
+	// 构造返回数据结构
+	result := map[string]interface{}{
+		"courierInfo": map[string]interface{}{
+			"id":                  fmt.Sprintf("%d", courier.ID),
+			"userId":              fmt.Sprintf("%d", user.ID),
+			"level":               level,
+			"zone":                courier.Zone,
+			"zoneCode":            courier.Zone,
+			"managedOPCodePrefix": managedOPCodePrefix,
+			"totalTasks":          courier.TaskCount,
+			"completedTasks":      int(float64(courier.TaskCount) * 0.94), // 假设94%完成率
+			"avgRating":           4.5,                                    // 模拟评分
+			"successRate":         0.94,                                   // 94%成功率
+			"points":              courier.Points,
+			"status":              courier.Status,
+			"createdAt":           courier.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			"updatedAt":           courier.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		},
+		"dailyStats": map[string]interface{}{
+			"todayDeliveries": int(courier.TaskCount / 30), // 假设每月30天平均
+			"pendingTasks":    int(courier.TaskCount / 20), // 假设5%待处理
+			"inProgressTasks": int(courier.TaskCount / 50), // 假设2%进行中
+			"completedToday":  int(courier.TaskCount / 30), // 今日完成数
+			"todayPoints":     int(courier.Points / 30),    // 今日积分
+		},
+	}
+
+	// 如果是L3或L4信使，添加团队统计
+	if level >= 3 {
+		var teamMembers int64
+		var activeMembers int64
+
+		// 查找下级信使数量
+		s.db.Model(&models.Courier{}).Where("parent_id = ?", courier.ID).Count(&teamMembers)
+		s.db.Model(&models.Courier{}).Where("parent_id = ? AND status = ?", courier.ID, "approved").Count(&activeMembers)
+
+		result["teamStats"] = map[string]interface{}{
+			"totalMembers":    int(teamMembers),
+			"activeMembers":   int(activeMembers),
+			"totalDeliveries": courier.TaskCount * int(teamMembers+1), // 包含自己的任务
+			"teamSuccessRate": 0.94,                                   // 团队成功率
+		}
+	}
+
+	return result, nil
+}
+
+// GetCourierHierarchyInfo 获取信使层级信息
+func (s *CourierService) GetCourierHierarchyInfo(user *models.User) (map[string]interface{}, error) {
+	// 获取信使信息
+	var courier models.Courier
+	err := s.db.Where("user_id = ? AND (status = ? OR status = ?)", user.ID, "active", "approved").First(&courier).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("用户不是信使或未审核通过")
+		}
+		return nil, fmt.Errorf("获取信使信息失败: %v", err)
+	}
+
+	level := s.getUserLevel(user.Role)
+
+	// 获取层级配置
+	levels := []map[string]interface{}{
+		{
+			"level":        1,
+			"name":         "一级信使 (楼栋信使)",
+			"description":  "负责单个楼栋的信件投递",
+			"permissions":  []string{"scan_letters", "update_delivery_status"},
+			"requirements": []string{"完成基础培训", "熟悉投递流程"},
+		},
+		{
+			"level":        2,
+			"name":         "二级信使 (片区信使)",
+			"description":  "管理多个楼栋，协调区域投递",
+			"permissions":  []string{"manage_subordinates", "assign_tasks", "area_management"},
+			"requirements": []string{"管理至少3个楼栋", "月度考核优秀"},
+		},
+		{
+			"level":        3,
+			"name":         "三级信使 (学校信使)",
+			"description":  "负责整个学校的信使管理",
+			"permissions":  []string{"school_management", "create_subordinates", "batch_operations"},
+			"requirements": []string{"管理经验丰富", "组织协调能力强"},
+		},
+		{
+			"level":        4,
+			"name":         "四级信使 (城市总代)",
+			"description":  "城市级别的信使总管理",
+			"permissions":  []string{"city_management", "cross_school_operations", "full_authority"},
+			"requirements": []string{"卓越的管理能力", "战略规划经验"},
+		},
+	}
+
+	result := map[string]interface{}{
+		"levels":       levels,
+		"currentLevel": level,
+		"courierInfo": map[string]interface{}{
+			"id":                  fmt.Sprintf("%d", courier.ID),
+			"level":               level,
+			"zone":                courier.Zone,
+			"managedOPCodePrefix": courier.ManagedOPCodePrefix,
+			"canCreateLevels":     s.getCanCreateLevels(level),
+		},
+	}
+
+	return result, nil
+}
+
 // --- 四级信使管理服务 ---
 
 // CreateSubordinateCourier 创建下级信使
@@ -283,25 +417,49 @@ func (s *CourierService) CreateSubordinateCourier(parentUser *models.User, req *
 		return nil, fmt.Errorf("创建用户失败: %v", err)
 	}
 
+	// 生成管理的OP Code前缀
+	managedPrefix := ""
+	switch req.Level {
+	case 4:
+		// 四级信使管理全部，可以设置为空或者特定值
+		managedPrefix = "" // 空值表示管理所有
+	case 3:
+		// 三级信使管理学校级别（前2位）
+		if len(req.School) >= 2 {
+			managedPrefix = req.School[:2]
+		}
+	case 2:
+		// 二级信使管理片区级别（前4位）
+		if len(req.Zone) >= 4 {
+			managedPrefix = req.Zone[:4]
+		}
+	case 1:
+		// 一级信使管理楼栋级别（前6位）
+		if len(req.Building) >= 6 {
+			managedPrefix = req.Building[:6]
+		}
+	}
+
 	// 创建信使记录
 	courier := models.Courier{
-		ID:              generateUUID(),
-		UserID:          newUser.ID,
-		Name:            req.Username,
-		Contact:         req.Email,
-		School:          req.School,
-		Zone:            req.Zone,
-		Level:           req.Level,
-		Status:          "approved", // 直接审核通过
-		HasPrinter:      false,
-		SelfIntro:       fmt.Sprintf("由%s创建的%d级信使", parentUser.Username, req.Level),
-		CanMentor:       "maybe",
-		WeeklyHours:     20,
-		MaxDailyTasks:   10,
-		TransportMethod: "walk",
-		TimeSlots:       `["09:00-12:00", "14:00-17:00"]`,
-		TaskCount:       0,
-		Points:          0,
+		ID:                  generateUUID(),
+		UserID:              newUser.ID,
+		Name:                req.Username,
+		Contact:             req.Email,
+		School:              req.School,
+		Zone:                req.Zone,
+		Level:               req.Level,
+		Status:              "approved", // 直接审核通过
+		HasPrinter:          false,
+		SelfIntro:           fmt.Sprintf("由%s创建的%d级信使", parentUser.Username, req.Level),
+		CanMentor:           "maybe",
+		WeeklyHours:         20,
+		MaxDailyTasks:       10,
+		TransportMethod:     "walk",
+		TimeSlots:           `["09:00-12:00", "14:00-17:00"]`,
+		TaskCount:           0,
+		Points:              0,
+		ManagedOPCodePrefix: managedPrefix,
 	}
 
 	if err := tx.Create(&courier).Error; err != nil {
@@ -398,8 +556,8 @@ func (s *CourierService) GetSubordinateCouriers(userID string) ([]models.Subordi
 	return subordinates, nil
 }
 
-// GetCourierInfoByUser 根据用户获取信使信息
-func (s *CourierService) GetCourierInfoByUser(user *models.User) (*models.CourierInfo, error) {
+// GetCourierInfoByUserStruct 根据用户获取信使信息结构
+func (s *CourierService) GetCourierInfoByUserStruct(user *models.User) (*models.CourierInfo, error) {
 	// 获取信使记录
 	var courier models.Courier
 	if err := s.db.Where("user_id = ?", user.ID).First(&courier).Error; err != nil {
@@ -881,6 +1039,276 @@ func (s *CourierService) GetCourierTasks(userID string, status string, priority 
 	}
 
 	return tasks, total, nil
+}
+
+// GetTaskDetail 获取任务详情
+func (s *CourierService) GetTaskDetail(userID string, taskID string) (*models.CourierTask, error) {
+	// 获取信使信息
+	var courier models.Courier
+	if err := s.db.Where("user_id = ?", userID).First(&courier).Error; err != nil {
+		return nil, errors.New("courier not found")
+	}
+
+	// 获取任务详情
+	var task models.CourierTask
+	if err := s.db.Where("id = ? AND courier_id = ?", taskID, courier.ID).First(&task).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.New("task not found")
+		}
+		return nil, err
+	}
+
+	// 预加载关联数据
+	if err := s.db.Preload("Letter").Preload("Letter.Sender").First(&task, task.ID).Error; err != nil {
+		return nil, err
+	}
+
+	return &task, nil
+}
+
+// UpdateTaskStatus 更新任务状态
+func (s *CourierService) UpdateTaskStatus(userID string, taskID string, status string, location string, note string) error {
+	// 获取信使信息
+	var courier models.Courier
+	if err := s.db.Where("user_id = ?", userID).First(&courier).Error; err != nil {
+		return errors.New("courier not found")
+	}
+
+	// 获取任务
+	var task models.CourierTask
+	if err := s.db.Where("id = ? AND courier_id = ?", taskID, courier.ID).First(&task).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.New("task not found")
+		}
+		return err
+	}
+
+	// 验证状态转换是否合法
+	if !isValidStatusTransition(task.Status, status) {
+		return errors.New("invalid status transition")
+	}
+
+	// 更新任务状态
+	updates := map[string]interface{}{
+		"status":     status,
+		"updated_at": time.Now(),
+	}
+
+	if location != "" {
+		updates["current_location"] = location
+	}
+
+	if note != "" {
+		updates["notes"] = note
+	}
+
+	// 如果是完成状态，更新完成时间
+	if status == "delivered" {
+		updates["delivered_at"] = time.Now()
+	}
+
+	if err := s.db.Model(&task).Updates(updates).Error; err != nil {
+		return err
+	}
+
+	// 更新信件状态（通过LetterCode查找）
+	if status == "delivered" {
+		if err := s.db.Model(&models.Letter{}).Where("letter_codes.code = ?", task.LetterCode).
+			Joins("JOIN letter_codes ON letters.id = letter_codes.letter_id").
+			Update("status", "delivered").Error; err != nil {
+			return err
+		}
+
+		// 更新信使统计
+		s.db.Model(&courier).UpdateColumn("completed_tasks", gorm.Expr("completed_tasks + ?", 1))
+	}
+
+	// 发送实时通知
+	if s.wsService != nil {
+		notification := map[string]interface{}{
+			"type":    "task_status_update",
+			"task_id": taskID,
+			"status":  status,
+			"time":    time.Now(),
+		}
+		s.wsService.BroadcastToUser(userID, notification)
+	}
+
+	return nil
+}
+
+// ProcessScan 处理扫码
+func (s *CourierService) ProcessScan(userID string, code string, action string, location string, latitude float64, longitude float64, note string) (map[string]interface{}, error) {
+	// 获取信使信息
+	var courier models.Courier
+	if err := s.db.Where("user_id = ?", userID).First(&courier).Error; err != nil {
+		return nil, errors.New("courier not found")
+	}
+
+	// 解析扫码内容（可能是信件条码或QR码）
+	var letter models.Letter
+	if err := s.db.Where("letter_code = ? OR qr_code = ?", code, code).First(&letter).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.New("invalid code")
+		}
+		return nil, err
+	}
+
+	// 检查权限（根据OP Code）
+	if !s.canAccessLetter(&courier, &letter) {
+		return nil, errors.New("permission denied")
+	}
+
+	result := map[string]interface{}{
+		"letter_id":   letter.ID,
+		"letter_code": code, // 使用传入的扫码
+		"action":      action,
+		"timestamp":   time.Now(),
+	}
+
+	switch action {
+	case "pickup":
+		// 取件操作
+		task, err := s.createOrUpdateTask(&courier, &letter, code, "collected", location)
+		if err != nil {
+			return nil, err
+		}
+		result["task_id"] = task.ID
+		result["message"] = "取件成功"
+
+	case "deliver":
+		// 投递操作
+		var task models.CourierTask
+		if err := s.db.Where("letter_id = ? AND courier_id = ?", letter.ID, courier.ID).First(&task).Error; err != nil {
+			return nil, errors.New("no active task for this letter")
+		}
+
+		if err := s.UpdateTaskStatus(userID, task.ID, "delivered", location, note); err != nil {
+			return nil, err
+		}
+		result["task_id"] = task.ID
+		result["message"] = "投递成功"
+
+	default:
+		return nil, errors.New("invalid action")
+	}
+
+	// 记录扫码事件
+	scanEvent := &models.ScanEvent{
+		ID:           uuid.New().String(),
+		LetterCodeID: letter.ID, // 使用LetterCodeID而非LetterID
+		ScannedBy:    courier.UserID,
+		ScanType:     models.ScanEventTypePickup, // 根据action设置类型
+		Location:     location,
+		Latitude:     &latitude,
+		Longitude:    &longitude,
+		Note:         note,
+		Timestamp:    time.Now(),
+	}
+	s.db.Create(scanEvent)
+
+	// 发送实时通知
+	if s.wsService != nil {
+		s.wsService.BroadcastToUser(userID, result)
+	}
+
+	return result, nil
+}
+
+// 辅助方法：验证状态转换是否合法
+func isValidStatusTransition(currentStatus, newStatus string) bool {
+	validTransitions := map[string][]string{
+		"pending":    {"accepted", "failed"},
+		"accepted":   {"collected", "failed"},
+		"collected":  {"in_transit", "failed"},
+		"in_transit": {"delivered", "failed"},
+		"delivered":  {}, // 终态
+		"failed":     {}, // 终态
+	}
+
+	allowed, exists := validTransitions[currentStatus]
+	if !exists {
+		return false
+	}
+
+	for _, status := range allowed {
+		if status == newStatus {
+			return true
+		}
+	}
+	return false
+}
+
+// 辅助方法：检查信使是否有权限访问信件
+func (s *CourierService) canAccessLetter(courier *models.Courier, letter *models.Letter) bool {
+	// L4信使可以访问所有信件
+	if courier.Level == 4 {
+		return true
+	}
+
+	// 检查OP Code权限
+	if letter.RecipientOPCode == "" {
+		return true // 如果没有OP Code限制，允许访问
+	}
+
+	// 根据信使管理的OP Code前缀检查权限
+	switch courier.Level {
+	case 3: // L3信使 - 学校级别（前2位）
+		return strings.HasPrefix(letter.RecipientOPCode, courier.ManagedOPCodePrefix[:2])
+	case 2: // L2信使 - 片区级别（前4位）
+		return strings.HasPrefix(letter.RecipientOPCode, courier.ManagedOPCodePrefix[:4])
+	case 1: // L1信使 - 楼栋级别（前4位）
+		return strings.HasPrefix(letter.RecipientOPCode, courier.ManagedOPCodePrefix[:4])
+	default:
+		return false
+	}
+}
+
+// 辅助方法：创建或更新任务
+func (s *CourierService) createOrUpdateTask(courier *models.Courier, letter *models.Letter, letterCode string, status string, location string) (*models.CourierTask, error) {
+	var task models.CourierTask
+
+	// 查找现有任务（通过LetterCode）
+	err := s.db.Where("letter_code = ? AND courier_id = ?", letterCode, courier.ID).First(&task).Error
+
+	if err == gorm.ErrRecordNotFound {
+		// 创建新任务
+		task = models.CourierTask{
+			ID:              uuid.New().String(),
+			CourierID:       courier.ID,
+			LetterCode:      letterCode, // 使用LetterCode而非LetterID
+			Title:           "投递任务",
+			SenderName:      "发件人",
+			RecipientHint:   "收件人提示",
+			Status:          status,
+			Priority:        "normal",
+			TargetLocation:  location,
+			PickupOPCode:    letter.SenderOPCode,
+			DeliveryOPCode:  letter.RecipientOPCode,
+			CurrentLocation: location,
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+
+		if err := s.db.Create(&task).Error; err != nil {
+			return nil, err
+		}
+	} else if err == nil {
+		// 更新现有任务
+		updates := map[string]interface{}{
+			"status":           status,
+			"current_location": location,
+			"updated_at":       time.Now(),
+		}
+
+		if err := s.db.Model(&task).Updates(updates).Error; err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+
+	return &task, nil
 }
 
 // generateMockTasks 生成模拟任务数据

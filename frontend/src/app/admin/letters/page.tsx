@@ -151,32 +151,7 @@ export default function LettersManagePage() {
   const [showLetterDetail, setShowLetterDetail] = useState(false)
   const [currentTab, setCurrentTab] = useState('all')
 
-  // 权限检查
-  if (!user || !hasPermission(PERMISSIONS.VIEW_REPORTS)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Mail className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">访问权限不足</h2>
-            <p className="text-gray-600 mb-4">
-              您没有访问信件管理功能的权限
-            </p>
-            <Button asChild variant="outline">
-              <a href="/admin">返回管理控制台</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // 加载数据
-  useEffect(() => {
-    loadLetters()
-    loadStats()
-  }, [])
-
+  // 加载数据函数
   const loadLetters = async () => {
     setLoading(true)
     try {
@@ -265,6 +240,31 @@ export default function LettersManagePage() {
         this_month_letters: 0
       })
     }
+  }
+
+  useEffect(() => {
+    loadLetters()
+    loadStats()
+  }, [])
+
+  // 权限检查
+  if (!user || !hasPermission(PERMISSIONS.VIEW_REPORTS)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Mail className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">访问权限不足</h2>
+            <p className="text-gray-600 mb-4">
+              您没有访问信件管理功能的权限
+            </p>
+            <Button asChild variant="outline">
+              <a href="/admin">返回管理控制台</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   // 根据当前选项卡过滤信件

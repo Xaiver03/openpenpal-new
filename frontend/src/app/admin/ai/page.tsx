@@ -113,6 +113,11 @@ export default function AdminAIPage() {
     test_type: 'connection' as const
   })
 
+  // 加载数据 - must be before conditional return
+  useEffect(() => {
+    loadData()
+  }, [])
+
   // 权限检查
   if (!user || !hasPermission(PERMISSIONS.SYSTEM_CONFIG)) {
     return (
@@ -132,11 +137,6 @@ export default function AdminAIPage() {
       </div>
     )
   }
-
-  // 加载数据
-  useEffect(() => {
-    loadData()
-  }, [])
 
   const loadData = async () => {
     setLoading(true)

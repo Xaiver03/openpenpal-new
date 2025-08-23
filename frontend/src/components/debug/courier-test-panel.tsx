@@ -32,7 +32,7 @@ export function CourierTestPanel() {
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return
+      if (!isDragging || typeof window === 'undefined') return
       setPosition({
         x: Math.max(0, Math.min(window.innerWidth - 320, e.clientX - dragOffset.current.x)),
         y: Math.max(0, Math.min(window.innerHeight - 400, e.clientY - dragOffset.current.y))
@@ -66,7 +66,9 @@ export function CourierTestPanel() {
     // 刷新用户状态以应用更改
     if (user) {
       await refreshUser()
-      window.location.reload() // 强制刷新页面以确保状态更新
+      if (typeof window !== 'undefined') {
+        window.location.reload() // 强制刷新页面以确保状态更新
+      }
     }
   }
   
@@ -78,7 +80,9 @@ export function CourierTestPanel() {
       enableTestCourierMode(newLevel)
       // 刷新用户状态
       refreshUser().then(() => {
-        window.location.reload()
+        if (typeof window !== 'undefined') {
+          window.location.reload()
+        }
       })
     }
   }

@@ -33,7 +33,7 @@ function enableCourierTestMode(level = 2) {
   localStorage.setItem('test_courier_level', level.toString())
   
   setTimeout(() => {
-    location.reload()
+    window.location.reload()
   }, 3000)
 }
 
@@ -42,7 +42,7 @@ function disableCourierTestMode() {
   console.log('🧪 禁用测试信使模式...')
   localStorage.removeItem('test_courier_mode')
   localStorage.removeItem('test_courier_level')
-  location.reload()
+  window.location.reload()
 }
 
 // 检查当前状态

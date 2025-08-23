@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LucideIcon, Search, Plus } from 'lucide-react'
+import { SafeTimestamp } from '@/components/ui/safe-timestamp'
 
 interface StatCard {
   icon: LucideIcon
@@ -143,9 +144,30 @@ export function CourierCard({
                     <span>评分: {averageRating}/5.0</span>
                   </div>
                 </div>
-                <div className="text-xs text-amber-600">
-                  入职: {new Date(joinDate).toLocaleDateString()} | 
-                  最后活跃: {new Date(lastActive).toLocaleString()}
+                <div className="text-xs text-amber-600 flex items-center gap-1">
+                  <span>入职:</span>
+                  {joinDate ? (
+                    <SafeTimestamp 
+                      date={joinDate} 
+                      format="locale" 
+                      fallback="--"
+                      className="inline"
+                    />
+                  ) : (
+                    <span>--</span>
+                  )}
+                  <span>|</span>
+                  <span>最后活跃:</span>
+                  {lastActive ? (
+                    <SafeTimestamp 
+                      date={lastActive} 
+                      format="locale" 
+                      fallback="--"
+                      className="inline"
+                    />
+                  ) : (
+                    <span>--</span>
+                  )}
                 </div>
               </div>
             </div>

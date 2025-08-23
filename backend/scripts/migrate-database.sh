@@ -195,9 +195,9 @@ execute_all_migrations() {
         # Credit system migration files (in order)
         "20240121_add_credit_limit_tables.sql"
         "20240122_add_credit_shop_tables.sql" 
-        "003_credit_activity_system.sql"
-        "004_credit_expiration_system.sql"
-        "005_credit_transfer_system.sql"
+        "003_credit_activity_system_pg.sql"     # Use PostgreSQL version
+        "004_credit_expiration_system_pg.sql"   # Use PostgreSQL version
+        "005_credit_transfer_system_pg.sql"     # Use PostgreSQL version
         
         # Other system migrations
         "002_add_user_profile_fields.sql"

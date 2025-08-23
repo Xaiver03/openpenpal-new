@@ -34,7 +34,9 @@ import {
   User,
   Tag,
   Star,
-  BookOpen
+  BookOpen,
+  Waves,
+  Clock
 } from 'lucide-react'
 import { CommentCountBadge } from '@/components/comments'
 import { CompactFollowButton, UserSuggestions } from '@/components/follow'
@@ -133,7 +135,7 @@ const PlazaPageComponent = () => {
   const categories = [
     { id: 'all', label: '全部', icon: BookOpen },
     { id: 'future', label: '未来信', icon: Calendar },
-    { id: 'drift', label: '漂流信', icon: MessageCircle },
+    { id: 'drift', label: '漂流瓶', icon: MessageCircle },
     { id: 'warm', label: '温暖信', icon: Heart },
     { id: 'story', label: '故事信', icon: PenTool },
   ]
@@ -193,7 +195,7 @@ const PlazaPageComponent = () => {
       excerpt: "这封信将随风漂流到某个角落，希望能遇到同样思念远方的你...",
       author: "漂流者",
       category: "drift",
-      categoryLabel: "漂流信",
+      categoryLabel: "漂流瓶",
       publishDate: "2024-01-17",
       likes: 98,
       views: 543,
@@ -374,7 +376,7 @@ const PlazaPageComponent = () => {
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
       'future': '未来信',
-      'drift': '漂流信',
+      'drift': '漂流瓶',
       'warm': '温暖信',
       'story': '故事信',
       'classic': '经典信',
@@ -426,13 +428,13 @@ const PlazaPageComponent = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild size="lg" className="bg-amber-600 hover:bg-amber-700 text-white font-serif px-8">
-                  <Link href="/write">
+                  <Link href="/letters/write">
                     <PenTool className="mr-2 h-5 w-5" />
                     发布作品
                   </Link>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="border-amber-300 text-amber-700 hover:bg-amber-50 font-serif px-8">
-                  <Link href="/write">
+                  <Link href="/letters/write">
                     <MessageCircle className="mr-2 h-5 w-5" />
                     参与讨论
                   </Link>
@@ -551,7 +553,13 @@ const PlazaPageComponent = () => {
                   <Card key={rec.id} className="group hover:shadow-lg transition-all duration-300 border-red-200 bg-gradient-to-br from-red-50 to-pink-50">
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                        <span className={`px-2 py-1 text-xs rounded-full flex items-center gap-1 ${
+                          rec.category === 'drift' ? 'bg-blue-100 text-blue-800' :
+                          rec.category === 'future' ? 'bg-purple-100 text-purple-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {rec.category === 'drift' && <Waves className="w-3 h-3" />}
+                          {rec.category === 'future' && <Clock className="w-3 h-3" />}
                           {rec.categoryLabel}
                         </span>
                         <div className="flex items-center gap-1 text-red-600">
@@ -633,7 +641,7 @@ const PlazaPageComponent = () => {
               <div className="text-center py-12">
                 <div className="text-amber-600 mb-4">暂无信件</div>
                 <Button asChild className="bg-amber-600 hover:bg-amber-700">
-                  <Link href="/write">
+                  <Link href="/letters/write">
                     <PenTool className="mr-2 h-4 w-4" />
                     写第一封信
                   </Link>
@@ -650,7 +658,13 @@ const PlazaPageComponent = () => {
                     }`}>
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">
+                          <span className={`px-2 py-1 text-xs rounded-full flex items-center gap-1 ${
+                            post.category === 'drift' ? 'bg-blue-100 text-blue-800' :
+                            post.category === 'future' ? 'bg-purple-100 text-purple-800' :
+                            'bg-amber-100 text-amber-800'
+                          }`}>
+                            {post.category === 'drift' && <Waves className="w-3 h-3" />}
+                            {post.category === 'future' && <Clock className="w-3 h-3" />}
                             {post.categoryLabel}
                           </span>
                           {post.featured && (

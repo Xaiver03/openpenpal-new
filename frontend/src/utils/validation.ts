@@ -516,3 +516,16 @@ export const validators = {
   letterContent: ValidationRules.letterContent,
   schoolCode: ValidationRules.schoolCode
 }
+
+// Password validation helpers
+export const validatePassword = (password: string): { isValid: boolean; error?: string } => {
+  const strongPasswordError = ValidationRules.strongPassword(password)
+  if (strongPasswordError) {
+    return { isValid: false, error: strongPasswordError }
+  }
+  return { isValid: true }
+}
+
+export const getPasswordStrength = (password: string): { score: number; feedback: string[] } => {
+  return SecurityValidator.checkPasswordStrength(password)
+}

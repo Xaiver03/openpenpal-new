@@ -4,16 +4,34 @@ import (
 	"context"
 	"fmt"
 	"gorm.io/gorm"
+	"openpenpal-backend/internal/config"
 )
 
 // TransactionHelper provides helper methods for database transactions
 type TransactionHelper struct {
-	db *gorm.DB
+	db      *gorm.DB
+	manager *config.TransactionManager
 }
 
 // NewTransactionHelper creates a new transaction helper
 func NewTransactionHelper(db *gorm.DB) *TransactionHelper {
-	return &TransactionHelper{db: db}
+	transactionConfig := config.DefaultTransactionConfig()
+	manager := config.NewTransactionManager(db, transactionConfig)
+	
+	return &TransactionHelper{
+		db:      db,
+		manager: manager,
+	}
+}
+
+// NewTransactionHelperWithConfig creates a new transaction helper with custom configuration
+func NewTransactionHelperWithConfig(db *gorm.DB, transactionConfig config.TransactionConfig) *TransactionHelper {
+	manager := config.NewTransactionManager(db, transactionConfig)
+	
+	return &TransactionHelper{
+		db:      db,
+		manager: manager,
+	}
 }
 
 // WithTransaction executes a function within a database transaction
@@ -100,4 +118,59 @@ func (h *TransactionHelper) GetDB(ctx context.Context) *gorm.DB {
 		return tx
 	}
 	return h.db.WithContext(ctx)
+}
+
+// WithCriticalTransaction executes a function with SERIALIZABLE isolation for critical operations
+func (h *TransactionHelper) WithCriticalTransaction(ctx context.Context, description string, fn func(*gorm.DB) error) error {
+	return h.manager.CriticalTransaction(ctx, description, fn)
+}
+
+// WithHighConcurrencyTransaction executes a function with optimized settings for high concurrency
+func (h *TransactionHelper) WithHighConcurrencyTransaction(ctx context.Context, description string, fn func(*gorm.DB) error) error {
+	return h.manager.HighConcurrencyTransaction(ctx, description, fn)
+}
+
+// WithReadOnlyTransaction executes a function with settings optimized for read operations
+func (h *TransactionHelper) WithReadOnlyTransaction(ctx context.Context, description string, fn func(*gorm.DB) error) error {
+	return h.manager.ReadOnlyTransaction(ctx, description, fn)
+}
+
+// WithCreditTransferTransaction executes a credit transfer with appropriate isolation
+func (h *TransactionHelper) WithCreditTransferTransaction(ctx context.Context, description string, fn func(*gorm.DB) error) error {
+	return h.manager.CreditTransferTransaction(ctx, description, fn)
+}
+
+// WithOrderCreationTransaction executes an order creation with inventory checks
+func (h *TransactionHelper) WithOrderCreationTransaction(ctx context.Context, description string, fn func(*gorm.DB) error) error {
+	return h.manager.OrderCreationTransaction(ctx, description, fn)
+}
+
+// WithUserDataTransaction executes user data updates with appropriate isolation
+func (h *TransactionHelper) WithUserDataTransaction(ctx context.Context, description string, fn func(*gorm.DB) error) error {
+	return h.manager.UserDataTransaction(ctx, description, fn)
+}
+
+// WithAnalyticsTransaction executes analytics queries with read consistency
+func (h *TransactionHelper) WithAnalyticsTransaction(ctx context.Context, description string, fn func(*gorm.DB) error) error {
+	return h.manager.AnalyticsTransaction(ctx, description, fn)
+}
+
+// WithBulkDataTransaction executes bulk operations with optimized settings
+func (h *TransactionHelper) WithBulkDataTransaction(ctx context.Context, description string, fn func(*gorm.DB) error) error {
+	return h.manager.BulkDataTransaction(ctx, description, fn)
+}
+
+// GetTransactionStats returns transaction statistics
+func (h *TransactionHelper) GetTransactionStats(ctx context.Context) (map[string]interface{}, error) {
+	return h.manager.GetTransactionStats(ctx)
+}
+
+// OptimizeForHighConcurrency optimizes transaction settings for high concurrency scenarios
+func (h *TransactionHelper) OptimizeForHighConcurrency() {
+	h.manager.OptimizeForHighConcurrency()
+}
+
+// OptimizeForConsistency optimizes transaction settings for maximum consistency
+func (h *TransactionHelper) OptimizeForConsistency() {
+	h.manager.OptimizeForConsistency()
 }

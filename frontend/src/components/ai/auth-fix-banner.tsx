@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RefreshCw, LogIn, AlertTriangle } from 'lucide-react'
@@ -14,6 +15,7 @@ interface AuthFixBannerProps {
 }
 
 export function AuthFixBanner({ onFixed }: AuthFixBannerProps) {
+  const router = useRouter()
   const [isFixing, setIsFixing] = useState(false)
   const { refreshUser, logout } = useAuth()
 
@@ -43,7 +45,7 @@ export function AuthFixBanner({ onFixed }: AuthFixBannerProps) {
   const handleForceRelogin = async () => {
     TokenManager.clear()
     await logout()
-    window.location.href = '/login'
+    router.push('/login')
   }
 
   return (

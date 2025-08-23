@@ -83,8 +83,8 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       component: this.props.name || 'EnhancedErrorBoundary',
       level: this.props.level || 'component',
       timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      url: typeof window !== 'undefined' ? window.location.href : '',
       userId: this.getCurrentUserId(),
       stackTrace: errorInfo.componentStack || undefined
     }
@@ -137,7 +137,9 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       })
     } else {
       // Force page reload as last resort
-      window.location.reload()
+      if (typeof window !== 'undefined') {
+        window.location.reload()
+      }
     }
   }
 
@@ -161,7 +163,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
         stack: error?.stack,
         componentStack: errorInfo?.componentStack || undefined,
         feedback: feedbackText,
-        url: window.location.href,
+        url: typeof window !== 'undefined' ? window.location.href : '',
         timestamp: new Date().toISOString(),
         userId: this.getCurrentUserId()
       })

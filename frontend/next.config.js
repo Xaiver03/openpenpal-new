@@ -26,10 +26,19 @@ const nextConfig = {
   // 禁用Google字体优化以避免超时
   optimizeFonts: false,
   
-  // 实验性功能 - 禁用Service Worker
+  // 实验性功能和性能优化
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
   
   // 编译优化
@@ -57,6 +66,10 @@ const nextConfig = {
   
   // Webpack优化
   webpack: (config, { dev, isServer }) => {
+    // 增加 chunk 加载超时时间
+    if (!isServer) {
+      config.output.chunkLoadTimeout = 120000; // 120 秒超时
+    }
     // Bundle 分析器
     if (!isServer && !dev && process.env.ANALYZE === 'true' && BundleAnalyzerPlugin) {
       config.plugins.push(
@@ -73,30 +86,67 @@ const nextConfig = {
     // 解决canvas问题
     config.resolve.alias.canvas = false;
     
+    // Fix webpack chunk loading issues
+    if (!isServer) {
+      config.output.publicPath = '/_next/';
+      config.output.chunkLoadingGlobal = 'webpackChunkOpenPenPal';
+      config.output.hotUpdateGlobal = 'webpackHotUpdateOpenPenPal';
+      
+      // 添加重试逻辑
+      config.output.chunkLoadTimeout = 120000;
+      config.output.webassemblyModuleFilename = 'static/wasm/[modulehash].wasm';
+      config.output.enabledChunkLoadingTypes = ['jsonp', 'import-scripts'];
+    }
+    
     // 生产环境优化
     if (!dev && !isServer) {
-      // 代码分割优化
+      // 代码分割优化 - 减少碎片化
       config.optimization.splitChunks = {
         chunks: 'all',
+        maxInitialRequests: 8, // 降低初始请求数
+        maxAsyncRequests: 10,  // 降低异步请求数
+        minSize: 20000,        // 最小块大小
+        maxSize: 500000,       // 增大最大块大小
         cacheGroups: {
+          // Framework chunk - 包含React和Next.js核心
+          framework: {
+            test: /[\\/]node_modules[\\/](react|react-dom|next)[\\/]/,
+            name: 'framework',
+            chunks: 'all',
+            priority: 30,
+            enforce: true,
+          },
+          // UI库和图标 - 合并为单个chunk
+          ui: {
+            test: /[\\/]node_modules[\\/](lucide-react|@radix-ui|@headlessui)[\\/]|[\\/]src[\\/]components[\\/]ui[\\/]/,
+            name: 'ui-bundle',
+            chunks: 'all',
+            priority: 20,
+            enforce: true,
+          },
+          // 所有node_modules - 合并为vendor chunk
           vendor: {
             test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
+            name: 'vendor',
             chunks: 'all',
+            priority: 10,
+            enforce: true,
           },
-          ui: {
-            test: /[\\/]src[\\/]components[\\/]ui[\\/]/,
-            name: 'ui-components',
+          // 应用代码 - 合并为app chunk
+          app: {
+            test: /[\\/]src[\\/]/,
+            name: 'app',
             chunks: 'all',
-          },
-          common: {
-            name: 'common',
-            minChunks: 2,
-            chunks: 'all',
+            priority: 5,
+            minChunks: 1,
             enforce: true,
           },
         },
       };
+
+      // 资源优化
+      config.optimization.usedExports = true;
+      config.optimization.sideEffects = false;
     }
     
     return config;
@@ -112,26 +162,9 @@ const nextConfig = {
     ];
   },
   
-  // Headers优化
+  // Headers优化 - Security headers are now handled by middleware
   async headers() {
     return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-        ],
-      },
       {
         source: '/static/(.*)',
         headers: [

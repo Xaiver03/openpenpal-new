@@ -95,7 +95,7 @@ func (s *SecureSeedManager) SecureSeedData() error {
 	// 从环境变量获取测试用户密码
 	testPassword := os.Getenv("TEST_USER_PASSWORD")
 	if testPassword == "" {
-		testPassword = "secret" // 默认测试密码
+		testPassword = "secret123" // 默认测试密码，满足8位字符要求
 		log.Printf("⚠️  Using default test password: %s", testPassword)
 	}
 

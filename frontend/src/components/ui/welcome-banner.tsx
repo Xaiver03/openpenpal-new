@@ -30,6 +30,8 @@ export function WelcomeBanner({
 
   useEffect(() => {
     // 检查是否显示欢迎横幅
+    if (typeof window === 'undefined') return
+    
     const urlParams = new URLSearchParams(window.location.search)
     const showWelcome = urlParams.get('welcome') === 'true'
     

@@ -2,7 +2,7 @@
 
 import { usePermission } from '@/hooks/use-permission'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Mail, BarChart, Settings, Shield, Brain, Truck, Award, MapPin } from 'lucide-react'
+import { Users, Mail, BarChart, Settings, Shield, Brain, Truck, Award, MapPin, QrCode, Activity } from 'lucide-react'
 import Link from 'next/link'
 import { WelcomeBanner } from '@/components/ui/welcome-banner'
 import { useEffect, useState } from 'react'
@@ -85,6 +85,13 @@ export default function AdminDashboard() {
       color: 'bg-teal-600'
     },
     {
+      title: '条码管理',
+      description: '管理和监控所有条码',
+      icon: QrCode,
+      href: '/admin/barcodes',
+      color: 'bg-cyan-600'
+    },
+    {
       title: '内容审核',
       description: '管理内容审核和敏感词库',
       icon: Shield,
@@ -118,6 +125,13 @@ export default function AdminDashboard() {
       icon: Award,
       href: '/admin/credits',
       color: 'bg-purple-600'
+    },
+    {
+      title: '系统监控',
+      description: '实时监控系统健康状态',
+      icon: Activity,
+      href: '/admin/monitoring',
+      color: 'bg-pink-600'
     }
   ]
 

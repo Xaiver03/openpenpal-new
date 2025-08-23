@@ -109,18 +109,50 @@ export default function MuseumContributePage() {
     imageFile: File | null
   }) => {
     try {
-      // TODO: Implement direct museum content creation API
-      // Currently the backend only supports submitting existing letters
-      toast({
-        title: '功能开发中',
-        description: '直接创建博物馆内容的功能正在开发中，请先写信后再贡献到博物馆',
-        variant: 'destructive'
+      // 准备标签数组
+      const tagsArray = data.tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0)
+
+      // 如果有手写图片，先上传图片
+      let imageUrl = null
+      if (data.isHandwritten && data.imageFile) {
+        const { imageUploadService } = await import('@/lib/services/image-upload-service')
+        const uploadResult = await imageUploadService.uploadSingleImage(data.imageFile, {
+          category: 'museum',
+          isPublic: true,
+          relatedType: 'museum_item'
+        })
+        imageUrl = uploadResult.url
+      }
+
+      // 创建博物馆内容
+      const response = await museumService.createMuseumItem({
+        title: data.title,
+        content: data.content,
+        author_name: user?.nickname || '匿名用户',
+        description: data.isHandwritten ? '手写信件' : '信件笔记',
+        image_url: imageUrl || undefined,
+        source_type: 'direct',
+        tags: tagsArray,
+        metadata: {
+          is_handwritten: data.isHandwritten
+        }
       })
+
+      toast({
+        title: '贡献成功',
+        description: `您的作品「${data.title}」已成功提交到博物馆！`,
+      })
+
+      // 表单重置将在子组件中处理
+      return response.data
     } catch (error: any) {
       console.error('Contribute new note error:', error)
       toast({
         title: '贡献失败',
-        description: error?.message || '请稍后重试',
+        description: error?.response?.data?.message || error?.message || '请稍后重试',
         variant: 'destructive'
       })
     }
@@ -283,7 +315,7 @@ export default function MuseumContributePage() {
                   你还没有可以贡献的信件。开始写信或等待收到信件后再来分享吧！
                 </p>
                 <Button asChild className="bg-amber-600 hover:bg-amber-700 text-white">
-                  <Link href="/write">
+                  <Link href="/letters/write">
                     <Send className="w-4 h-4 mr-2" />
                     开始写信
                   </Link>
@@ -302,7 +334,15 @@ export default function MuseumContributePage() {
 }
 
 // 新增信件笔记创建表单组件
-function CreateNewNoteForm({ onSubmit }: { onSubmit: (data: any) => void }) {
+function CreateNewNoteForm({ onSubmit }: { 
+  onSubmit: (data: {
+    title: string
+    content: string 
+    tags: string
+    isHandwritten: boolean
+    imageFile: File | null
+  }) => Promise<any>
+}) {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -311,6 +351,7 @@ function CreateNewNoteForm({ onSubmit }: { onSubmit: (data: any) => void }) {
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -322,13 +363,20 @@ function CreateNewNoteForm({ onSubmit }: { onSubmit: (data: any) => void }) {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ ...formData, imageFile })
-    // 重置表单
-    setFormData({ title: '', content: '', tags: '', isHandwritten: false })
-    setImageFile(null)
-    setPreview(null)
+    if (submitting) return
+    
+    setSubmitting(true)
+    try {
+      await onSubmit({ ...formData, imageFile })
+      // 成功后重置表单
+      setFormData({ title: '', content: '', tags: '', isHandwritten: false })
+      setImageFile(null)
+      setPreview(null)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -428,10 +476,10 @@ function CreateNewNoteForm({ onSubmit }: { onSubmit: (data: any) => void }) {
             <Button
               type="submit"
               className="bg-amber-600 hover:bg-amber-700 text-white"
-              disabled={!formData.title || !formData.content}
+              disabled={!formData.title || !formData.content || submitting}
             >
               <Sparkles className="w-4 h-4 mr-2" />
-              贡献到博物馆
+              {submitting ? '提交中...' : '贡献到博物馆'}
             </Button>
             <Button
               type="button"

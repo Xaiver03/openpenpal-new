@@ -12,11 +12,41 @@ spring:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:openpenpal}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      # Connection Pool Sizing - Optimized for microservices
+      maximum-pool-size: 30              # Increased from 10 for better concurrency
+      minimum-idle: 3                    # Reduced from 5 to avoid idle waste
+      
+      # Timeout Configuration - Prevents thread starvation
+      connection-timeout: 20000          # 20s (reduced from 30s)
+      idle-timeout: 120000              # 2 minutes (reduced from 10 min)
+      max-lifetime: 1800000             # 30 minutes (unchanged)
+      validation-timeout: 5000          # 5s for connection validation
+      
+      # Leak Detection - Critical for debugging
+      leak-detection-threshold: 60000   # 60s to detect connection leaks
+      
+      # PostgreSQL Specific
+      connection-test-query: "SELECT 1"
+      
+      # Advanced Tuning
+      initialization-fail-timeout: -1   # Fail fast on startup
+      isolate-internal-queries: false   # Better performance
+      allow-pool-suspension: false      # Prevent pool suspension
+      auto-commit: true                 # Ensure auto-commit
+      
+      # JMX Monitoring
+      register-mbeans: true             # Enable JMX monitoring
+      
+      # PostgreSQL Driver Properties
+      data-source-properties:
+        prepareThreshold: 5             # Prepare after 5 executions
+        preparedStatementCacheQueries: 256
+        preparedStatementCacheSizeMiB: 5
+        socketTimeout: 300              # 5 min socket timeout
+        tcpKeepAlive: true
+        loginTimeout: 10
+        connectTimeout: 10
+        cancelSignalTimeout: 10
   
   jpa:
     hibernate:
@@ -28,6 +58,13 @@ spring:
         format_sql: ${FORMAT_SQL:false}
         jdbc:
           time_zone: UTC
+          batch_size: 25               # Batch inserts/updates
+          fetch_size: 100              # Fetch size optimization
+          batch_versioned_data: true   # Batch versioned entities
+        order_inserts: true            # Order inserts for batching
+        order_updates: true            # Order updates for batching
+        connection:
+          release_mode: after_transaction  # Release connections after transaction
   
   data:
     redis:

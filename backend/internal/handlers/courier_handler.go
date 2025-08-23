@@ -332,6 +332,35 @@ func (h *CourierHandler) GetCourierInfo(c *gin.Context) {
 	})
 }
 
+// GetMyStats 获取当前信使的详细统计信息
+// @Summary 获取当前信使的详细统计信息
+// @Description 获取当前登录信使的详细统计数据，包括任务统计、团队数据等
+// @Tags courier
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/courier/stats [get]
+func (h *CourierHandler) GetMyStats(c *gin.Context) {
+	resp := response.NewGinResponse()
+
+	user, exists := c.Get("user")
+	if !exists {
+		resp.Unauthorized(c, "用户认证失败")
+		return
+	}
+
+	userModel := user.(*models.User)
+	stats, err := h.courierService.GetCourierInfoByUser(userModel)
+	if err != nil {
+		resp.InternalServerError(c, "获取统计信息失败: "+err.Error())
+		return
+	}
+
+	resp.Success(c, stats)
+}
+
 // === 管理级别API (按信使等级) ===
 
 // GetFirstLevelStats 获取一级信使管理统计
@@ -538,4 +567,155 @@ func (h *CourierHandler) GetCourierTasks(c *gin.Context) {
 			"pages": (total + int64(limitInt) - 1) / int64(limitInt),
 		},
 	})
+}
+
+// GetTaskDetail 获取任务详情
+func (h *CourierHandler) GetTaskDetail(c *gin.Context) {
+	resp := response.NewGinResponse()
+
+	// 从JWT中获取用户ID
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		resp.Unauthorized(c, "用户认证失败")
+		return
+	}
+
+	taskID := c.Param("id")
+	if taskID == "" {
+		resp.BadRequest(c, "任务ID不能为空")
+		return
+	}
+
+	task, err := h.courierService.GetTaskDetail(userID, taskID)
+	if err != nil {
+		if err.Error() == "task not found" {
+			resp.NotFound(c, "任务不存在")
+			return
+		}
+		resp.InternalServerError(c, "获取任务详情失败")
+		return
+	}
+
+	resp.Success(c, task)
+}
+
+// UpdateTaskStatus 更新任务状态
+func (h *CourierHandler) UpdateTaskStatus(c *gin.Context) {
+	resp := response.NewGinResponse()
+
+	// 从JWT中获取用户ID
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		resp.Unauthorized(c, "用户认证失败")
+		return
+	}
+
+	taskID := c.Param("id")
+	if taskID == "" {
+		resp.BadRequest(c, "任务ID不能为空")
+		return
+	}
+
+	var req struct {
+		Status   string `json:"status" binding:"required,oneof=accepted collected in_transit delivered failed"`
+		Location string `json:"location"`
+		Note     string `json:"note"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.BadRequest(c, "参数验证失败: "+err.Error())
+		return
+	}
+
+	err := h.courierService.UpdateTaskStatus(userID, taskID, req.Status, req.Location, req.Note)
+	if err != nil {
+		if err.Error() == "task not found" {
+			resp.NotFound(c, "任务不存在")
+			return
+		}
+		if err.Error() == "permission denied" {
+			resp.Forbidden(c, "无权操作此任务")
+			return
+		}
+		resp.InternalServerError(c, "更新任务状态失败")
+		return
+	}
+
+	resp.Success(c, gin.H{
+		"message": "任务状态更新成功",
+		"status":  req.Status,
+	})
+}
+
+// ScanCode 扫码处理（新的统一扫码接口）
+func (h *CourierHandler) ScanCode(c *gin.Context) {
+	resp := response.NewGinResponse()
+
+	// 从JWT中获取用户ID
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		resp.Unauthorized(c, "用户认证失败")
+		return
+	}
+
+	var req struct {
+		Code      string  `json:"code" binding:"required"`
+		Action    string  `json:"action" binding:"required,oneof=pickup deliver"`
+		Location  string  `json:"location"`
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+		Note      string  `json:"note"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.BadRequest(c, "参数验证失败: "+err.Error())
+		return
+	}
+
+	result, err := h.courierService.ProcessScan(userID, req.Code, req.Action, req.Location, req.Latitude, req.Longitude, req.Note)
+	if err != nil {
+		if err.Error() == "invalid code" {
+			resp.BadRequest(c, "无效的扫码内容")
+			return
+		}
+		if err.Error() == "permission denied" {
+			resp.Forbidden(c, "无权处理此信件")
+			return
+		}
+		resp.InternalServerError(c, "扫码处理失败")
+		return
+	}
+
+	resp.Success(c, result)
+}
+
+// GetSubordinatesV2 获取下级信使列表 (备用方法，防止路由冲突)
+
+// GetHierarchyInfo 获取层级信息
+// @Summary 获取信使层级信息
+// @Description 获取当前信使的层级信息和权限
+// @Tags courier
+// @Produce json
+// @Param Authorization header string true "Bearer token"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/courier/hierarchy [get]
+func (h *CourierHandler) GetHierarchyInfo(c *gin.Context) {
+	resp := response.NewGinResponse()
+
+	user, exists := c.Get("user")
+	if !exists {
+		resp.Unauthorized(c, "用户认证失败")
+		return
+	}
+
+	userModel := user.(*models.User)
+	hierarchyInfo, err := h.courierService.GetCourierHierarchyInfo(userModel)
+	if err != nil {
+		resp.InternalServerError(c, "获取层级信息失败: "+err.Error())
+		return
+	}
+
+	resp.Success(c, hierarchyInfo)
 }

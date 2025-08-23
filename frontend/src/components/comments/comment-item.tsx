@@ -3,10 +3,11 @@
  * 评论项组件 - 显示单个评论及其操作
  */
 
+'use client'
+
 import * as React from 'react'
 import { useState, useCallback } from 'react'
-import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+import { SafeTimestamp } from '@/components/ui/safe-timestamp'
 import { 
   Heart, 
   MessageSquare, 
@@ -54,12 +55,6 @@ export const CommentItem = React.forwardRef<HTMLDivElement, CommentItemProps>(
     const [is_loading, setIsLoading] = useState(false)
     const [show_report_dialog, setShowReportDialog] = useState(false)
     const [is_reporting, setIsReporting] = useState(false)
-
-    // Format creation time
-    const created_time = formatDistanceToNow(new Date(comment.created_at), {
-      addSuffix: true,
-      locale: zhCN
-    })
 
     // Calculate indentation for nested comments
     const indent_level = Math.min(depth, max_depth)
@@ -166,9 +161,12 @@ export const CommentItem = React.forwardRef<HTMLDivElement, CommentItemProps>(
                 </Badge>
               )}
               <span className="text-muted-foreground">·</span>
-              <time className="text-muted-foreground" dateTime={comment.created_at}>
-                {created_time}
-              </time>
+              <SafeTimestamp 
+                date={comment.created_at} 
+                format="relative" 
+                fallback="刚刚"
+                className="text-muted-foreground"
+              />
               {comment.updated_at !== comment.created_at && (
                 <span className="text-xs text-muted-foreground">（已编辑）</span>
               )}

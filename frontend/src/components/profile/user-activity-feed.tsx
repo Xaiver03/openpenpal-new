@@ -23,8 +23,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { SafeTimestamp } from '@/components/ui/safe-timestamp'
 import { cn } from '@/lib/utils'
-import { formatDistanceToNow } from '@/lib/utils/date'
 
 interface Activity {
   id: string
@@ -180,13 +180,6 @@ export function UserActivityFeed({
     }
   }
 
-  const formatActivityTime = (timestamp: string) => {
-    try {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true })
-    } catch {
-      return '刚刚'
-    }
-  }
 
   const loadMore = () => {
     setDisplayCount(prev => prev + max_items)
@@ -290,9 +283,12 @@ export function UserActivityFeed({
                               )}
                             </div>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            {formatActivityTime(activity.created_at)}
-                          </p>
+                          <SafeTimestamp 
+                            date={activity.created_at} 
+                            format="relative" 
+                            fallback="刚刚"
+                            className="text-xs text-muted-foreground"
+                          />
                         </div>
                       </div>
                     )

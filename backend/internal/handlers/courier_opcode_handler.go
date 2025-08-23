@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -39,7 +38,7 @@ func (h *CourierOPCodeHandler) GetApplications(c *gin.Context) {
 	user := userInterface.(*models.User)
 
 	// 检查信使身份
-	courierLevel := h.getCourierLevel(models.UserRole(user.Role))
+	courierLevel := h.getCourierLevel(user.Role)
 	if courierLevel == 0 {
 		c.JSON(http.StatusForbidden, gin.H{
 			"success": false,
@@ -97,12 +96,12 @@ func (h *CourierOPCodeHandler) ReviewApplication(c *gin.Context) {
 	user := userInterface.(*models.User)
 
 	// 检查信使级别
-	courierLevel := h.getCourierLevel(models.UserRole(user.Role))
-	if courierLevel < 2 {
+	courierLevel := h.getCourierLevel(user.Role)
+	if courierLevel < 1 {
 		c.JSON(http.StatusForbidden, gin.H{
 			"success": false,
 			"code":    4003,
-			"message": "需要二级或以上信使权限",
+			"message": "需要信使权限",
 		})
 		return
 	}
@@ -213,7 +212,7 @@ func (h *CourierOPCodeHandler) CreateOPCode(c *gin.Context) {
 	user := userInterface.(*models.User)
 
 	// 检查信使级别
-	courierLevel := h.getCourierLevel(models.UserRole(user.Role))
+	courierLevel := h.getCourierLevel(user.Role)
 	if courierLevel < 2 {
 		c.JSON(http.StatusForbidden, gin.H{
 			"success": false,
@@ -265,11 +264,15 @@ func (h *CourierOPCodeHandler) CreateOPCode(c *gin.Context) {
 	// 创建OP Code
 	opCode := &models.SignalCode{
 		Code:        req.Code,
-		Type:        req.Type,
-		Description: fmt.Sprintf("%s - %s", req.Name, req.Description),
-		Status:      "active",
+		SchoolCode:  req.Code[:2],
+		AreaCode:    req.Code[2:4],
+		PointCode:   req.Code[4:6],
+		PointType:   req.Type,
+		PointName:   req.Name,
+		FullAddress: req.Description,
+		IsActive:    true,
 		IsPublic:    req.IsPublic,
-		OwnerID:     &user.ID,
+		ManagedBy:   user.ID,
 	}
 
 	if err := h.opcodeService.CreateOPCode(opCode); err != nil {
@@ -314,25 +317,46 @@ func (h *CourierOPCodeHandler) GetManagedOPCodes(c *gin.Context) {
 		return
 	}
 
+	// 获取信使级别
+	courierLevel := h.getCourierLevel(user.Role)
+
 	// 获取管理范围内的所有OP Code
-	prefix := courier.ManagedOPCodePrefix
-	if prefix == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"code":    200,
-			"message": "获取成功",
-			"data":    []interface{}{},
-		})
-		return
+	var codes []*models.SignalCode
+	var getErr error
+
+	if courierLevel == 4 {
+		// 四级信使获取所有OP Code
+		codes, getErr = h.opcodeService.GetAllOPCodes()
+	} else {
+		// 其他级别根据前缀获取
+		prefix := courier.ManagedOPCodePrefix
+		if prefix == "" {
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"code":    200,
+				"message": "获取成功",
+				"data":    []interface{}{},
+			})
+			return
+		}
+		codesSlice, err := h.opcodeService.GetOPCodesByPrefix(prefix)
+		if err != nil {
+			getErr = err
+		} else {
+			// Convert []models.SignalCode to []*models.SignalCode
+			codes = make([]*models.SignalCode, len(codesSlice))
+			for i := range codesSlice {
+				codes[i] = &codesSlice[i]
+			}
+		}
 	}
 
-	codes, err := h.opcodeService.GetOPCodesByPrefix(prefix)
-	if err != nil {
+	if getErr != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"code":    5001,
 			"message": "获取编码列表失败",
-			"error":   err.Error(),
+			"error":   getErr.Error(),
 		})
 		return
 	}
@@ -346,7 +370,7 @@ func (h *CourierOPCodeHandler) GetManagedOPCodes(c *gin.Context) {
 }
 
 // 辅助方法：获取信使级别
-func (h *CourierOPCodeHandler) getCourierLevel(role string) int {
+func (h *CourierOPCodeHandler) getCourierLevel(role models.UserRole) int {
 	switch role {
 	case models.RoleCourierLevel1:
 		return 1
@@ -367,6 +391,11 @@ func (h *CourierOPCodeHandler) filterApplicationsByLevel(
 	courier *models.Courier,
 	level int,
 ) []*models.OPCodeApplication {
+	// 四级信使可以看到所有申请
+	if level == 4 {
+		return applications
+	}
+
 	if courier.ManagedOPCodePrefix == "" {
 		return []*models.OPCodeApplication{}
 	}
@@ -376,18 +405,20 @@ func (h *CourierOPCodeHandler) filterApplicationsByLevel(
 		// 构建申请的编码前缀
 		appPrefix := app.SchoolCode + app.AreaCode
 
-		// 根据级别判断是否可以管理
+		// 上级信使继承下级权限
 		switch level {
-		case 2: // 二级信使管理具体投递点（完整4位前缀匹配）
-			if strings.HasPrefix(appPrefix, courier.ManagedOPCodePrefix[:4]) {
-				filtered = append(filtered, app)
-			}
-		case 3: // 三级信使管理学校内的片区（前2位匹配）
+		case 3: // 三级信使管理整个学校（前2位匹配）
 			if strings.HasPrefix(appPrefix, courier.ManagedOPCodePrefix[:2]) {
 				filtered = append(filtered, app)
 			}
-		case 4: // 四级信使管理所有学校
-			filtered = append(filtered, app)
+		case 2: // 二级信使管理片区（前4位匹配）
+			if strings.HasPrefix(appPrefix, courier.ManagedOPCodePrefix[:4]) {
+				filtered = append(filtered, app)
+			}
+		case 1: // 一级信使只能查看同楼栋的申请
+			if strings.HasPrefix(appPrefix, courier.ManagedOPCodePrefix[:4]) {
+				filtered = append(filtered, app)
+			}
 		}
 	}
 
@@ -400,6 +431,11 @@ func (h *CourierOPCodeHandler) canManageOPCode(
 	courier *models.Courier,
 	level int,
 ) bool {
+	// 四级信使有全部权限
+	if level == 4 {
+		return true
+	}
+
 	if courier.ManagedOPCodePrefix == "" {
 		return false
 	}
@@ -411,8 +447,6 @@ func (h *CourierOPCodeHandler) canManageOPCode(
 		return strings.HasPrefix(appPrefix, courier.ManagedOPCodePrefix[:4])
 	case 3: // 三级信使
 		return strings.HasPrefix(appPrefix, courier.ManagedOPCodePrefix[:2])
-	case 4: // 四级信使
-		return true
 	default:
 		return false
 	}
@@ -424,7 +458,16 @@ func (h *CourierOPCodeHandler) canCreateOPCode(
 	courier *models.Courier,
 	level int,
 ) bool {
-	if len(code) != 6 || courier.ManagedOPCodePrefix == "" {
+	if len(code) != 6 {
+		return false
+	}
+
+	// 四级信使可以创建任何编码
+	if level == 4 {
+		return true
+	}
+
+	if courier.ManagedOPCodePrefix == "" {
 		return false
 	}
 
@@ -433,8 +476,6 @@ func (h *CourierOPCodeHandler) canCreateOPCode(
 		return strings.HasPrefix(code, courier.ManagedOPCodePrefix[:4])
 	case 3: // 三级信使可以创建其管理的2位前缀下的编码
 		return strings.HasPrefix(code, courier.ManagedOPCodePrefix[:2])
-	case 4: // 四级信使可以创建任何编码
-		return true
 	default:
 		return false
 	}
@@ -495,7 +536,7 @@ func (h *CourierOPCodeHandler) UpdateOPCode(c *gin.Context) {
 	}
 
 	// 验证权限
-	courierLevel := h.getCourierLevel(models.UserRole(user.Role))
+	courierLevel := h.getCourierLevel(user.Role)
 	if !h.canCreateOPCode(opCode.Code, courier, courierLevel) {
 		c.JSON(http.StatusForbidden, gin.H{
 			"success": false,
@@ -506,15 +547,14 @@ func (h *CourierOPCodeHandler) UpdateOPCode(c *gin.Context) {
 	}
 
 	// 更新信息
-	opCode.Description = fmt.Sprintf("%s - %s", req.Name, req.Description)
-	opCode.IsPublic = req.IsPublic
-	if req.IsActive {
-		opCode.Status = "active"
-	} else {
-		opCode.Status = "inactive"
+	updates := map[string]interface{}{
+		"point_name":   req.Name,
+		"full_address": req.Description,
+		"is_public":    req.IsPublic,
+		"is_active":    req.IsActive,
 	}
 
-	if err := h.opcodeService.UpdateOPCode(opCode); err != nil {
+	if err := h.opcodeService.UpdateOPCode(opCode.Code, updates); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"code":    5001,
@@ -591,7 +631,7 @@ func (h *CourierOPCodeHandler) DeleteOPCode(c *gin.Context) {
 	}
 
 	// 删除编码
-	if err := h.opcodeService.DeleteOPCode(opcodeID); err != nil {
+	if err := h.opcodeService.DeleteOPCode(opCode.Code); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"code":    5001,

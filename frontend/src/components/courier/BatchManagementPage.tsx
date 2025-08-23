@@ -80,8 +80,8 @@ export default function BatchManagementPage() {
         school_code: courierInfo?.level === 3 ? courierInfo?.school_code : undefined
       })
       
-      if (response.success && response.data) {
-        setBatches(response.data.batches)
+      if (response.success && response.data && response.data.batches) {
+        setBatches(response.data.batches || [])
       } else {
         console.error('获取批次列表失败:', response.message)
         // 如果API调用失败，使用模拟数据作为后备
@@ -528,7 +528,7 @@ export default function BatchManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {batches.map((batch) => (
+                    {batches && batches.length > 0 ? batches.map((batch) => (
                       <TableRow key={batch.id}>
                         <TableCell className="font-mono">{batch.batch_no}</TableCell>
                         <TableCell>{batch.school_code}</TableCell>
@@ -583,7 +583,13 @@ export default function BatchManagementPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )) : (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                          暂无批次数据
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -641,7 +647,7 @@ export default function BatchManagementPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {barcodes.map((barcode) => (
+                        {barcodes && barcodes.length > 0 ? barcodes.map((barcode) => (
                           <TableRow key={barcode.id}>
                             <TableCell className="font-mono">{barcode.code}</TableCell>
                             <TableCell>
@@ -656,7 +662,13 @@ export default function BatchManagementPage() {
                               {barcode.recipient_code || '-'}
                             </TableCell>
                           </TableRow>
-                        ))}
+                        )) : (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                              暂无条码数据
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
                   </CardContent>

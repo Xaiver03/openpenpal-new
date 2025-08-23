@@ -18,6 +18,7 @@ export interface MuseumEntry {
   bookmark_count: number;
   share_count: number;
   ai_metadata?: Record<string, any>;
+  imageUrl?: string;
   created_at: string;
   updated_at: string;
   published_at?: string;

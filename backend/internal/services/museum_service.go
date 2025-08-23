@@ -133,6 +133,7 @@ func (s *MuseumService) CreateMuseumItem(ctx context.Context, req *CreateMuseumI
 		SourceID:    req.SourceID,
 		Title:       req.Title,
 		Description: req.Description,
+		ImageURL:    req.ImageURL,
 		Tags:        strings.Join(req.Tags, ","),
 		Status:      models.MuseumItemPending,
 		SubmittedBy: req.SubmittedBy,
@@ -436,6 +437,7 @@ type CreateMuseumItemRequest struct {
 	SourceID    string                  `json:"sourceId" binding:"required"`
 	Title       string                  `json:"title"`
 	Description string                  `json:"description"`
+	ImageURL    string                  `json:"image_url"`               // 博物馆图片URL
 	Tags        []string                `json:"tags"`
 	SubmittedBy string                  `json:"submittedBy" binding:"required"`
 }

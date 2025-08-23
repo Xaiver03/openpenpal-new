@@ -27,7 +27,6 @@ public class DatabaseAutoConfiguration {
     }
 
     @Bean
-    @Primary
     public DataSource dataSource() {
         // PostgreSQL优先级配置列表
         List<DatabaseConfig> postgresConfigs = Arrays.asList(

@@ -6,7 +6,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getZoneStats, getZoneCouriers, getCourierCandidates } from '@/lib/api/index'
+import { CourierService } from '@/lib/api/courier-service'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +40,7 @@ import {
   COURIER_PERMISSION_CONFIGS 
 } from '@/components/courier/CourierPermissionGuard'
 import { FeatureErrorBoundary } from '@/components/error-boundary'
+import { CourierCenterNavigation } from '@/components/courier/CourierCenterNavigation'
 import { log } from '@/utils/logger'
 
 interface ZoneLevelCourier {
@@ -97,123 +98,74 @@ export default function ZoneManagePage() {
   const loadData = async () => {
     setLoading(true)
     try {
-        const [statsResponse, couriersResponse] = await Promise.all([
-          getZoneStats().catch(() => null),
-          getZoneCouriers().catch(() => [])
-        ])
+        // 使用真实的API获取数据
+        const courierStats = await CourierService.getCourierStats()
+        
+        // 映射API数据到页面所需格式
+        setStats({
+          totalBuildings: courierStats.teamStats?.totalMembers || 0,
+          activeCouriers: courierStats.teamStats?.activeMembers || 0,  
+          totalDeliveries: courierStats.teamStats?.totalDeliveries || 0,
+          pendingTasks: courierStats.dailyStats?.pendingTasks || 0,
+          averageRating: courierStats.courierInfo?.avgRating || 0,
+          successRate: courierStats.courierInfo?.successRate || 0
+        })
 
-        if (statsResponse?.success) {
-          setStats(statsResponse.data as any)
-        } else {
-          setStats({
-            totalBuildings: 12,
-            activeCouriers: 18,
-            totalDeliveries: 892,
-            pendingTasks: 5,
-            averageRating: 4.7,
-            successRate: 96.3
+        // 获取下级信使列表
+        try {
+          const hierarchyInfo = await CourierService.getHierarchyInfo()
+          console.log('获取层级信息成功:', hierarchyInfo)
+          
+          // 尝试获取下级信使列表
+          const subordinatesResponse = await fetch('/api/v1/courier/subordinates', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
           })
+          
+          if (subordinatesResponse.ok) {
+            const subordinatesData = await subordinatesResponse.json()
+            const apiCouriers = subordinatesData.data?.couriers || subordinatesData.couriers || []
+            
+            if (apiCouriers.length > 0) {
+              // 转换API数据为UI格式 - 二级信使管理一级信使
+              const uiCouriers: ZoneLevelCourier[] = apiCouriers
+                .filter((courier: any) => courier.level === 1) 
+                .map((courier: any) => ({
+                  id: courier.id || `courier-${Date.now()}`,
+                  username: courier.username || '未知用户',
+                  buildingName: courier.building || '未分配楼栋',
+                  buildingCode: courier.zone_code || 'UNASSIGNED',
+                  floorRange: courier.floor_range || '1-10层',
+                  roomRange: courier.room_range || '101-1020',
+                  level: courier.level || 1,
+                  status: courier.status === 'active' ? 'active' : 'pending',
+                  points: courier.points || 0,
+                  taskCount: (courier.completedTasks || 0) + (courier.currentTasks || 0),
+                  completedTasks: courier.completedTasks || 0,
+                  averageRating: courier.rating || 4.5,
+                  joinDate: courier.createdAt || undefined,
+                  lastActive: courier.lastActive || undefined,
+                  contactInfo: courier.profile?.phone ? { 
+                    phone: courier.profile.phone,
+                    wechat: courier.profile.wechat
+                  } : {},
+                  workingHours: courier.workingHours
+                }))
+              setCouriers(uiCouriers)
+              console.log('✅ 使用真实API数据:', uiCouriers)
+              return
+            }
+          }
+        } catch (error) {
+          console.log('⚠️ API调用异常:', error)
         }
 
-        if (couriersResponse && 'success' in couriersResponse && couriersResponse.success) {
-          setCouriers((couriersResponse as any).data || [])
-        } else {
-          const mockCouriers: ZoneLevelCourier[] = [
-            {
-              id: '1',
-              username: 'building_a_courier',
-              buildingName: 'A栋',
-              buildingCode: 'ZONE_A_001',
-              floorRange: '1-6层',
-              roomRange: '101-620',
-              level: 1,
-              status: 'active',
-              points: 320,
-              taskCount: 156,
-              completedTasks: 148,
-              averageRating: 4.9,
-              joinDate: '2024-01-10',
-              lastActive: '2024-01-24T09:15:00Z',
-              contactInfo: {
-                phone: '138****1234',
-                wechat: 'building_a_courier'
-              },
-              workingHours: {
-                start: '08:00',
-                end: '18:00',
-                weekdays: [1, 2, 3, 4, 5, 6]
-              }
-            },
-            {
-              id: '2',
-              username: 'building_b_courier',
-              buildingName: 'B栋',
-              buildingCode: 'ZONE_A_002',
-              floorRange: '1-8层',
-              roomRange: '101-825',
-              level: 1,
-              status: 'active',
-              points: 280,
-              taskCount: 134,
-              completedTasks: 129,
-              averageRating: 4.6,
-              joinDate: '2024-01-15',
-              lastActive: '2024-01-24T11:30:00Z',
-              contactInfo: {
-                phone: '159****5678'
-              },
-              workingHours: {
-                start: '09:00',
-                end: '19:00',
-                weekdays: [1, 2, 3, 4, 5]
-              }
-            },
-            {
-              id: '3',
-              username: 'building_c_courier',
-              buildingName: 'C栋',
-              buildingCode: 'ZONE_A_003',
-              floorRange: '1-5层',
-              level: 1,
-              status: 'pending',
-              points: 120,
-              taskCount: 45,
-              completedTasks: 42,
-              averageRating: 4.3,
-              joinDate: '2024-01-20',
-              lastActive: '2024-01-23T15:45:00Z',
-              contactInfo: {
-                phone: '186****9999',
-                wechat: 'building_c_helper'
-              }
-            },
-            {
-              id: '4',
-              username: 'building_d_courier',
-              buildingName: 'D栋',
-              buildingCode: 'ZONE_A_004',
-              floorRange: '1-7层',
-              roomRange: '101-715',
-              level: 1,
-              status: 'frozen',
-              points: 95,
-              taskCount: 67,
-              completedTasks: 58,
-              averageRating: 3.9,
-              joinDate: '2023-12-05',
-              lastActive: '2024-01-19T16:20:00Z',
-              contactInfo: {
-                phone: '177****3333'
-              }
-            }
-          ]
-          setCouriers(mockCouriers)
-        }
-      } catch (error) {
-        log.error('Failed to load zone level management data', error, 'ZoneManagePage')
-      } finally {
-        setLoading(false)
-      }
+        // 如果API无数据或失败，设置空数组显示"暂无数据"状态
+        setCouriers([])
+    } catch (error) {
+      log.error('Failed to load zone level management data', error, 'ZoneManagePage')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -488,7 +440,10 @@ export default function ZoneManagePage() {
         errorTitle="二级信使管理权限不足"
         errorDescription="只有三级及以上信使才能管理二级信使"
       >
-      <ManagementPageLayout
+        {/* 信使中心导航 */}
+        <CourierCenterNavigation currentPage="zone" className="mb-6" />
+
+        <ManagementPageLayout
         config={MANAGEMENT_CONFIGS.SECOND_LEVEL}
         stats={statCards}
         searchPlaceholder="搜索信使用户名、楼栋名称或编号..."

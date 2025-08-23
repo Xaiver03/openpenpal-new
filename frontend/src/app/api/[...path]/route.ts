@@ -7,7 +7,8 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080'
 async function handler(req: NextRequest, { params }: { params: { path: string[] } }) {
   const path = params.path.join('/')
   // Map frontend routes to backend routes
-  const routePath = path.startsWith('ai/') ? path : `v1/${path}`
+  // If path already starts with v1/, don't add it again
+  const routePath = path.startsWith('v1/') ? path : `v1/${path}`
   const url = `${BACKEND_URL}/api/${routePath}${req.nextUrl.search}`
 
   try {

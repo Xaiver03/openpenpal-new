@@ -109,7 +109,7 @@ export default function ReadLetterPage() {
       reply_to_title: letter.title || ''
     })
     
-    router.push(`/write?${searchParams.toString()}`)
+    router.push(`/letters/write?${searchParams.toString()}`)
   }
 
   const handleShare = async () => {

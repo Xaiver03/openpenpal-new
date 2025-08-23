@@ -236,7 +236,7 @@ export function PrivacySettings({ className }: PrivacySettingsProps) {
             </TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
-              通知设置
+              通知权限
             </TabsTrigger>
             <TabsTrigger value="blocking" className="flex items-center gap-2">
               <UserMinus className="h-4 w-4" />
@@ -383,7 +383,7 @@ export function PrivacySettings({ className }: PrivacySettingsProps) {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                选择您希望接收哪些类型的通知。
+                控制是否接收特定类型的通知。如需设置通知接收方式（邮件/推送），请前往"设置 → 通知方式"。
               </AlertDescription>
             </Alert>
 

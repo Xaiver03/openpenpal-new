@@ -5,12 +5,12 @@
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { JWTUtils } from '@/lib/auth/jwt-utils'
+import { JWTUtilsEdge } from '@/lib/auth/jwt-utils-edge'
 import { securityMiddleware } from './middleware-security'
 
 // 需要认证的路由路径
 const PROTECTED_ROUTES = [
-  '/write', 
+  '/letters', 
   '/plaza',
   '/museum',
   '/shop',
@@ -87,7 +87,7 @@ function getAndValidateToken(request: NextRequest): {
   
   try {
     // 只检查token格式和过期时间，不验证签名（签名验证由API路由处理）
-    const payload = JWTUtils.decodeToken(token)
+    const payload = JWTUtilsEdge.decodeToken(token)
     if (!payload || !payload.exp) {
       console.log('🔒 Token validation failed: Invalid format')
       return { isValid: false, token, payload: null }
@@ -138,6 +138,20 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   console.log('🛡️ Middleware processing:', pathname)
+  
+  // Redirect old routes to new routes
+  if (pathname === '/write') {
+    console.log('🔄 Redirecting /write to /letters/write')
+    return NextResponse.redirect(new URL('/letters/write', request.url))
+  }
+  if (pathname === '/deliver') {
+    console.log('🔄 Redirecting /deliver to /letters/send')
+    return NextResponse.redirect(new URL('/letters/send', request.url))
+  }
+  if (pathname === '/mailbox') {
+    console.log('🔄 Redirecting /mailbox to /letters')
+    return NextResponse.redirect(new URL('/letters', request.url))
+  }
   
   // Redirect /postcode to /opcode (OP Code system replacement)
   if (pathname === '/postcode') {

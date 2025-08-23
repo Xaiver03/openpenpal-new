@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { usePermission } from '@/hooks/use-permission'
 import { BackButton } from '@/components/ui/back-button'
+import { SafeTimestamp } from '@/components/ui/safe-timestamp'
 import { 
   Scan,
   Camera,
@@ -71,6 +72,13 @@ export default function CourierScanPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+
+  // Cleanup effect - must be before conditional returns
+  useEffect(() => {
+    return () => {
+      stopScanning()
+    }
+  }, [])
 
   // 权限检查
   if (!isCourier()) {
@@ -329,31 +337,28 @@ export default function CourierScanPage() {
     }
   }
 
-  useEffect(() => {
-    return () => {
-      stopScanning()
-    }
-  }, [])
-
   return (
-    <div className="container max-w-6xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <BackButton href="/courier" />
-          <div>
-            <h1 className="font-serif text-3xl font-bold text-amber-900 mb-2">
-              信使扫码中心
+    <div className="container max-w-6xl mx-auto px-4 py-4 md:py-8">
+      {/* Header - Mobile Optimized */}
+      <div className="mb-6 md:mb-8">
+        <div className="flex items-center gap-2 md:gap-4 mb-3 md:mb-4">
+          <BackButton href="/courier" className="md:hidden" />
+          <div className="flex-1">
+            <h1 className="font-serif text-xl md:text-3xl font-bold text-amber-900 mb-1 md:mb-2">
+              信使扫码
             </h1>
-            <p className="text-amber-700">
+            <p className="text-amber-700 text-sm md:text-base hidden md:block">
               扫描信件二维码，更新投递状态。欢迎您，{user?.nickname}！
+            </p>
+            <p className="text-amber-700 text-xs md:hidden">
+              扫码更新投递状态
             </p>
           </div>
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="mb-8">
+      {/* Tab Navigation - Mobile Optimized */}
+      <div className="mb-4 md:mb-8">
         <div className="flex space-x-1 bg-amber-100 p-1 rounded-lg">
           <button
             onClick={() => setActiveTab('scan')}
@@ -386,7 +391,7 @@ export default function CourierScanPage() {
       </div>
 
       {activeTab === 'scan' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
           {/* 扫码区域 */}
           <div className="space-y-6">
             {/* 摄像头扫描 */}
@@ -572,13 +577,13 @@ export default function CourierScanPage() {
                     )}
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className="h-4 w-4 text-amber-600" />
-                      <span>创建：{new Date(letterInfo.createdAt).toLocaleDateString('zh-CN', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}</span>
+                      <span>创建：</span>
+                      <SafeTimestamp 
+                        date={letterInfo.createdAt} 
+                        format="locale" 
+                        fallback="--"
+                        className="inline"
+                      />
                     </div>
                     {letterInfo.targetLocation && (
                       <div className="flex items-center gap-2 text-sm">
@@ -773,9 +778,12 @@ export default function CourierScanPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-amber-600">
-                          {new Date(item.timestamp).toLocaleString('zh-CN')}
-                        </p>
+                        <SafeTimestamp 
+                          date={item.timestamp} 
+                          format="locale" 
+                          fallback="--"
+                          className="text-xs text-amber-600"
+                        />
                         {item.location && (
                           <p className="text-xs text-amber-500 mt-1">
                             📍 {item.location}

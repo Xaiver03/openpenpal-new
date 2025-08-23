@@ -198,5 +198,6 @@ export interface MuseumEntry {
   like_count: number;
   bookmark_count: number;
   share_count: number;
+  imageUrl?: string;
 }
 

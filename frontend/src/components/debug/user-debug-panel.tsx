@@ -74,6 +74,7 @@ const UserDebugPanel = memo(function UserDebugPanel() {
       const newY = e.clientY - dragOffset.y
       
       // 限制在视窗范围内
+      if (typeof window === 'undefined') return
       const maxX = window.innerWidth - (panelRef.current?.offsetWidth || 0)
       const maxY = window.innerHeight - (panelRef.current?.offsetHeight || 0)
       
@@ -101,7 +102,7 @@ const UserDebugPanel = memo(function UserDebugPanel() {
   // 响应式位置调整
   useEffect(() => {
     const handleResize = () => {
-      if (!panelRef.current) return
+      if (!panelRef.current || typeof window === 'undefined') return
       
       const isMobile = window.innerWidth < 768
       const maxX = window.innerWidth - panelRef.current.offsetWidth

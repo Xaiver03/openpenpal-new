@@ -65,14 +65,14 @@ func (p *Product) BeforeCreate(tx *gorm.DB) error {
 
 // Cart 购物车模型
 type Cart struct {
-	ID          uuid.UUID  `gorm:"type:varchar(36);primary_key" json:"id"`
-	UserID      string     `gorm:"type:varchar(36);not null;index" json:"user_id"`
-	User        *User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Items       []CartItem `gorm:"foreignKey:CartID" json:"items"`
-	TotalItems  int        `gorm:"type:int;default:0" json:"total_items"`
-	TotalAmount float64    `gorm:"type:decimal(10,2);default:0" json:"total_amount"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID          uuid.UUID      `gorm:"type:varchar(36);primary_key" json:"id"`
+	UserID      string         `gorm:"type:varchar(36);not null;index" json:"user_id"`
+	User        *User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Items       []ShopCartItem `gorm:"foreignKey:CartID" json:"items"`
+	TotalItems  int            `gorm:"type:int;default:0" json:"total_items"`
+	TotalAmount float64        `gorm:"type:decimal(10,2);default:0" json:"total_amount"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 func (c *Cart) BeforeCreate(tx *gorm.DB) error {
@@ -82,8 +82,8 @@ func (c *Cart) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// CartItem 购物车项目模型
-type CartItem struct {
+// ShopCartItem 商城购物车项目模型（避免与cart.go中的CartItem冲突）
+type ShopCartItem struct {
 	ID        uuid.UUID `gorm:"type:varchar(36);primary_key" json:"id"`
 	CartID    uuid.UUID `gorm:"type:varchar(36);not null;index" json:"cart_id"`
 	Cart      *Cart     `gorm:"foreignKey:CartID" json:"cart,omitempty"`
@@ -96,7 +96,7 @@ type CartItem struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func (ci *CartItem) BeforeCreate(tx *gorm.DB) error {
+func (ci *ShopCartItem) BeforeCreate(tx *gorm.DB) error {
 	if ci.ID == uuid.Nil {
 		ci.ID = uuid.New()
 	}

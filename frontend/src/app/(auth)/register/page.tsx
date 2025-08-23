@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { EmailVerificationStep } from '@/components/auth/EmailVerificationStep'
 import { SimpleRegistrationForm } from '@/components/auth/SimpleRegistrationForm'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState<RegistrationStep>('email-verification')
   const [email, setEmail] = useState('')
   const [verificationCode, setVerificationCode] = useState('')
-  const [registeredUserId, setRegisteredUserId] = useState<string>('')
+  const [, setRegisteredUserId] = useState<string>('')
   
   useEffect(() => {
     setMounted(true)

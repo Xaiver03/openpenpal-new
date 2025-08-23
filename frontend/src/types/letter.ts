@@ -285,22 +285,3 @@ export interface LetterStats {
   total_views: number
 }
 
-/**
- * 信件模板
- */
-export interface LetterTemplate {
-  id: string
-  name: string
-  description?: string
-  category: string
-  preview_image?: string
-  content_template: string
-  style_config?: any
-  is_premium: boolean
-  is_active: boolean
-  usage_count: number
-  rating: number
-  created_by?: string
-  created_at: string
-  updated_at: string
-}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,10 +17,7 @@ import {
   EyeOff
 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context-new'
-import { handlePostLoginNavigation } from '@/lib/auth/role-navigation'
-
 export default function LoginPage() {
-  const router = useRouter()
   const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
@@ -40,7 +37,8 @@ export default function LoginPage() {
 
 function LoginForm() {
   const router = useRouter()
-  const { login, user } = useAuth()
+  const searchParams = useSearchParams()
+  const { login } = useAuth()
   
   const [formData, setFormData] = useState({
     username: '',
@@ -74,9 +72,7 @@ function LoginForm() {
       console.log('✅ 登录成功，准备跳转')
       
       // 检查是否有返回URL参数
-      const urlParams = new URLSearchParams(window.location.search)
-      const returnUrl = urlParams.get('returnUrl')
-      const isFirstLogin = urlParams.get('firstLogin') === 'true'
+      const returnUrl = searchParams.get('returnUrl')
       
       // 登录成功，跳转到首页或返回URL
       const targetUrl = returnUrl || '/'

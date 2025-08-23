@@ -1,0 +1,191 @@
+# OpenPenPal Prometheus 配置
+# 针对微服务架构的全面指标收集
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'openpenpal-local'
+    environment: 'development'
+
+# 告警规则
+rule_files:
+  - "rules/*.yml"
+
+# AlertManager 配置
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# 指标收集目标
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # 系统指标 - Node Exporter
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # 容器指标 - cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+
+  # Redis 监控
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+
+  # PostgreSQL 监控
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+
+  # Frontend 应用 (Next.js)
+  - job_name: 'frontend'
+    static_configs:
+      - targets: ['host.docker.internal:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Backend 主服务 (Go)
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Write Service (Python FastAPI)
+  - job_name: 'write-service'
+    static_configs:
+      - targets: ['host.docker.internal:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Courier Service (Go)
+  - job_name: 'courier-service'
+    static_configs:
+      - targets: ['host.docker.internal:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Admin Service (Java Spring Boot)
+  - job_name: 'admin-service'
+    static_configs:
+      - targets: ['host.docker.internal:8003']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # OCR Service (Python)
+  - job_name: 'ocr-service'
+    static_configs:
+      - targets: ['host.docker.internal:8004']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Gateway Service (Go)
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['host.docker.internal:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # 端点健康检查 - Blackbox Exporter
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://host.docker.internal:3000     # Frontend
+        - http://host.docker.internal:8080/health  # Backend
+        - http://host.docker.internal:8001/health  # Write Service
+        - http://host.docker.internal:8002/health  # Courier Service
+        - http://host.docker.internal:8003/actuator/health  # Admin Service
+        - http://host.docker.internal:8004/health  # OCR Service
+        - http://host.docker.internal:8000/health  # Gateway
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # HTTPS 端点检查
+  - job_name: 'blackbox-https'
+    metrics_path: /probe
+    params:
+      module: [https_2xx]
+    static_configs:
+      - targets:
+        - https://api.openpenpal.com  # 生产环境 API
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # TCP 端点检查
+  - job_name: 'blackbox-tcp'
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets:
+        - host.docker.internal:5432  # PostgreSQL
+        - host.docker.internal:6379  # Redis
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # WebSocket 连接监控
+  - job_name: 'websocket-health'
+    metrics_path: /probe
+    params:
+      module: [websocket_connect]
+    static_configs:
+      - targets:
+        - ws://host.docker.internal:8080/ws
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+# 服务发现配置 (用于 Kubernetes 环境)
+# kubernetes_sd_configs:
+#   - role: pod
+#     namespaces:
+#       names:
+#         - openpenpal
+#   - role: service
+#     namespaces:
+#       names:
+#         - openpenpal

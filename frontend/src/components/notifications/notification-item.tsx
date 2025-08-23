@@ -19,8 +19,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { SafeTimestamp } from '@/components/ui/safe-timestamp'
 import { cn } from '@/lib/utils'
-import { formatDistanceToNow } from '@/lib/utils/date'
 import type { NotificationItemProps, NotificationType } from '@/types/notification'
 
 export function NotificationItem({
@@ -129,9 +129,12 @@ export function NotificationItem({
         )}>
           {notification.content}
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-        </p>
+        <SafeTimestamp 
+          date={notification.created_at} 
+          format="relative" 
+          fallback="刚刚"
+          className="text-xs text-muted-foreground mt-1 block"
+        />
       </div>
 
       {/* Actions */}

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -20,17 +22,73 @@ const (
 	// Ping发送间隔，必须小于pongWait
 	pingPeriod = (pongWait * 9) / 10
 
-	// 最大消息大小
-	maxMessageSize = 512
+	// 最大消息大小 (64KB for larger letter content)
+	maxMessageSize = 64 * 1024
 )
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		// 生产环境中应该检查Origin
-		return true
-	},
+	CheckOrigin:     validateWebSocketOrigin,
+}
+
+// validateWebSocketOrigin 验证WebSocket连接的Origin头
+func validateWebSocketOrigin(r *http.Request) bool {
+	// 开发环境：允许localhost和本地IP
+	if env := os.Getenv("ENVIRONMENT"); env == "development" || env == "dev" {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true // 允许没有Origin的连接（如某些客户端）
+		}
+
+		// 允许常见的开发环境Origin
+		allowedDevOrigins := []string{
+			"http://localhost:3000",
+			"http://localhost:3001",
+			"http://127.0.0.1:3000",
+			"http://127.0.0.1:3001",
+			"http://localhost:8080",
+			"http://127.0.0.1:8080",
+		}
+
+		for _, allowed := range allowedDevOrigins {
+			if origin == allowed {
+				return true
+			}
+		}
+		log.Printf("WebSocket: Rejected origin in development: %s", origin)
+		return false
+	}
+
+	// 生产环境：严格检查Origin
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		log.Printf("WebSocket: Rejected connection without Origin header")
+		return false
+	}
+
+	// 生产环境允许的Origin列表
+	allowedOrigins := []string{
+		"https://openpenpal.com",
+		"https://www.openpenpal.com",
+		"https://app.openpenpal.com",
+	}
+
+	// 检查环境变量中配置的额外允许的Origin
+	if extraOrigins := os.Getenv("ALLOWED_WEBSOCKET_ORIGINS"); extraOrigins != "" {
+		for _, extraOrigin := range strings.Split(extraOrigins, ",") {
+			allowedOrigins = append(allowedOrigins, strings.TrimSpace(extraOrigin))
+		}
+	}
+
+	for _, allowed := range allowedOrigins {
+		if origin == allowed {
+			return true
+		}
+	}
+
+	log.Printf("WebSocket: Rejected unauthorized origin: %s", origin)
+	return false
 }
 
 // Client WebSocket客户端

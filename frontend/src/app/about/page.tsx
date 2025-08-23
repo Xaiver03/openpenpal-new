@@ -226,7 +226,7 @@ export default function AboutPage() {
           <CardContent className="text-center">
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="font-serif">
-                <Link href="/write">
+                <Link href="/letters/write">
                   <Mail className="mr-2 h-5 w-5" />
                   写第一封信
                 </Link>

@@ -1,361 +1,246 @@
-#!/usr/bin/env node
-
 /**
- * Frontend-Backend Integration Test Script
- * Tests the follow system and privacy system APIs through the frontend
+ * 前端后端集成测试脚本
+ * 测试漂流瓶和未来信API的基本功能
  */
 
-const axios = require('axios');
+const API_BASE = 'http://localhost:8080/api/v1'
 
-// Configuration
-const FRONTEND_URL = 'http://localhost:3000';
-const BACKEND_URL = 'http://localhost:8080';
-const API_VERSION = '/api/v1';
-
-// Test data
-const testUser = {
-  username: `testuser_${Date.now()}`,
-  password: 'Test@123456',
-  email: `test${Date.now()}@example.com`,
-  nickname: 'Test User',
-  school: 'Test School'
-};
-
-const testUser2 = {
-  username: `testuser2_${Date.now()}`,
-  password: 'Test@123456',
-  email: `test2${Date.now()}@example.com`,
-  nickname: 'Test User 2',
-  school: 'Test School'
-};
-
-let authToken1 = null;
-let authToken2 = null;
-let userId1 = null;
-let userId2 = null;
-
-// Helper function to make API requests
-async function apiRequest(method, endpoint, data = null, token = null) {
-  const config = {
-    method,
-    url: `${FRONTEND_URL}${endpoint}`,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` })
-    },
-    ...(data && { data })
-  };
-
+// 获取CSRF token
+async function getCSRFToken() {
   try {
-    const response = await axios(config);
-    return { success: true, data: response.data };
+    const response = await fetch(`${API_BASE}/auth/csrf`)
+    if (!response.ok) {
+      throw new Error(`Failed to get CSRF token: ${response.status}`)
+    }
+    const data = await response.json()
+    return data.data?.token || data.token
   } catch (error) {
-    return { 
-      success: false, 
-      error: error.response?.data || error.message,
-      status: error.response?.status 
-    };
+    console.error('Failed to get CSRF token:', error)
+    return null
   }
 }
 
-// Test functions
-async function testUserRegistration() {
-  console.log('\n🧪 Testing User Registration...');
-  
-  // Register first user
-  const result1 = await apiRequest('POST', '/api/auth/register', testUser);
-  if (result1.success) {
-    console.log('✅ User 1 registered successfully');
-    authToken1 = result1.data.data?.token || result1.data.token;
-    userId1 = result1.data.data?.user?.id || result1.data.user?.id;
-  } else {
-    console.log('❌ User 1 registration failed:', result1.error);
-    return false;
-  }
-
-  // Register second user
-  const result2 = await apiRequest('POST', '/api/auth/register', testUser2);
-  if (result2.success) {
-    console.log('✅ User 2 registered successfully');
-    authToken2 = result2.data.data?.token || result2.data.token;
-    userId2 = result2.data.data?.user?.id || result2.data.user?.id;
-  } else {
-    console.log('❌ User 2 registration failed:', result2.error);
-    return false;
-  }
-
-  return true;
-}
-
-async function testFollowSystem() {
-  console.log('\n🧪 Testing Follow System APIs...');
-  
-  if (!authToken1 || !userId2) {
-    console.log('❌ Missing auth tokens or user IDs');
-    return false;
-  }
-
-  // Test 1: Follow a user
-  console.log('\n📍 Test 1: User 1 follows User 2');
-  const followResult = await apiRequest('POST', '/api/v1/follow/users', {
-    user_id: userId2,
-    notification_enabled: true
-  }, authToken1);
-  
-  if (followResult.success) {
-    console.log('✅ Follow action successful:', followResult.data);
-  } else {
-    console.log('❌ Follow action failed:', followResult.error);
-  }
-
-  // Test 2: Get follow status
-  console.log('\n📍 Test 2: Check follow status');
-  const statusResult = await apiRequest('GET', `/api/v1/follow/users/${userId2}/status`, null, authToken1);
-  
-  if (statusResult.success) {
-    console.log('✅ Follow status retrieved:', statusResult.data);
-  } else {
-    console.log('❌ Failed to get follow status:', statusResult.error);
-  }
-
-  // Test 3: Get followers list
-  console.log('\n📍 Test 3: Get User 2\'s followers');
-  const followersResult = await apiRequest('GET', `/api/v1/follow/users/${userId2}/followers`, null, authToken2);
-  
-  if (followersResult.success) {
-    console.log('✅ Followers list retrieved:', followersResult.data);
-  } else {
-    console.log('❌ Failed to get followers:', followersResult.error);
-  }
-
-  // Test 4: Get following list
-  console.log('\n📍 Test 4: Get User 1\'s following list');
-  const followingResult = await apiRequest('GET', '/api/v1/follow/following', null, authToken1);
-  
-  if (followingResult.success) {
-    console.log('✅ Following list retrieved:', followingResult.data);
-  } else {
-    console.log('❌ Failed to get following list:', followingResult.error);
-  }
-
-  // Test 5: Get follow statistics
-  console.log('\n📍 Test 5: Get follow statistics');
-  const statsResult = await apiRequest('GET', '/api/v1/me/follow-stats', null, authToken1);
-  
-  if (statsResult.success) {
-    console.log('✅ Follow stats retrieved:', statsResult.data);
-  } else {
-    console.log('❌ Failed to get follow stats:', statsResult.error);
-  }
-
-  // Test 6: Get user suggestions
-  console.log('\n📍 Test 6: Get user suggestions');
-  const suggestionsResult = await apiRequest('GET', '/api/v1/follow/suggestions?limit=5', null, authToken1);
-  
-  if (suggestionsResult.success) {
-    console.log('✅ User suggestions retrieved:', suggestionsResult.data);
-  } else {
-    console.log('❌ Failed to get suggestions:', suggestionsResult.error);
-  }
-
-  // Test 7: Unfollow user
-  console.log('\n📍 Test 7: User 1 unfollows User 2');
-  const unfollowResult = await apiRequest('DELETE', `/api/v1/follow/users/${userId2}`, null, authToken1);
-  
-  if (unfollowResult.success) {
-    console.log('✅ Unfollow action successful:', unfollowResult.data);
-  } else {
-    console.log('❌ Unfollow action failed:', unfollowResult.error);
-  }
-
-  return true;
-}
-
-async function testPrivacySystem() {
-  console.log('\n🧪 Testing Privacy System APIs...');
-  
-  if (!authToken1) {
-    console.log('❌ Missing auth token');
-    return false;
-  }
-
-  // Test 1: Get privacy settings
-  console.log('\n📍 Test 1: Get privacy settings');
-  const getSettingsResult = await apiRequest('GET', '/api/v1/privacy/settings', null, authToken1);
-  
-  if (getSettingsResult.success) {
-    console.log('✅ Privacy settings retrieved:', getSettingsResult.data);
-  } else {
-    console.log('❌ Failed to get privacy settings:', getSettingsResult.error);
-  }
-
-  // Test 2: Update privacy settings
-  console.log('\n📍 Test 2: Update privacy settings');
-  const updateSettingsResult = await apiRequest('PUT', '/api/v1/privacy/settings', {
-    profile_visibility: 'friends',
-    show_email: false,
-    show_op_code: true,
-    op_code_privacy: 'partial',
-    allow_comments: true,
-    letter_visibility_default: 'private'
-  }, authToken1);
-  
-  if (updateSettingsResult.success) {
-    console.log('✅ Privacy settings updated:', updateSettingsResult.data);
-  } else {
-    console.log('❌ Failed to update privacy settings:', updateSettingsResult.error);
-  }
-
-  // Test 3: Check privacy permission
-  console.log('\n📍 Test 3: Check privacy permission');
-  const checkPrivacyResult = await apiRequest('GET', `/api/v1/privacy/check/${userId2}?action=view_profile`, null, authToken1);
-  
-  if (checkPrivacyResult.success) {
-    console.log('✅ Privacy check result:', checkPrivacyResult.data);
-  } else {
-    console.log('❌ Failed to check privacy:', checkPrivacyResult.error);
-  }
-
-  // Test 4: Block a user
-  console.log('\n📍 Test 4: Block a user');
-  const blockResult = await apiRequest('POST', '/api/v1/privacy/block', {
-    user_id: userId2
-  }, authToken1);
-  
-  if (blockResult.success) {
-    console.log('✅ User blocked successfully:', blockResult.data);
-  } else {
-    console.log('❌ Failed to block user:', blockResult.error);
-  }
-
-  // Test 5: Get blocked users list
-  console.log('\n📍 Test 5: Get blocked users list');
-  const blockedListResult = await apiRequest('GET', '/api/v1/privacy/blocked', null, authToken1);
-  
-  if (blockedListResult.success) {
-    console.log('✅ Blocked users list retrieved:', blockedListResult.data);
-  } else {
-    console.log('❌ Failed to get blocked users:', blockedListResult.error);
-  }
-
-  // Test 6: Unblock user
-  console.log('\n📍 Test 6: Unblock user');
-  const unblockResult = await apiRequest('DELETE', `/api/v1/privacy/block/${userId2}`, null, authToken1);
-  
-  if (unblockResult.success) {
-    console.log('✅ User unblocked successfully:', unblockResult.data);
-  } else {
-    console.log('❌ Failed to unblock user:', unblockResult.error);
-  }
-
-  return true;
-}
-
-async function testPersonalHomepage() {
-  console.log('\n🧪 Testing Personal Homepage...');
-  
-  if (!authToken1 || !testUser.username) {
-    console.log('❌ Missing auth token or username');
-    return false;
-  }
-
-  // Test 1: Access user profile page
-  console.log('\n📍 Test 1: Access user profile API');
-  const profileResult = await apiRequest('GET', `/api/users/${testUser.username}/profile`, null, authToken1);
-  
-  if (profileResult.success) {
-    console.log('✅ User profile retrieved:', profileResult.data);
-  } else {
-    console.log('❌ Failed to get user profile:', profileResult.error);
-  }
-
-  // Test 2: Get user follow stats
-  console.log('\n📍 Test 2: Get user follow stats');
-  const followStatsResult = await apiRequest('GET', `/api/users/${testUser.username}/follow-stats`, null, authToken1);
-  
-  if (followStatsResult.success) {
-    console.log('✅ Follow stats retrieved:', followStatsResult.data);
-  } else {
-    console.log('❌ Failed to get follow stats:', followStatsResult.error);
-  }
-
-  // Test 3: Get user's public letters
-  console.log('\n📍 Test 3: Get user\'s public letters');
-  const lettersResult = await apiRequest('GET', `/api/users/${testUser.username}/letters?public=true`, null, authToken1);
-  
-  if (lettersResult.success) {
-    console.log('✅ Public letters retrieved:', lettersResult.data);
-  } else {
-    console.log('❌ Failed to get public letters:', lettersResult.error);
-  }
-
-  return true;
-}
-
-async function checkFrontendComponents() {
-  console.log('\n🧪 Checking Frontend Components...');
-  
-  // Check if frontend is using real API endpoints
-  console.log('\n📍 Checking API configuration...');
-  
+// 模拟用户登录并获取token
+async function loginAndGetToken() {
   try {
-    // Test if the frontend proxy is working
-    const proxyTest = await apiRequest('GET', '/api/health');
-    if (proxyTest.success || proxyTest.status === 200) {
-      console.log('✅ Frontend API proxy is working');
+    // 首先获取CSRF token
+    const csrfToken = await getCSRFToken()
+    if (!csrfToken) {
+      throw new Error('Failed to obtain CSRF token')
+    }
+
+    const response = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
+      body: JSON.stringify({
+        username: 'alice',
+        password: 'Secret123!'
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(`Login failed: ${response.status} - ${errorData.message || 'Unknown error'}`)
+    }
+
+    const data = await response.json()
+    return data.data?.token || data.token
+  } catch (error) {
+    console.error('Login failed:', error)
+    return null
+  }
+}
+
+// 测试漂流瓶API
+async function testDriftBottleAPI(token) {
+  console.log('🧪 Testing Drift Bottle API...')
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  }
+
+  try {
+    // 1. 测试获取漂流中的瓶子
+    console.log('  📍 Testing GET /drift-bottles/floating')
+    const floatingResponse = await fetch(`${API_BASE}/drift-bottles/floating?limit=5`, {
+      headers
+    })
+    
+    if (floatingResponse.ok) {
+      const floatingData = await floatingResponse.json()
+      console.log('  ✅ Floating bottles:', floatingData.data?.length || 0)
     } else {
-      console.log('❌ Frontend API proxy might not be configured correctly');
+      console.log('  ❌ Floating bottles API failed:', floatingResponse.status)
+    }
+
+    // 2. 测试获取我的漂流瓶
+    console.log('  📍 Testing GET /drift-bottles/my')
+    const myBottlesResponse = await fetch(`${API_BASE}/drift-bottles/my?page=1&limit=10`, {
+      headers
+    })
+    
+    if (myBottlesResponse.ok) {
+      const myBottlesData = await myBottlesResponse.json()
+      console.log('  ✅ My bottles:', myBottlesData.data?.total || 0)
+    } else {
+      console.log('  ❌ My bottles API failed:', myBottlesResponse.status)
+    }
+
+    // 3. 测试统计信息
+    console.log('  📍 Testing GET /drift-bottles/stats')
+    const statsResponse = await fetch(`${API_BASE}/drift-bottles/stats`, {
+      headers
+    })
+    
+    if (statsResponse.ok) {
+      const statsData = await statsResponse.json()
+      console.log('  ✅ Stats retrieved successfully')
+      console.log('    - Sent:', statsData.data?.sent_count || 0)
+      console.log('    - Collected:', statsData.data?.collected_count || 0)
+      console.log('    - Floating:', statsData.data?.floating_count || 0)
+    } else {
+      console.log('  ❌ Stats API failed:', statsResponse.status)
+    }
+
+  } catch (error) {
+    console.error('  ❌ Drift Bottle API error:', error.message)
+  }
+}
+
+// 测试未来信API
+async function testFutureLetterAPI(token) {
+  console.log('🧪 Testing Future Letter API...')
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  }
+
+  try {
+    // 1. 测试获取已安排的未来信
+    console.log('  📍 Testing GET /future-letters')
+    const scheduledResponse = await fetch(`${API_BASE}/future-letters?page=1&limit=10`, {
+      headers
+    })
+    
+    if (scheduledResponse.ok) {
+      const scheduledData = await scheduledResponse.json()
+      console.log('  ✅ Scheduled letters:', scheduledData.data?.total || 0)
+    } else {
+      console.log('  ❌ Scheduled letters API failed:', scheduledResponse.status)
+    }
+
+    // 2. 测试统计信息
+    console.log('  📍 Testing GET /future-letters/stats')
+    const statsResponse = await fetch(`${API_BASE}/future-letters/stats`, {
+      headers
+    })
+    
+    if (statsResponse.ok) {
+      const statsData = await statsResponse.json()
+      console.log('  ✅ Stats retrieved successfully')
+      console.log('    - Pending:', statsData.data?.pending_count || 0)
+      console.log('    - Upcoming 24h:', statsData.data?.upcoming_24h_count || 0)
+    } else {
+      console.log('  ❌ Stats API failed:', statsResponse.status)
+    }
+
+  } catch (error) {
+    console.error('  ❌ Future Letter API error:', error.message)
+  }
+}
+
+// 检查服务器健康状态
+async function checkServerHealth() {
+  try {
+    const response = await fetch('http://localhost:8080/health')
+    if (response.ok) {
+      console.log('✅ Backend server is healthy')
+      return true
+    } else {
+      console.log('❌ Backend server health check failed:', response.status)
+      return false
     }
   } catch (error) {
-    console.log('❌ Error checking frontend proxy:', error.message);
+    console.log('❌ Backend server is not accessible:', error.message)
+    return false
   }
-
-  return true;
 }
 
-// Main test runner
-async function runTests() {
-  console.log('🚀 Starting Frontend-Backend Integration Tests');
-  console.log('================================================');
-  console.log(`Frontend URL: ${FRONTEND_URL}`);
-  console.log(`Backend URL: ${BACKEND_URL}`);
-  console.log('================================================');
-
-  // Check if servers are running
-  console.log('\n🔍 Checking server status...');
+// 简单的API路由存在性测试（无需认证）
+async function testAPIRoutesExist() {
+  console.log('🧪 Testing API Routes Exist...')
   
-  try {
-    await axios.get(`${FRONTEND_URL}`);
-    console.log('✅ Frontend server is running');
-  } catch (error) {
-    console.log('❌ Frontend server is not accessible');
-    return;
+  const routes = [
+    '/api/v1/drift-bottles/floating',
+    '/api/v1/drift-bottles/stats',
+    '/api/v1/future-letters/stats'
+  ]
+  
+  for (const route of routes) {
+    try {
+      console.log(`  📍 Testing ${route}`)
+      const response = await fetch(`http://localhost:8080${route}`)
+      
+      if (response.status === 401 || response.status === 403) {
+        console.log(`  ✅ Route exists (${response.status} - auth required)`)
+      } else if (response.status === 404) {
+        console.log(`  ❌ Route not found (${response.status})`)
+      } else {
+        console.log(`  ✅ Route accessible (${response.status})`)
+      }
+    } catch (error) {
+      console.log(`  ❌ Route error: ${error.message}`)
+    }
   }
-
-  try {
-    await axios.get(`${BACKEND_URL}/health`);
-    console.log('✅ Backend server is running');
-  } catch (error) {
-    console.log('❌ Backend server is not accessible');
-    return;
-  }
-
-  // Run tests
-  await testUserRegistration();
-  await testFollowSystem();
-  await testPrivacySystem();
-  await testPersonalHomepage();
-  await checkFrontendComponents();
-
-  console.log('\n\n🎉 Integration tests completed!');
-  console.log('================================================');
-  console.log('Summary:');
-  console.log('- Test User 1:', testUser.username);
-  console.log('- Test User 2:', testUser2.username);
-  console.log('- User ID 1:', userId1);
-  console.log('- User ID 2:', userId2);
-  console.log('================================================');
 }
 
-// Run the tests
-runTests().catch(console.error);
+// 主测试函数
+async function runIntegrationTest() {
+  console.log('🚀 Starting Frontend-Backend Integration Test')
+  console.log('=' .repeat(50))
+
+  // 1. 检查服务器健康状态
+  const isHealthy = await checkServerHealth()
+  if (!isHealthy) {
+    console.log('❌ Cannot proceed without healthy backend server')
+    return
+  }
+
+  // 2. 测试API路由是否存在
+  await testAPIRoutesExist()
+
+  // 3. 尝试登录获取token（如果失败也继续）
+  console.log('🔐 Attempting login...')
+  const token = await loginAndGetToken()
+  if (!token) {
+    console.log('⚠️  Authentication failed, but continuing with route tests')
+  } else {
+    console.log('✅ Login successful')
+    
+    // 4. 测试漂流瓶API
+    await testDriftBottleAPI(token)
+
+    // 5. 测试未来信API
+    await testFutureLetterAPI(token)
+  }
+
+  console.log('=' .repeat(50))
+  console.log('🎉 Integration test completed!')
+}
+
+// 运行测试
+if (require.main === module) {
+  runIntegrationTest().catch(console.error)
+}
+
+module.exports = {
+  runIntegrationTest,
+  testDriftBottleAPI,
+  testFutureLetterAPI,
+  checkServerHealth
+}

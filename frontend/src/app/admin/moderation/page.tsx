@@ -117,31 +117,7 @@ export default function ModerationPage() {
     priority: 50
   })
 
-  // 权限检查
-  if (!user || !hasPermission(PERMISSIONS.SYSTEM_CONFIG)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">访问权限不足</h2>
-            <p className="text-gray-600 mb-4">
-              您没有访问内容审核管理的权限
-            </p>
-            <Button asChild variant="outline">
-              <a href="/admin">返回管理控制台</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // 加载数据
-  useEffect(() => {
-    loadData()
-  }, [])
-
+  // 加载数据函数
   const loadData = async () => {
     setLoading(true)
     try {
@@ -174,6 +150,30 @@ export default function ModerationPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  // 权限检查
+  if (!user || !hasPermission(PERMISSIONS.SYSTEM_CONFIG)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">访问权限不足</h2>
+            <p className="text-gray-600 mb-4">
+              您没有访问内容审核管理的权限
+            </p>
+            <Button asChild variant="outline">
+              <a href="/admin">返回管理控制台</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   // 审核内容

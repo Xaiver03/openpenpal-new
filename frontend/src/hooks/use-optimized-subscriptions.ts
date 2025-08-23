@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useCallback } from 'react'
-import { shallow } from 'zustand/shallow'
+import { useShallow } from 'zustand/react/shallow'
 import { useUserStore, type User } from '@/stores/user-store'
 import { type UserRole, type Permission } from '@/constants/roles'
 
@@ -13,15 +13,16 @@ import { type UserRole, type Permission } from '@/constants/roles'
  */
 export function useUserBasicInfo() {
   return useUserStore(
-    useCallback((state) => ({
-      id: state.user?.id,
-      username: state.user?.username,
-      nickname: state.user?.nickname,
-      email: state.user?.email,
-      avatar: state.user?.avatar,
-      isAuthenticated: state.isAuthenticated
-    }), []),
-    shallow
+    useShallow(
+      useCallback((state) => ({
+        id: state.user?.id,
+        username: state.user?.username,
+        nickname: state.user?.nickname,
+        email: state.user?.email,
+        avatar: state.user?.avatar,
+        isAuthenticated: state.isAuthenticated
+      }), [])
+    )
   )
 }
 
@@ -30,13 +31,14 @@ export function useUserBasicInfo() {
  */
 export function useUserRoleInfo() {
   return useUserStore(
-    useCallback((state) => ({
-      role: state.user?.role,
-      permissions: state.user?.permissions,
-      canAccessAdmin: state.canAccessAdmin(),
-      isCourier: state.isCourier()
-    }), []),
-    shallow
+    useShallow(
+      useCallback((state) => ({
+        role: state.user?.role,
+        permissions: state.user?.permissions,
+        canAccessAdmin: state.canAccessAdmin(),
+        isCourier: state.isCourier()
+      }), [])
+    )
   )
 }
 
@@ -45,13 +47,14 @@ export function useUserRoleInfo() {
  */
 export function useCourierInfo() {
   return useUserStore(
-    useCallback((state) => ({
+    useShallow(
+      useCallback((state) => ({
       courierInfo: state.user?.courierInfo,
       level: state.getCourierLevel(),
       levelName: state.getCourierLevelName(),
       isCourier: state.isCourier()
-    }), []),
-    shallow
+    }), [])
+    )
   )
 }
 
@@ -60,13 +63,14 @@ export function useCourierInfo() {
  */
 export function useLoadingStates() {
   return useUserStore(
-    useCallback((state) => ({
+    useShallow(
+      useCallback((state) => ({
       isLoading: state.loading.isLoading,
       isRefreshing: state.loading.isRefreshing,
       error: state.loading.error,
       lastUpdated: state.loading.lastUpdated
-    }), []),
-    shallow
+    }), [])
+    )
   )
 }
 
@@ -95,13 +99,14 @@ export function usePermissionChecker() {
  */
 export function useAuthActions() {
   return useUserStore(
-    useCallback((state) => ({
+    useShallow(
+      useCallback((state) => ({
       login: state.login,
       logout: state.logout,
       refreshUser: state.refreshUser,
       clearError: state.clearError
-    }), []),
-    shallow
+    }), [])
+    )
   )
 }
 
@@ -113,8 +118,9 @@ export function useSelectiveUserData<T>(
   dependencies: any[] = []
 ) {
   return useUserStore(
-    useCallback((state) => selector(state.user), dependencies),
-    shallow
+    useShallow(
+      useCallback((state) => selector(state.user), dependencies)
+    )
   )
 }
 
@@ -205,7 +211,8 @@ export function useStorePerformanceMonitor() {
  */
 export function useBatchUserData() {
   return useUserStore(
-    useCallback((state) => {
+    useShallow(
+      useCallback((state) => {
       const user = state.user
       if (!user) return null
       
@@ -248,8 +255,8 @@ export function useBatchUserData() {
           lastLoginAt: user.last_login_at
         }
       }
-    }, []),
-    shallow
+    }, [])
+    )
   )
 }
 

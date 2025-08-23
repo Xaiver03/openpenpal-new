@@ -15,9 +15,12 @@ export interface ProfileVisibility {
   bio: PrivacyLevel
   school_info: PrivacyLevel
   contact_info: PrivacyLevel
+  op_code: PrivacyLevel           // OP Code visibility
   activity_feed: PrivacyLevel
   follow_lists: PrivacyLevel
   statistics: PrivacyLevel
+  achievements: PrivacyLevel       // Achievement badges visibility
+  public_letters: PrivacyLevel     // Public letters visibility
   last_active: PrivacyLevel
 }
 
@@ -93,9 +96,12 @@ export const DEFAULT_PRIVACY_SETTINGS: Omit<PrivacySettings, 'id' | 'user_id' | 
     bio: 'school',
     school_info: 'public',
     contact_info: 'friends',
+    op_code: 'school',           // Default: visible to same school
     activity_feed: 'school',
     follow_lists: 'friends',
     statistics: 'public',
+    achievements: 'public',       // Default: public visible
+    public_letters: 'public',     // Default: public visible
     last_active: 'school'
   },
   social_privacy: {
@@ -145,8 +151,11 @@ export const PROFILE_FIELD_LABELS: Record<keyof ProfileVisibility, string> = {
   bio: '个人简介',
   school_info: '学校信息',
   contact_info: '联系方式',
+  op_code: 'OP Code',
   activity_feed: '活动动态',
   follow_lists: '关注列表',
   statistics: '统计信息',
+  achievements: '成就徽章',
+  public_letters: '公开信件',
   last_active: '最近活跃'
 }

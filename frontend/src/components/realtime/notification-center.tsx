@@ -14,8 +14,7 @@ import {
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu'
 import { useRealtimeNotifications } from '@/hooks/use-realtime'
-import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+import { SafeTimestamp } from '@/components/ui/safe-timestamp'
 
 interface NotificationCenterProps {
   className?: string
@@ -177,12 +176,12 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
                       </p>
                       
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(notification.created_at, { 
-                            addSuffix: true, 
-                            locale: zhCN 
-                          })}
-                        </span>
+                        <SafeTimestamp 
+                          date={notification.created_at} 
+                          format="relative" 
+                          fallback="刚刚"
+                          className="text-xs text-gray-500"
+                        />
                         
                         {notification.priority !== 'normal' && (
                           <Badge 

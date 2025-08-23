@@ -54,6 +54,8 @@ const (
 	VisibilityPrivate LetterVisibility = "private"
 	VisibilityPublic  LetterVisibility = "public"
 	VisibilityFriends LetterVisibility = "friends"
+	VisibilityDrift   LetterVisibility = "drift"   // 漂流瓶状态
+	VisibilityFuture  LetterVisibility = "future"  // 未来信状态
 )
 
 // Letter 信件模型

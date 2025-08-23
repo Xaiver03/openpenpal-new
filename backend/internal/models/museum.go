@@ -33,6 +33,7 @@ type MuseumItem struct {
 	SourceID     string           `json:"sourceId" gorm:"column:source_id;type:varchar(36);not null"`
 	Title        string           `json:"title" gorm:"type:varchar(200)"`
 	Description  string           `json:"description" gorm:"type:text"`
+	ImageURL     string           `json:"image_url" gorm:"column:image_url;type:varchar(500)"` // 博物馆图片URL
 	Tags         string           `json:"tags" gorm:"type:text"`
 	Status       MuseumItemStatus `json:"status" gorm:"type:varchar(20);default:'pending'"`
 	SubmittedBy  string           `json:"submittedBy" gorm:"column:submitted_by;type:varchar(36)"`
@@ -94,6 +95,7 @@ type MuseumEntry struct {
 	LetterID          string           `json:"letterId" gorm:"column:letter_id;type:varchar(36)"`
 	SubmissionID      *string          `json:"submissionId" gorm:"column:submission_id;type:varchar(36)"`
 	DisplayTitle      string           `json:"displayTitle" gorm:"column:display_title;type:varchar(200)"`
+	ImageURL          *string          `json:"imageUrl" gorm:"column:image_url"`  // 博物馆条目图片URL
 	AuthorDisplayType string           `json:"authorDisplayType" gorm:"column:author_display_type;type:varchar(20)"`
 	AuthorDisplayName *string          `json:"authorDisplayName" gorm:"column:author_display_name;type:varchar(100)"`
 	CuratorType       string           `json:"curatorType" gorm:"column:curator_type;type:varchar(20)"`

@@ -12,8 +12,6 @@ import {
   Brain, 
   Bot, 
   Users, 
-  Wand2,
-  Lightbulb,
   BookOpen,
   Calendar,
   MessageCircle,
@@ -22,10 +20,6 @@ import {
 import { AIWritingInspiration } from '@/components/ai/ai-writing-inspiration'
 import { AIDailyInspiration } from '@/components/ai/ai-daily-inspiration'
 import { AIPenpalMatch } from '@/components/ai/ai-penpal-match'
-import { AIPersonaSelector, AIPersonaPreview } from '@/components/ai/ai-persona-selector'
-import { AIReplyGenerator } from '@/components/ai/ai-reply-generator'
-import { AIReplyAdvice } from '@/components/ai/ai-reply-advice'
-import { CloudLetterCompanion } from '@/components/ai/cloud-letter-companion'
 import { UnreachableCompanion } from '@/components/ai/unreachable-companion'
 import { CharacterStation } from '@/components/ai/character-station'
 import { AuthFixBanner } from '@/components/ai/auth-fix-banner'
@@ -34,9 +28,8 @@ import { useAuth } from '@/contexts/auth-context-new'
 import { TokenManager } from '@/lib/auth/cookie-token-manager'
 
 export default function AIPage() {
-  const [selectedPersona, setSelectedPersona] = useState<string>('friend')
   // Use a real letter ID from the database for testing
-  const [testLetterId, setTestLetterId] = useState<string>('24b6c37e-b2eb-4639-9bc8-8834cea914e2')
+  const [testLetterId] = useState<string>('24b6c37e-b2eb-4639-9bc8-8834cea914e2')
   const [showAuthFix, setShowAuthFix] = useState(false)
   
   const router = useRouter()
@@ -98,7 +91,7 @@ export default function AIPage() {
     return () => {
       clearTimeout(timer)
     }
-  }, [isAuthenticated, user, router])
+  }, [isAuthenticated, user, router, refreshUser])
   
   // Remove the loading spinner - show the page even when not authenticated
 

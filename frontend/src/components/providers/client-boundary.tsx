@@ -1,6 +1,7 @@
 'use client'
 
 import React, { Suspense, useState, useEffect } from 'react'
+import { Toaster } from 'sonner'
 
 // 直接导入而不是懒加载以避免hydration问题
 import { WebSocketProvider } from '@/contexts/websocket-context'
@@ -45,6 +46,16 @@ function ClientOnlyComponents() {
       <NotificationManager />
       <PerformanceMonitor />
       <AuthDebugPanel />
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#fefcf7',
+            border: '1px solid #e5e7eb',
+            color: '#1f2937',
+          },
+        }}
+      />
     </Suspense>
   )
 }

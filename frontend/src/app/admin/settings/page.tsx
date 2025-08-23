@@ -140,26 +140,6 @@ export default function SystemSettingsPage() {
   const [testingEmail, setTestingEmail] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
-  // 权限检查
-  if (!user || !hasPermission(PERMISSIONS.SYSTEM_CONFIG)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">访问权限不足</h2>
-            <p className="text-gray-600 mb-4">
-              您没有访问系统设置的权限
-            </p>
-            <Button asChild variant="outline">
-              <a href="/admin">返回管理控制台</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   // 加载配置
   useEffect(() => {
     loadConfig()
@@ -170,27 +150,6 @@ export default function SystemSettingsPage() {
     const hasChanges = JSON.stringify(config) !== JSON.stringify(originalConfig)
     setHasChanges(hasChanges)
   }, [config, originalConfig])
-
-  const loadConfig = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/v1/admin/settings')
-      const result = await response.json()
-      
-      if (result.success && result.data?.code === 0) {
-        setConfig(result.data.data)
-        setOriginalConfig(result.data.data)
-      } else {
-        console.error('加载配置失败:', result.message)
-        alert('加载配置失败: ' + result.message)
-      }
-    } catch (error) {
-      console.error('Failed to load config:', error)
-      alert('加载配置失败，请刷新页面重试')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const saveConfig = async () => {
     setSaving(true)
@@ -216,6 +175,58 @@ export default function SystemSettingsPage() {
       alert('配置保存失败，请重试')
     } finally {
       setSaving(false)
+    }
+  }
+
+  // 未保存更改检测
+  const { confirmLeave, safeNavigate } = useUnsavedChanges({
+    hasUnsavedChanges: hasChanges,
+    message: '您有未保存的系统设置更改。是否要在离开前保存？',
+    onSave: saveConfig,
+    onDiscard: () => {
+      setConfig(originalConfig)
+      setHasChanges(false)
+    }
+  })
+
+  // 权限检查
+  if (!user || !hasPermission(PERMISSIONS.SYSTEM_CONFIG)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">访问权限不足</h2>
+            <p className="text-gray-600 mb-4">
+              您没有访问系统设置的权限
+            </p>
+            <Button asChild variant="outline">
+              <a href="/admin">返回管理控制台</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const loadConfig = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/v1/admin/settings')
+      const result = await response.json()
+      
+      if (result.success && result.data?.code === 0) {
+        setConfig(result.data.data)
+        setOriginalConfig(result.data.data)
+      } else {
+        console.error('加载配置失败:', result.message)
+        alert('加载配置失败: ' + result.message)
+      }
+    } catch (error) {
+      console.error('Failed to load config:', error)
+      alert('加载配置失败，请刷新页面重试')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -277,17 +288,6 @@ export default function SystemSettingsPage() {
   const handleConfigChange = (key: keyof SystemConfig, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }))
   }
-  
-  // 未保存更改检测
-  const { confirmLeave, safeNavigate } = useUnsavedChanges({
-    hasUnsavedChanges: hasChanges,
-    message: '您有未保存的系统设置更改。是否要在离开前保存？',
-    onSave: saveConfig,
-    onDiscard: () => {
-      setConfig(originalConfig)
-      setHasChanges(false)
-    }
-  })
 
   if (loading) {
     return (

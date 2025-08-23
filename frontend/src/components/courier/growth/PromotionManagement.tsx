@@ -19,8 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { formatDistanceToNow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { SafeTimestamp } from '@/components/ui/safe-timestamp';
 
 export function PromotionManagement() {
   const { toast } = useToast();
@@ -137,18 +136,22 @@ export function PromotionManagement() {
                             </div>
                             
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>
-                                申请时间: {formatDistanceToNow(new Date(request.created_at), {
-                                  addSuffix: true,
-                                  locale: zhCN,
-                                })}
+                              <span className="flex items-center">
+                                申请时间: <SafeTimestamp 
+                                  date={request.created_at}
+                                  format="relative"
+                                  fallback="刚刚"
+                                  className="ml-1"
+                                />
                               </span>
                               {request.reviewed_at && (
-                                <span>
-                                  审核时间: {formatDistanceToNow(new Date(request.reviewed_at), {
-                                    addSuffix: true,
-                                    locale: zhCN,
-                                  })}
+                                <span className="flex items-center">
+                                  审核时间: <SafeTimestamp 
+                                    date={request.reviewed_at}
+                                    format="relative"
+                                    fallback="刚刚"
+                                    className="ml-1"
+                                  />
                                 </span>
                               )}
                             </div>

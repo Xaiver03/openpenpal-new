@@ -6,6 +6,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Bell, Check, Settings, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +27,7 @@ export function NotificationBell({
   show_count = true,
   max_count = 99
 }: NotificationBellProps) {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const { 
     notifications, 
@@ -59,7 +61,7 @@ export function NotificationBell({
     
     // Navigate if URL provided
     if (url) {
-      window.location.href = url
+      router.push(url)
     }
     
     // Close dropdown
@@ -111,7 +113,7 @@ export function NotificationBell({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.location.href = '/settings/notifications'}
+              onClick={() => router.push('/settings/notifications')}
               className="h-8 w-8 p-0"
             >
               <Settings className="h-4 w-4" />
@@ -159,7 +161,7 @@ export function NotificationBell({
                 className="w-full justify-center text-sm"
                 onClick={() => {
                   setIsOpen(false)
-                  window.location.href = '/notifications'
+                  router.push('/notifications')
                 }}
               >
                 查看全部通知

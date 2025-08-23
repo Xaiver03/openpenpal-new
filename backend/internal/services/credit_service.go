@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -12,16 +13,25 @@ import (
 
 // CreditService 积分系统服务
 type CreditService struct {
-	db              *gorm.DB
-	notificationSvc *NotificationService
-	expirationSvc   *CreditExpirationService // Phase 4.1: 积分过期服务
+	db                  *gorm.DB
+	transactionHelper   *TransactionHelper    // 标准化事务管理
+	concurrencyManager  *ConcurrencyManager  // 并发控制管理
+	notificationSvc     *NotificationService
+	expirationSvc       *CreditExpirationService // Phase 4.1: 积分过期服务
 }
 
 // NewCreditService 创建积分服务
 func NewCreditService(db *gorm.DB) *CreditService {
 	return &CreditService{
-		db: db,
+		db:                db,
+		transactionHelper: NewTransactionHelper(db),
+		// 注意：concurrencyManager 需要Redis客户端，应通过SetConcurrencyManager设置
 	}
+}
+
+// SetConcurrencyManager 设置并发控制管理器
+func (s *CreditService) SetConcurrencyManager(cm *ConcurrencyManager) {
+	s.concurrencyManager = cm
 }
 
 // SetNotificationService 设置通知服务
@@ -75,8 +85,44 @@ const (
 // 等级升级所需积分
 var PointsLevelUp = []int{0, 100, 300, 600, 1000, 1500} // 每级所需总积分
 
-// GetOrCreateUserCredit 获取或创建用户积分记录
+// GetOrCreateUserCredit 获取或创建用户积分记录（线程安全）
 func (s *CreditService) GetOrCreateUserCredit(userID string) (*models.UserCredit, error) {
+	var credit models.UserCredit
+	
+	// 如果有并发管理器，使用线程安全的方式
+	if s.concurrencyManager != nil {
+		err := s.concurrencyManager.GetOrCreateUserCreditSafe(context.Background(), userID, &credit)
+		if err != nil {
+			// 如果并发管理器失败，回退到传统方式
+			return s.getOrCreateUserCreditFallback(userID)
+		}
+		
+		// 如果记录为空（新创建的），需要初始化字段
+		if credit.ID == "" {
+			credit = models.UserCredit{
+				ID:        uuid.New().String(),
+				UserID:    userID,
+				Total:     0,
+				Available: 0,
+				Used:      0,
+				Earned:    0,
+				Level:     1,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			if err := s.db.Create(&credit).Error; err != nil {
+				return nil, fmt.Errorf("failed to create user credit: %w", err)
+			}
+		}
+		return &credit, nil
+	}
+	
+	// 回退到传统方式
+	return s.getOrCreateUserCreditFallback(userID)
+}
+
+// getOrCreateUserCreditFallback 传统的获取或创建用户积分记录（用作回退方案）
+func (s *CreditService) getOrCreateUserCreditFallback(userID string) (*models.UserCredit, error) {
 	var credit models.UserCredit
 	if err := s.db.Where("user_id = ?", userID).First(&credit).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -113,43 +159,49 @@ func (s *CreditService) AddPoints(userID string, points int, description, refere
 		return err
 	}
 
-	// 开始事务
-	tx := s.db.Begin()
+	var transaction models.CreditTransaction
+	var oldLevel int
+	var newLevel int
 
-	// 更新积分
-	oldLevel := credit.Level
-	credit.Total += points
-	credit.Available += points
-	credit.Earned += points
+	// 使用标准化事务管理
+	err = s.transactionHelper.WithTransaction(context.Background(), func(tx *gorm.DB) error {
+		// 更新积分
+		oldLevel = credit.Level
+		credit.Total += points
+		credit.Available += points
+		credit.Earned += points
 
-	// 检查等级升级
-	newLevel := s.calculateLevel(credit.Total)
-	if newLevel > credit.Level {
-		credit.Level = newLevel
+		// 检查等级升级
+		newLevel = s.calculateLevel(credit.Total)
+		if newLevel > credit.Level {
+			credit.Level = newLevel
+		}
+
+		if err := tx.Save(credit).Error; err != nil {
+			return fmt.Errorf("failed to update user credit: %w", err)
+		}
+
+		// 创建交易记录
+		transaction = models.CreditTransaction{
+			ID:          uuid.New().String(),
+			UserID:      userID,
+			Type:        "earn",
+			Amount:      points,
+			Description: description,
+			Reference:   reference,
+			CreatedAt:   time.Now(),
+		}
+
+		if err := tx.Create(&transaction).Error; err != nil {
+			return fmt.Errorf("failed to create transaction: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
-
-	if err := tx.Save(credit).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to update user credit: %w", err)
-	}
-
-	// 创建交易记录
-	transaction := models.CreditTransaction{
-		ID:          uuid.New().String(),
-		UserID:      userID,
-		Type:        "earn",
-		Amount:      points,
-		Description: description,
-		Reference:   reference,
-		CreatedAt:   time.Now(),
-	}
-
-	if err := tx.Create(&transaction).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to create transaction: %w", err)
-	}
-
-	tx.Commit()
 
 	// Phase 4.1: 为新增积分添加过期时间（异步处理）
 	if s.expirationSvc != nil {
@@ -202,35 +254,37 @@ func (s *CreditService) SpendPoints(userID string, points int, description, refe
 		return fmt.Errorf("insufficient credits: available %d, required %d", credit.Available, points)
 	}
 
-	// 开始事务
-	tx := s.db.Begin()
+	// 使用标准化事务管理
+	err = s.transactionHelper.WithTransaction(context.Background(), func(tx *gorm.DB) error {
+		// 更新积分
+		credit.Available -= points
+		credit.Used += points
 
-	// 更新积分
-	credit.Available -= points
-	credit.Used += points
+		if err := tx.Save(credit).Error; err != nil {
+			return fmt.Errorf("failed to update user credit: %w", err)
+		}
 
-	if err := tx.Save(credit).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to update user credit: %w", err)
+		// 创建交易记录
+		transaction := models.CreditTransaction{
+			ID:          uuid.New().String(),
+			UserID:      userID,
+			Type:        "spend",
+			Amount:      -points, // 负数表示消费
+			Description: description,
+			Reference:   reference,
+			CreatedAt:   time.Now(),
+		}
+
+		if err := tx.Create(&transaction).Error; err != nil {
+			return fmt.Errorf("failed to create transaction: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
-
-	// 创建交易记录
-	transaction := models.CreditTransaction{
-		ID:          uuid.New().String(),
-		UserID:      userID,
-		Type:        "spend",
-		Amount:      -points, // 负数表示消费
-		Description: description,
-		Reference:   reference,
-		CreatedAt:   time.Now(),
-	}
-
-	if err := tx.Create(&transaction).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to create transaction: %w", err)
-	}
-
-	tx.Commit()
 
 	// 发送通知
 	if s.notificationSvc != nil {
@@ -391,10 +445,8 @@ func (s *CreditService) RewardAdminCustom(userID string, points int, description
 
 // ========================= 积分限制与验证机制 =========================
 
-// CheckDailyLimit 检查每日积分限制 - FSD风控要求
+// CheckDailyLimit 检查每日积分限制 - FSD风控要求（并发安全）
 func (s *CreditService) CheckDailyLimit(userID, actionType string) (bool, error) {
-	today := time.Now().Format("2006-01-02")
-	
 	var dailyLimits = map[string]int{
 		"letter_created":    3,  // 每日上限3封
 		"receive_letter":    5,  // 每日上限5封
@@ -407,6 +459,36 @@ func (s *CreditService) CheckDailyLimit(userID, actionType string) (bool, error)
 	if !exists {
 		return true, nil // 无限制的行为类型
 	}
+	
+	// 如果有并发管理器，使用Redis分布式频率限制
+	if s.concurrencyManager != nil {
+		windowSize := 24 * time.Hour
+		if actionType == "writing_challenge" {
+			windowSize = 7 * 24 * time.Hour // 写作挑战是每周限制
+		}
+		
+		op := RateLimitedOperation{
+			UserID:     userID,
+			ActionType: actionType,
+			WindowSize: windowSize,
+			MaxCount:   limit,
+		}
+		
+		allowed, err := s.concurrencyManager.CheckRateLimit(context.Background(), op)
+		if err != nil {
+			// 如果Redis失败，回退到数据库查询
+			return s.checkDailyLimitFallback(userID, actionType, limit)
+		}
+		return allowed, nil
+	}
+	
+	// 回退到传统数据库查询
+	return s.checkDailyLimitFallback(userID, actionType, limit)
+}
+
+// checkDailyLimitFallback 传统的每日限制检查（回退方案）
+func (s *CreditService) checkDailyLimitFallback(userID, actionType string, limit int) (bool, error) {
+	today := time.Now().Format("2006-01-02")
 	
 	var count int64
 	err := s.db.Model(&models.CreditTransaction{}).
@@ -507,11 +589,11 @@ func (s *CreditService) determineCreditType(description string) string {
 // creditContains 检查字符串是否包含子字符串（辅助函数）
 func creditContains(s, substr string) bool {
 	return len(s) >= len(substr) && s[:len(substr)] == substr ||
-		   len(s) > len(substr) && findSubstring(s, substr)
+		   len(s) > len(substr) && creditFindSubstring(s, substr)
 }
 
 // findSubstring 简单的子字符串查找
-func findSubstring(s, substr string) bool {
+func creditFindSubstring(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {
 			return true

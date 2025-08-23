@@ -28,8 +28,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu'
 import { useWebSocket, ConnectionStatus } from '@/contexts/websocket-context'
-import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+import { SafeTimestamp } from '@/components/ui/safe-timestamp'
 
 interface WebSocketStatusProps {
   showDetails?: boolean
@@ -156,10 +155,18 @@ export function WebSocketStatus({ showDetails = false, className = '' }: WebSock
                     {statusInfo.text}
                   </h4>
                   <p className="text-xs text-gray-600">
-                    {connectionStatus === 'connected' && connectionInfo
-                      ? `连接于 ${formatDistanceToNow(new Date(connectionInfo.connected_at), { addSuffix: true, locale: zhCN })}`
-                      : '实时通信功能'
-                    }
+                    {connectionStatus === 'connected' && connectionInfo ? (
+                      <>
+                        连接于 <SafeTimestamp 
+                          date={connectionInfo.connected_at} 
+                          format="relative" 
+                          fallback="刚刚"
+                          className="inline"
+                        />
+                      </>
+                    ) : (
+                      '实时通信功能'
+                    )}
                   </p>
                 </div>
               </div>

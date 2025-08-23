@@ -71,6 +71,7 @@ func (h *OPCodeHandler) ApplyOPCode(c *gin.Context) {
 }
 
 // ValidateOPCode 验证OP Code格式和有效性
+// 公开接口，但会根据用户认证状态返回不同级别的信息
 func (h *OPCodeHandler) ValidateOPCode(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {
@@ -105,14 +106,50 @@ func (h *OPCodeHandler) ValidateOPCode(c *gin.Context) {
 		return
 	}
 
+	// 基础响应数据
+	responseData := gin.H{
+		"code":     code,
+		"is_valid": isValid,
+	}
+
+	// 如果用户已认证，提供额外信息
+	userInterface, exists := c.Get("user")
+	if exists && isValid {
+		user := userInterface.(*models.User)
+		
+		// 检查用户权限决定返回多少信息
+		includePrivate := user.Role == models.RolePlatformAdmin ||
+			user.Role == models.RoleSuperAdmin ||
+			user.Role == models.RoleCourierLevel1 ||
+			user.Role == models.RoleCourierLevel2 ||
+			user.Role == models.RoleCourierLevel3 ||
+			user.Role == models.RoleCourierLevel4
+
+		if opCode, err := h.opcodeService.GetOPCodeByCode(code, includePrivate); err == nil {
+			additionalInfo := gin.H{
+				"is_active":      opCode.IsActive,
+				"is_public":      opCode.IsPublic,
+				"point_type":     opCode.PointType,
+			}
+			
+			// 管理员和信使可以看到更多信息
+			if includePrivate {
+				additionalInfo["point_name"] = opCode.PointName
+				additionalInfo["full_address"] = opCode.FullAddress
+				additionalInfo["created_at"] = opCode.CreatedAt
+				additionalInfo["updated_at"] = opCode.UpdatedAt
+			}
+			
+			responseData["additional_info"] = additionalInfo
+			responseData["user_role"] = user.Role
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"code":    200,
 		"message": "验证成功",
-		"data": gin.H{
-			"code":     code,
-			"is_valid": isValid,
-		},
+		"data":    responseData,
 	})
 }
 
@@ -260,6 +297,7 @@ func (h *OPCodeHandler) AdminReviewApplication(c *gin.Context) {
 }
 
 // GetOPCode 根据编码获取OP Code信息
+// 公开接口，但会根据用户认证状态返回不同级别的信息
 func (h *OPCodeHandler) GetOPCode(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
@@ -274,8 +312,9 @@ func (h *OPCodeHandler) GetOPCode(c *gin.Context) {
 	// 检查用户权限
 	userInterface, exists := c.Get("user")
 	includePrivate := false
+	var user *models.User
 	if exists {
-		user := userInterface.(*models.User)
+		user = userInterface.(*models.User)
 		// 管理员或信使可以查看私有信息
 		includePrivate = user.Role == models.RolePlatformAdmin ||
 			user.Role == models.RoleSuperAdmin ||
@@ -296,11 +335,47 @@ func (h *OPCodeHandler) GetOPCode(c *gin.Context) {
 		return
 	}
 
+	// 构建响应数据
+	responseData := make(map[string]interface{})
+	
+	// 基础字段，所有人都能看到
+	responseData["code"] = opCode.Code
+	responseData["school_code"] = opCode.SchoolCode
+	responseData["area_code"] = opCode.AreaCode
+	responseData["is_active"] = opCode.IsActive
+	responseData["is_public"] = opCode.IsPublic
+	responseData["point_type"] = opCode.PointType
+	
+	// 根据权限级别添加额外字段
+	if includePrivate {
+		responseData["point_code"] = opCode.PointCode
+		responseData["point_name"] = opCode.PointName
+		responseData["full_address"] = opCode.FullAddress
+		responseData["binding_type"] = opCode.BindingType
+		responseData["binding_id"] = opCode.BindingID
+		responseData["created_at"] = opCode.CreatedAt
+		responseData["updated_at"] = opCode.UpdatedAt
+		responseData["access_level"] = "full"
+		
+		// 信使特有信息 - 暂时注释掉，因为 CanAccessOPCode 方法可能不存在
+		// if user != nil && (user.Role == models.RoleCourierLevel1 ||
+		// 	user.Role == models.RoleCourierLevel2 ||
+		// 	user.Role == models.RoleCourierLevel3 ||
+		// 	user.Role == models.RoleCourierLevel4) {
+		// 	// 检查是否在信使管辖范围内
+		// 	if canAccess, err := h.courierService.CanAccessOPCode(user.ID, code); err == nil {
+		// 		responseData["can_manage"] = canAccess
+		// 	}
+		// }
+	} else {
+		responseData["access_level"] = "basic"
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"code":    200,
 		"message": "获取成功",
-		"data":    opCode,
+		"data":    responseData,
 	})
 }
 

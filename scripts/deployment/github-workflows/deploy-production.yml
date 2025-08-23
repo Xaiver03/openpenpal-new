@@ -1,0 +1,405 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deployment_mode:
+        description: 'Deployment mode'
+        required: true
+        default: 'blue-green'
+        type: choice
+        options:
+          - blue-green
+          - rolling
+          - canary
+
+env:
+  DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+  DOCKER_NAMESPACE: ${{ secrets.DOCKER_NAMESPACE }}
+  PROJECT_NAME: openpenpal
+  DEPLOYMENT_ENV: production
+
+jobs:
+  # 代码质量检查
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Run security scanning
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload security results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # 单元测试
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: backend
+            path: ./backend
+            type: go
+          - name: write-service
+            path: ./services/write-service
+            type: python
+          - name: courier-service
+            path: ./services/courier-service
+            type: go
+          - name: admin-service
+            path: ./services/admin-service/backend
+            type: java
+          - name: ocr-service
+            path: ./services/ocr-service
+            type: python
+          - name: gateway
+            path: ./services/gateway
+            type: go
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Go
+      if: matrix.service.type == 'go'
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        
+    - name: Setup Python
+      if: matrix.service.type == 'python'
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Setup Java
+      if: matrix.service.type == 'java'
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Run tests for ${{ matrix.service.name }}
+      working-directory: ${{ matrix.service.path }}
+      run: |
+        if [ "${{ matrix.service.type }}" = "go" ]; then
+          go mod download
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
+        elif [ "${{ matrix.service.type }}" = "python" ]; then
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+          pytest --cov=. --cov-report=html
+        elif [ "${{ matrix.service.type }}" = "java" ]; then
+          mvn clean test jacoco:report
+        fi
+        
+    - name: Upload coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-${{ matrix.service.name }}
+        path: |
+          **/coverage.html
+          **/target/site/jacoco/
+          **/htmlcov/
+
+  # 构建镜像
+  build-images:
+    needs: [code-quality, unit-tests]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: 
+          - name: frontend
+            context: ./frontend
+            dockerfile: ./deploy/docker/Dockerfile.frontend.prod
+            platforms: linux/amd64,linux/arm64
+          - name: admin-frontend
+            context: ./services/admin-service/frontend
+            dockerfile: ./services/admin-service/frontend/Dockerfile
+            platforms: linux/amd64,linux/arm64
+          - name: gateway
+            context: ./services/gateway
+            dockerfile: ./services/gateway/Dockerfile
+            platforms: linux/amd64,linux/arm64
+          - name: backend
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+            platforms: linux/amd64,linux/arm64
+          - name: write-service
+            context: ./services/write-service
+            dockerfile: ./services/write-service/Dockerfile
+            platforms: linux/amd64
+          - name: courier-service
+            context: ./services/courier-service
+            dockerfile: ./services/courier-service/Dockerfile
+            platforms: linux/amd64,linux/arm64
+          - name: admin-service
+            context: ./services/admin-service/backend
+            dockerfile: ./services/admin-service/backend/Dockerfile
+            platforms: linux/amd64
+          - name: ocr-service
+            context: ./services/ocr-service
+            dockerfile: ./services/ocr-service/Dockerfile
+            platforms: linux/amd64
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver-opts: |
+          network=host
+          image=moby/buildkit:v0.12.0
+    
+    - name: Login to Tencent Cloud Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ matrix.service.name }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=${{ github.run_number }}
+    
+    - name: Build and push ${{ matrix.service.name }}
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ matrix.service.context }}
+        file: ${{ matrix.service.dockerfile }}
+        platforms: ${{ matrix.service.platforms }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: |
+          type=gha,scope=${{ matrix.service.name }}
+          type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ matrix.service.name }}:buildcache
+        cache-to: |
+          type=gha,mode=max,scope=${{ matrix.service.name }}
+          type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ matrix.service.name }}:buildcache,mode=max
+        build-args: |
+          BUILD_DATE=${{ github.event.repository.updated_at }}
+          BUILD_VERSION=${{ github.sha }}
+          VCS_REF=${{ github.sha }}
+          VCS_URL=${{ github.event.repository.clone_url }}
+
+  # 集成测试
+  integration-tests:
+    needs: build-images
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup test environment
+      run: |
+        docker-compose -f docker-compose.test.yml up -d
+        sleep 30
+        
+    - name: Run integration tests
+      run: |
+        npm install
+        npm run test:integration
+        
+    - name: Cleanup
+      if: always()
+      run: docker-compose -f docker-compose.test.yml down -v
+
+  # 部署到生产环境
+  deploy:
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup deployment files
+      run: |
+        mkdir -p deployment-package
+        cp -r deploy/* deployment-package/
+        cp -r scripts/deploy/* deployment-package/scripts/
+        
+        # 创建环境配置文件
+        cat > deployment-package/.env.production << EOF
+        DOCKER_REGISTRY=${{ env.DOCKER_REGISTRY }}
+        DOCKER_NAMESPACE=${{ env.DOCKER_NAMESPACE }}
+        IMAGE_TAG=${{ github.sha }}
+        JWT_SECRET=${{ secrets.JWT_SECRET }}
+        POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+        REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+        GRAFANA_PASSWORD=${{ secrets.GRAFANA_PASSWORD }}
+        DEPLOYMENT_MODE=${{ github.event.inputs.deployment_mode || 'blue-green' }}
+        EOF
+    
+    - name: Copy deployment files to server
+      uses: appleboy/scp-action@v0.1.5
+      with:
+        host: ${{ secrets.TENCENT_HOST }}
+        username: ${{ secrets.TENCENT_USER }}
+        key: ${{ secrets.TENCENT_SSH_KEY }}
+        source: "deployment-package/*"
+        target: "/home/ubuntu/openpenpal-deploy"
+        strip_components: 1
+    
+    - name: Pre-deployment backup
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.TENCENT_HOST }}
+        username: ${{ secrets.TENCENT_USER }}
+        key: ${{ secrets.TENCENT_SSH_KEY }}
+        script: |
+          cd /home/ubuntu/openpenpal
+          ./scripts/backup.sh pre-deployment
+    
+    - name: Deploy using ${{ github.event.inputs.deployment_mode || 'blue-green' }} strategy
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.TENCENT_HOST }}
+        username: ${{ secrets.TENCENT_USER }}
+        key: ${{ secrets.TENCENT_SSH_KEY }}
+        timeout: 30m
+        script: |
+          cd /home/ubuntu/openpenpal-deploy
+          chmod +x scripts/*.sh
+          
+          # 执行部署
+          case "${{ github.event.inputs.deployment_mode || 'blue-green' }}" in
+            "blue-green")
+              ./scripts/deploy-blue-green.sh production
+              ;;
+            "rolling")
+              ./scripts/deploy-rolling.sh production
+              ;;
+            "canary")
+              ./scripts/deploy-canary.sh production
+              ;;
+          esac
+    
+    - name: Health check
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.TENCENT_HOST }}
+        username: ${{ secrets.TENCENT_USER }}
+        key: ${{ secrets.TENCENT_SSH_KEY }}
+        script: |
+          cd /home/ubuntu/openpenpal-deploy
+          ./scripts/health-check.sh production
+          
+          # 性能基准测试
+          ./scripts/performance-benchmark.sh
+    
+    - name: Post-deployment tasks
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.TENCENT_HOST }}
+        username: ${{ secrets.TENCENT_USER }}
+        key: ${{ secrets.TENCENT_SSH_KEY }}
+        script: |
+          cd /home/ubuntu/openpenpal-deploy
+          
+          # 清理旧镜像
+          docker image prune -a --force --filter "until=72h"
+          
+          # 更新监控配置
+          ./scripts/update-monitoring.sh
+          
+          # 刷新 CDN
+          ./scripts/refresh-cdn.sh
+
+  # 通知
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Send Slack notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: |
+          Deployment Status: ${{ needs.deploy.result }}
+          Branch: ${{ github.ref }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+          Message: ${{ github.event.head_commit.message }}
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        
+    - name: Send email notification
+      if: failure()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.qq.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "❌ OpenPenPal Production Deployment Failed"
+        to: ${{ secrets.EMAIL_NOTIFICATION }}
+        from: OpenPenPal CI/CD
+        body: |
+          Deployment failed for OpenPenPal production environment.
+          
+          Details:
+          - Branch: ${{ github.ref }}
+          - Commit: ${{ github.sha }}
+          - Author: ${{ github.actor }}
+          - Time: ${{ github.event.head_commit.timestamp }}
+          
+          Please check the GitHub Actions logs for more information.
+
+  # 回滚准备
+  prepare-rollback:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+    - name: Create rollback issue
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `🚨 Production deployment failed - ${context.sha.substring(0, 7)}`,
+            body: `## Deployment Failure
+            
+            **Commit**: ${context.sha}
+            **Author**: ${context.actor}
+            **Time**: ${new Date().toISOString()}
+            
+            ### Actions Required
+            - [ ] Investigate failure cause
+            - [ ] Execute rollback if necessary
+            - [ ] Fix issues
+            - [ ] Re-deploy
+            
+            ### Rollback Command
+            \`\`\`bash
+            ssh ubuntu@production "./scripts/rollback.sh ${context.sha}"
+            \`\`\`
+            `,
+            labels: ['deployment', 'production', 'urgent']
+          })

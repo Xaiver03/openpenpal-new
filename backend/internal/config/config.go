@@ -34,8 +34,9 @@ type Config struct {
 	BaseURL    string
 
 	// Security
-	JWTSecret  string
-	BCryptCost int
+	JWTSecret     string
+	BCryptCost    int
+	EncryptionKey string // 数据加密密钥
 
 	// Frontend
 	FrontendURL string
@@ -100,8 +101,9 @@ func Load() (*Config, error) {
 		BaseURL:    getEnv("BASE_URL", "http://localhost:8080"),
 
 		// Security
-		JWTSecret:  getEnvOrPanic("JWT_SECRET"),
-		BCryptCost: getEnvAsInt("BCRYPT_COST", 12),
+		JWTSecret:     getEnvOrPanic("JWT_SECRET"),
+		BCryptCost:    getEnvAsInt("BCRYPT_COST", 12),
+		EncryptionKey: getEnv("ENCRYPTION_KEY", "openpenpal-default-encryption-key-please-change-in-production"),
 
 		// Frontend
 		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
